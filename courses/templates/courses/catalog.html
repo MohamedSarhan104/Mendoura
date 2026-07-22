@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% load i18n %}
+{% block title %}Browse Courses - Mendoura{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-6 py-12 animate-fade-in">
+
+  <div class="mb-10">
+    <h1 class="text-3xl font-extrabold">{% trans "Browse Courses" %}</h1>
+    <p class="text-gray-500 dark:text-gray-400 mt-1">{% trans "Pick a course and start learning today." %}</p>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    {% for course in courses %}
+      {% include 'courses/_course_card.html' %}
+    {% empty %}
+      <div class="col-span-full bg-white dark:bg-gray-900 border border-dashed border-gray-300 dark:border-gray-700 rounded-2xl p-12 text-center">
+        <i class="fa-solid fa-magnifying-glass text-4xl text-gray-300 mb-4"></i>
+        <p class="text-lg font-semibold">{% trans "No courses available yet" %}</p>
+        <p class="text-gray-500 dark:text-gray-400 text-sm mt-1">{% trans "Check back soon, instructors are cooking up something great." %}</p>
+      </div>
+    {% endfor %}
+  </div>
+
+</div>
+{% endblock %}

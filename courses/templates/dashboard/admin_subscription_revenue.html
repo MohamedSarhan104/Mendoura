@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+{% load i18n %}
+{% block title %}Subscription Revenue - Mendoura Admin{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto px-6 py-12">
+
+  <a href="{% url 'admin_dashboard' %}" class="text-sm text-brand-600 hover:underline">
+    <i class="fa-solid fa-arrow-left"></i> {% trans "Back to Admin Overview" %}
+  </a>
+
+  <div class="flex items-center justify-between flex-wrap gap-4 mt-4 mb-8">
+    <h1 class="text-3xl font-extrabold">{% trans "Subscription Revenue Distribution" %}</h1>
+    <form method="post" action="{% url 'run_subscription_distribution' %}">
+      {% csrf_token %}
+      <button type="submit" class="px-5 py-2 rounded-lg bg-brand-600 text-white font-semibold hover:bg-brand-700 transition"
+              {% if not due_subscription_periods_count %}disabled{% endif %}>
+        {% trans "Run Distribution Now" %} {% if due_subscription_periods_count %}{% blocktrans with count=due_subscription_periods_count %}({{ count }} due){% endblocktrans %}{% endif %}
+      </button>
+    </form>
+  </div>
+
+  <div class="space-y-6">
+    {% for period in periods %}
+      <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-6">
+        <div class="flex items-center justify-between flex-wrap gap-2 mb-4">
+          <div>
+            <p class="font-semibold">{{ period.subscription.student.username }} &middot; {{ period.subscription.plan.name }}</p>
+            <p class="text-xs text-gray-400">{{ period.period_start|date:"M d, Y" }} &rarr; {{ period.period_end|date:"M d, Y" }}</p>
+          </div>
+          <div class="text-right">
+            <p class="font-bold">${{ period.amount_paid }} <span class="text-xs text-gray-400">{% trans "pool" %}</span></p>
+            <span class="text-xs px-2 py-0.5 rounded-full
+              {% if period.status == 'distributed' %}bg-green-100 text-green-700
+              {% elif period.status == 'canceled' %}bg-gray-100 text-gray-600
+              {% else %}bg-yellow-100 text-yellow-700{% endif %}">
+              {{ period.get_status_display }}
+            </span>
+          </div>
+        </div>
+
+        {% if period.distributions.all %}
+          <table class="w-full text-sm">
+            <thead class="text-left text-gray-400">
+              <tr>
+                <th class="py-2">{% trans "Course" %}</th>
+                <th class="py-2">{% trans "Instructor" %}</th>
+                <th class="py-2">{% trans "Minutes Watched" %}</th>
+                <th class="py-2">{% trans "Share" %}</th>
+                <th class="py-2">{% trans "Instructor Gets" %}</th>
+                <th class="py-2">{% trans "Platform Keeps" %}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for dist in period.distributions.all %}
+                <tr class="border-t border-gray-100 dark:border-gray-800">
+                  <td class="py-2 font-semibold">{{ dist.course.title }}</td>
+                  <td class="py-2">{{ dist.instructor.username }}</td>
+                  <td class="py-2">{{ dist.minutes_watched }}</td>
+                  <td class="py-2">{{ dist.share_of_period_pct }}%</td>
+                  <td class="py-2 text-green-600 font-semibold">${{ dist.instructor_amount }}</td>
+                  <td class="py-2 text-gray-500">${{ dist.platform_amount }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        {% else %}
+          <p class="text-sm text-gray-400">
+            {% if period.status == 'distributed' %}{% trans "No watch-time during this period -- the full pool stayed with the platform." %}
+            {% elif period.status == 'canceled' %}{% trans "Canceled before distribution (refunded)." %}
+            {% else %}{% trans "Not distributed yet." %}{% endif %}
+          </p>
+        {% endif %}
+      </div>
+    {% empty %}
+      <div class="bg-white dark:bg-gray-900 border border-dashed border-gray-300 dark:border-gray-700 rounded-2xl p-12 text-center text-gray-400">
+        {% trans "No subscription periods yet." %}
+      </div>
+    {% endfor %}
+  </div>
+
+</div>
+{% endblock %}

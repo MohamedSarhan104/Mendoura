@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+{% load i18n %}
+{% block title %}Mendoura — Learn Without Limits{% endblock %}
+
+{% block content %}
+<section class="max-w-7xl mx-auto px-6 pt-20 pb-24 text-center">
+  <span class="inline-block px-4 py-1 rounded-full bg-brand-50 dark:bg-brand-600/10 text-brand-600 dark:text-brand-400 text-sm font-semibold mb-6">
+    <i class="fa-solid fa-sparkles mr-1"></i> {% trans "AI-Powered Learning Platform" %}
+  </span>
+  <h1 class="text-5xl md:text-6xl font-extrabold leading-tight mb-4">
+    {% blocktrans %}Where your mind explores <span class="text-brand-600 dark:text-brand-400">the new aura.</span>{% endblocktrans %}
+  </h1>
+  <p class="text-lg text-gray-500 dark:text-gray-400 max-w-2xl mx-auto mb-10">
+    {% trans "Courses built by real instructors, enhanced with AI. Track your progress, earn certificates, and grow your career." %}
+  </p>
+  <div class="flex items-center justify-center gap-4">
+    <a href="{% url 'track_list' %}" class="px-8 py-3 rounded-xl bg-brand-600 text-white font-semibold hover:bg-brand-700 transition shadow-lg shadow-brand-600/30">
+      {% trans "Start Learning" %}
+    </a>
+    <a href="{% url 'instructor_signup' %}" class="px-8 py-3 rounded-xl border border-gray-300 dark:border-gray-700 font-semibold hover:bg-gray-100 dark:hover:bg-gray-800 transition">
+      {% trans "Become an Instructor" %}
+    </a>
+  </div>
+</section>
+
+<section class="max-w-7xl mx-auto px-6 pb-24">
+  <h2 class="text-2xl font-extrabold mb-6">{% trans "Browse by Track" %}</h2>
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+    {% for track in tracks %}
+      <a href="{% url 'track_detail' track.slug %}" class="p-6 rounded-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 hover:shadow-lg hover:-translate-y-1 transition block">
+        <div class="w-10 h-10 rounded-lg bg-brand-50 dark:bg-brand-600/10 flex items-center justify-center text-brand-600 dark:text-brand-400 mb-3">
+          <i class="fa-solid {{ track.icon|default:'fa-layer-group' }}"></i>
+        </div>
+        <h3 class="font-bold">{{ track.translated_name }}</h3>
+      </a>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="max-w-7xl mx-auto px-6 pb-24 grid md:grid-cols-3 gap-6">
+  <div class="p-8 rounded-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-sm">
+    <div class="w-12 h-12 rounded-xl bg-brand-50 dark:bg-brand-600/10 flex items-center justify-center text-brand-600 dark:text-brand-400 text-xl mb-4">
+      <i class="fa-solid fa-robot"></i>
+    </div>
+    <h3 class="font-bold text-lg mb-2">{% trans "AI-Enhanced Lectures" %}</h3>
+    <p class="text-gray-500 dark:text-gray-400 text-sm">{% trans "Instructors write scripts, AI polishes them into engaging lectures." %}</p>
+  </div>
+  <div class="p-8 rounded-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-sm">
+    <div class="w-12 h-12 rounded-xl bg-brand-50 dark:bg-brand-600/10 flex items-center justify-center text-brand-600 dark:text-brand-400 text-xl mb-4">
+      <i class="fa-solid fa-certificate"></i>
+    </div>
+    <h3 class="font-bold text-lg mb-2">{% trans "Verified Certificates" %}</h3>
+    <p class="text-gray-500 dark:text-gray-400 text-sm">{% trans "Complete courses and earn certificates to showcase your skills." %}</p>
+  </div>
+  <div class="p-8 rounded-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-sm">
+    <div class="w-12 h-12 rounded-xl bg-brand-50 dark:bg-brand-600/10 flex items-center justify-center text-brand-600 dark:text-brand-400 text-xl mb-4">
+      <i class="fa-solid fa-wallet"></i>
+    </div>
+    <h3 class="font-bold text-lg mb-2">{% trans "Instructor Earnings" %}</h3>
+    <p class="text-gray-500 dark:text-gray-400 text-sm">{% trans "Track your sales and withdraw earnings straight from your dashboard." %}</p>
+  </div>
+</section>
+
+<section class="max-w-7xl mx-auto px-6 pb-24">
+  <h2 class="text-2xl font-extrabold mb-2 text-center">{% trans "Simple, transparent pricing" %}</h2>
+  <p class="text-gray-500 dark:text-gray-400 text-center mb-10">{% trans "Buy a single course, or unlock everything with a subscription." %}</p>
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+    <div class="p-8 rounded-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800">
+      <span class="text-xs font-semibold text-brand-600 uppercase">{% trans "Single Course" %}</span>
+      <p class="text-2xl font-extrabold mt-4 mb-2">{% trans "Pay per course" %}</p>
+      <p class="text-sm text-gray-500 dark:text-gray-400">{% trans "Lifetime access to just the course you need." %}</p>
+    </div>
+    {% for plan in plans %}
+      <div class="relative p-8 rounded-2xl bg-white dark:bg-gray-900
+        {% if plan.interval == 'annual' %}border-2 border-brand-600 shadow-xl{% else %}border border-gray-200 dark:border-gray-800{% endif %}">
+        {% if plan.interval == 'annual' %}
+          <span class="absolute -top-3 left-8 bg-brand-600 text-white text-xs font-semibold px-3 py-1 rounded-full">{% trans "Best Value" %}</span>
+        {% endif %}
+        <span class="text-xs font-semibold text-brand-600 uppercase">{{ plan.name }}</span>
+        <p class="text-3xl font-extrabold mt-4">{{ plan.price_egp|floatformat:0 }} EGP
+          <span class="text-base font-medium text-gray-400">/{% if plan.interval == 'monthly' %}{% trans "mo" %}{% else %}{% trans "yr" %}{% endif %}</span>
+        </p>
+        <p class="text-sm text-gray-400 mb-4">(~${{ plan.price_usd|floatformat:0 }}/{% if plan.interval == 'monthly' %}{% trans "mo" %}{% else %}{% trans "yr" %}{% endif %})</p>
+        <p class="text-sm text-gray-500 dark:text-gray-400">{% trans "Unlimited access to every track and course." %}</p>
+      </div>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

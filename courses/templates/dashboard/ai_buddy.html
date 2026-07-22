@@ -1,0 +1,195 @@
+{% extends 'base.html' %}
+{% load i18n %}
+{% block title %}AI Coach - Mendoura{% endblock %}
+
+{% block content %}
+<style>
+  /* No @tailwindcss/typography plugin installed -- style markdown output by hand. */
+  .md-content p { margin: 0 0 0.6em; }
+  .md-content p:last-child { margin-bottom: 0; }
+  .md-content ul, .md-content ol { margin: 0.4em 0 0.6em; padding-left: 1.4em; }
+  .md-content li { margin: 0.2em 0; }
+  .md-content strong { font-weight: 700; color: #fff; }
+  .md-content h1, .md-content h2, .md-content h3 { font-weight: 700; color: #fff; margin: 0.8em 0 0.4em; }
+  .md-content h1:first-child, .md-content h2:first-child, .md-content h3:first-child { margin-top: 0; }
+  .md-content code { background: rgba(255,255,255,0.08); padding: 0.1em 0.35em; border-radius: 0.3em; font-size: 0.85em; }
+  .md-content pre { background: rgba(0,0,0,0.4); padding: 0.75em 1em; border-radius: 0.6em; overflow-x: auto; margin: 0.6em 0; }
+  .md-content pre code { background: none; padding: 0; }
+  .md-content a { color: #a78bfa; text-decoration: underline; }
+  .md-content table { border-collapse: collapse; margin: 0.6em 0; }
+  .md-content th, .md-content td { border: 1px solid rgba(255,255,255,0.15); padding: 0.35em 0.6em; }
+</style>
+<div class="max-w-4xl mx-auto px-6 py-10 animate-fade-in">
+
+  <div class="bg-gray-950 border border-gray-800 rounded-2xl overflow-hidden flex flex-col" style="height: calc(100vh - 11rem); min-height: 520px;">
+
+    <div class="px-6 py-5 border-b border-gray-800 flex items-center gap-4">
+      <div class="w-11 h-11 rounded-full bg-brand-600 flex items-center justify-center text-xl shrink-0">
+        <i class="fa-solid fa-robot text-white"></i>
+      </div>
+      <div class="min-w-0 flex items-center gap-2 flex-wrap">
+        <div>
+          <h1 class="text-lg font-bold text-white truncate">{% trans "Mendoura AI Coach" %}</h1>
+          <p class="text-xs text-gray-400">{% trans "Your 24/7 Study Partner" %}</p>
+        </div>
+        {% if not ai_configured %}
+          <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-gradient-to-r from-purple-600/25 via-brand-600/25 to-purple-600/25 text-purple-200 border border-purple-400/40 shadow-[0_0_14px_2px_rgba(168,85,247,0.35)]">
+            {% trans "Mendoura General AI Coach" %} 🤖✨
+          </span>
+        {% endif %}
+      </div>
+    </div>
+
+    <div id="chat-log" class="flex-1 overflow-y-auto px-6 py-6 space-y-5">
+      {% if not chat_messages %}
+        <div class="flex gap-3">
+          <div class="w-8 h-8 rounded-full bg-brand-600 flex items-center justify-center shrink-0">
+            <i class="fa-solid fa-robot text-white text-xs"></i>
+          </div>
+          <div class="bg-gray-900 text-gray-100 rounded-2xl rounded-tl-sm px-4 py-3 max-w-[80%] text-sm leading-relaxed">
+            <p class="font-semibold text-white mb-1">{% trans "Welcome to Mendoura AI Coach - Your 24/7 Study Partner" %}</p>
+            <p>{% trans "Ask me to explain a tricky concept, summarize a lecture, build you a study schedule, or just talk through what you're stuck on. I'm here whenever you need me." %}</p>
+          </div>
+        </div>
+      {% endif %}
+      {% for message in chat_messages %}
+        {% if message.role == 'user' %}
+          <div class="flex gap-3 justify-end">
+            <div class="bg-brand-600 text-white rounded-2xl rounded-tr-sm px-4 py-3 max-w-[80%] text-sm leading-relaxed whitespace-pre-wrap">{{ message.content }}</div>
+          </div>
+        {% else %}
+          <div class="flex gap-3">
+            <div class="w-8 h-8 rounded-full bg-brand-600 flex items-center justify-center shrink-0">
+              <i class="fa-solid fa-robot text-white text-xs"></i>
+            </div>
+            <div class="md-content bg-gray-900 text-gray-100 rounded-2xl rounded-tl-sm px-4 py-3 max-w-[80%] text-sm leading-relaxed">{{ message.html|safe }}</div>
+          </div>
+        {% endif %}
+      {% endfor %}
+    </div>
+
+    <form id="chat-form" class="border-t border-gray-800 px-4 py-4 flex items-end gap-3">
+      {% csrf_token %}
+      <textarea id="chat-input" rows="1" maxlength="6000" placeholder="{% trans "Ask your AI Coach anything..." %}"
+                class="flex-1 resize-none bg-gray-900 text-gray-100 placeholder-gray-500 rounded-xl px-4 py-3 text-sm border border-gray-800 focus:ring-2 focus:ring-brand-500 outline-none disabled:opacity-50"></textarea>
+      <button type="submit" id="chat-send"
+              class="w-11 h-11 shrink-0 rounded-xl bg-brand-600 hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed text-white flex items-center justify-center transition">
+        <i class="fa-solid fa-paper-plane"></i>
+      </button>
+    </form>
+
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+{% trans "Something went wrong. Please try again." as msg_generic_error %}
+{% trans "Network error -- please try again." as msg_network_error %}
+<script>
+(function () {
+  const log = document.getElementById('chat-log');
+  const form = document.getElementById('chat-form');
+  const input = document.getElementById('chat-input');
+  const sendBtn = document.getElementById('chat-send');
+  if (!form) return;
+
+  input.addEventListener('input', () => {
+    input.style.height = 'auto';
+    input.style.height = Math.min(input.scrollHeight, 160) + 'px';
+  });
+
+  function scrollToBottom() {
+    log.scrollTop = log.scrollHeight;
+  }
+  scrollToBottom();
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  function appendUserBubble(text) {
+    const wrap = document.createElement('div');
+    wrap.className = 'flex gap-3 justify-end';
+    wrap.innerHTML = `<div class="bg-brand-600 text-white rounded-2xl rounded-tr-sm px-4 py-3 max-w-[80%] text-sm leading-relaxed whitespace-pre-wrap">${escapeHtml(text)}</div>`;
+    log.appendChild(wrap);
+    scrollToBottom();
+  }
+
+  function appendAssistantBubble(html) {
+    const wrap = document.createElement('div');
+    wrap.className = 'flex gap-3';
+    wrap.innerHTML = `
+      <div class="w-8 h-8 rounded-full bg-brand-600 flex items-center justify-center shrink-0">
+        <i class="fa-solid fa-robot text-white text-xs"></i>
+      </div>
+      <div class="md-content bg-gray-900 text-gray-100 rounded-2xl rounded-tl-sm px-4 py-3 max-w-[80%] text-sm leading-relaxed">${html}</div>`;
+    log.appendChild(wrap);
+    scrollToBottom();
+    return wrap;
+  }
+
+  function appendTypingIndicator() {
+    const wrap = document.createElement('div');
+    wrap.className = 'flex gap-3';
+    wrap.id = 'typing-indicator';
+    wrap.innerHTML = `
+      <div class="w-8 h-8 rounded-full bg-brand-600 flex items-center justify-center shrink-0">
+        <i class="fa-solid fa-robot text-white text-xs"></i>
+      </div>
+      <div class="bg-gray-900 text-gray-400 rounded-2xl rounded-tl-sm px-4 py-3 text-sm">
+        <i class="fa-solid fa-ellipsis fa-fade"></i>
+      </div>`;
+    log.appendChild(wrap);
+    scrollToBottom();
+  }
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const text = input.value.trim();
+    if (!text) return;
+
+    appendUserBubble(text);
+    input.value = '';
+    input.style.height = 'auto';
+    input.disabled = true;
+    sendBtn.disabled = true;
+    appendTypingIndicator();
+
+    const csrftoken = document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '';
+
+    try {
+      const res = await fetch("{% url 'ai_coach_send' %}", {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrftoken },
+        body: JSON.stringify({ message: text }),
+      });
+      const data = await res.json();
+      document.getElementById('typing-indicator')?.remove();
+
+      if (!res.ok) {
+        appendAssistantBubble(`<p class="text-red-400">${escapeHtml(data.error || '{{ msg_generic_error|escapejs }}')}</p>`);
+      } else {
+        appendAssistantBubble(data.reply_html);
+      }
+    } catch (err) {
+      document.getElementById('typing-indicator')?.remove();
+      appendAssistantBubble('<p class="text-red-400">{{ msg_network_error|escapejs }}</p>');
+    } finally {
+      input.disabled = false;
+      sendBtn.disabled = false;
+      input.focus();
+    }
+  });
+
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      form.requestSubmit();
+    }
+  });
+})();
+</script>
+{% endblock %}

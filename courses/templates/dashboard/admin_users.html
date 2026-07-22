@@ -1,0 +1,138 @@
+{% extends 'base.html' %}
+{% load i18n %}
+{% block title %}Users - Mendoura Admin{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto px-6 py-12">
+
+  <a href="{% url 'admin_dashboard' %}" class="text-sm text-brand-600 hover:underline">
+    <i class="fa-solid fa-arrow-left"></i> {% trans "Back to Admin Overview" %}
+  </a>
+
+  <h1 class="text-3xl font-extrabold mt-4 mb-8">{% trans "Users" %}</h1>
+
+  <div class="flex items-center gap-3 mb-4">
+    <h2 class="text-xl font-bold">{% trans "Pending Registrations" %}</h2>
+    {% if pending_users %}
+      <span class="bg-amber-100 text-amber-700 px-2 py-1 rounded-full text-xs font-semibold">{{ pending_users|length }}</span>
+    {% endif %}
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 overflow-x-auto mb-12">
+    <table class="w-full text-sm">
+      <thead class="bg-gray-50 dark:bg-gray-800 text-left">
+        <tr>
+          <th class="p-4">{% trans "Username" %}</th>
+          <th class="p-4">{% trans "Email" %}</th>
+          <th class="p-4">{% trans "Role" %}</th>
+          <th class="p-4">{% trans "Joined" %}</th>
+          <th class="p-4">{% trans "Actions" %}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in pending_users %}
+          <tr class="border-t border-gray-100 dark:border-gray-800">
+            <td class="p-4 font-semibold">{{ u.username }}</td>
+            <td class="p-4 text-gray-500">{{ u.email }}</td>
+            <td class="p-4">
+              {% if u.is_instructor %}
+                <span class="bg-purple-100 text-purple-700 px-2 py-1 rounded-full text-xs">{% trans "Instructor" %}</span>
+              {% elif u.is_student %}
+                <span class="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs">{% trans "Student" %}</span>
+              {% endif %}
+            </td>
+            <td class="p-4 text-gray-400">{{ u.date_joined|date:"M d, Y" }}</td>
+            <td class="p-4">
+              <div class="flex items-center gap-2">
+                <form method="post" action="{% url 'approve_user' u.id %}">
+                  {% csrf_token %}
+                  <button type="submit" class="px-3 py-1.5 rounded-lg bg-green-600 hover:bg-green-700 text-white text-xs font-semibold">
+                    <i class="fa-solid fa-check mr-1"></i>{% trans "Approve" %}
+                  </button>
+                </form>
+                <form method="post" action="{% url 'reject_user' u.id %}"
+                      onsubmit="return confirm('{% trans "Reject and permanently delete this registration?" %}');">
+                  {% csrf_token %}
+                  <button type="submit" class="px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white text-xs font-semibold">
+                    <i class="fa-solid fa-xmark mr-1"></i>{% trans "Reject" %}
+                  </button>
+                </form>
+              </div>
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td class="p-4 text-gray-400" colspan="5">{% trans "No pending registrations." %}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <h2 class="text-xl font-bold mb-4">{% trans "Students" %}</h2>
+  <div class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 overflow-x-auto mb-12">
+    <table class="w-full text-sm">
+      <thead class="bg-gray-50 dark:bg-gray-800 text-left">
+        <tr>
+          <th class="p-4">{% trans "Username" %}</th>
+          <th class="p-4">{% trans "Email" %}</th>
+          <th class="p-4">{% trans "Joined" %}</th>
+          <th class="p-4">{% trans "Actions" %}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in students %}
+          <tr class="border-t border-gray-100 dark:border-gray-800">
+            <td class="p-4 font-semibold">{{ u.username }}</td>
+            <td class="p-4 text-gray-500">{{ u.email }}</td>
+            <td class="p-4 text-gray-400">{{ u.date_joined|date:"M d, Y" }}</td>
+            <td class="p-4">
+              <form method="post" action="{% url 'delete_user' u.id %}"
+                    onsubmit="return confirm('{% trans "Permanently delete this user? This cannot be undone." %}');">
+                {% csrf_token %}
+                <button type="submit" class="px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white text-xs font-semibold">
+                  <i class="fa-solid fa-trash mr-1"></i>{% trans "Delete User" %}
+                </button>
+              </form>
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td class="p-4 text-gray-400" colspan="4">{% trans "No students found." %}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <h2 class="text-xl font-bold mb-4">{% trans "Instructors" %}</h2>
+  <div class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead class="bg-gray-50 dark:bg-gray-800 text-left">
+        <tr>
+          <th class="p-4">{% trans "Username" %}</th>
+          <th class="p-4">{% trans "Email" %}</th>
+          <th class="p-4">{% trans "Joined" %}</th>
+          <th class="p-4">{% trans "Actions" %}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in instructors %}
+          <tr class="border-t border-gray-100 dark:border-gray-800">
+            <td class="p-4 font-semibold">{{ u.username }}</td>
+            <td class="p-4 text-gray-500">{{ u.email }}</td>
+            <td class="p-4 text-gray-400">{{ u.date_joined|date:"M d, Y" }}</td>
+            <td class="p-4">
+              <form method="post" action="{% url 'delete_user' u.id %}"
+                    onsubmit="return confirm('{% trans "Permanently delete this user? This cannot be undone." %}');">
+                {% csrf_token %}
+                <button type="submit" class="px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white text-xs font-semibold">
+                  <i class="fa-solid fa-trash mr-1"></i>{% trans "Delete User" %}
+                </button>
+              </form>
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td class="p-4 text-gray-400" colspan="4">{% trans "No instructors found." %}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+{% block title %}Homework - {{ lecture.title }}{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto px-6 py-12">
+
+  <a href="{% url 'course_player' course.id lecture.id %}" class="text-sm text-brand-600 hover:underline">
+    <i class="fa-solid fa-arrow-left"></i> {{ lecture.title }}
+  </a>
+
+  <h1 class="text-3xl font-extrabold mt-4 mb-1">Homework</h1>
+  <p class="text-gray-500 dark:text-gray-400 mb-10">{{ lecture.title }} &middot; {{ course.title }}</p>
+
+  {% if submission and submission.is_graded %}
+    <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-8">
+      <div class="flex items-center gap-2 text-green-600 font-semibold mb-4">
+        <i class="fa-solid fa-circle-check"></i> Graded
+      </div>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">Grade</p>
+      <p class="text-2xl font-bold mb-6">{{ submission.grade|default:"—" }}</p>
+      {% if submission.feedback %}
+        <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">Feedback</p>
+        <p class="mb-6">{{ submission.feedback }}</p>
+      {% endif %}
+      <div class="border-t border-gray-100 dark:border-gray-800 pt-5 text-sm text-gray-500 dark:text-gray-400">
+        <p class="mb-2">Your submission (locked — already graded):</p>
+        {% if submission.submitted_file %}
+          <a href="{{ submission.submitted_file.url }}" target="_blank" class="text-brand-600 hover:underline">
+            <i class="fa-solid fa-paperclip"></i> Submitted file
+          </a><br>
+        {% endif %}
+        {% if submission.submission_link %}
+          <a href="{{ submission.submission_link }}" target="_blank" class="text-brand-600 hover:underline">
+            <i class="fa-solid fa-link"></i> {{ submission.submission_link }}
+          </a><br>
+        {% endif %}
+        {% if submission.note %}<p class="mt-2">{{ submission.note }}</p>{% endif %}
+      </div>
+    </div>
+  {% else %}
+    <form method="post" enctype="multipart/form-data" class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-8 space-y-5">
+      {% csrf_token %}
+
+      <div>
+        <label class="block text-sm font-semibold mb-2">Upload a file <span class="text-gray-400 font-normal">(optional)</span></label>
+        {{ form.submitted_file }}
+        {% if submission.submitted_file %}
+          <p class="text-xs text-gray-400 mt-2">
+            Current file: <a href="{{ submission.submitted_file.url }}" target="_blank" class="text-brand-600 hover:underline">{{ submission.submitted_file.name }}</a>
+          </p>
+        {% endif %}
+      </div>
+
+      <div>
+        <label class="block text-sm font-semibold mb-2">Or a link <span class="text-gray-400 font-normal">(optional)</span></label>
+        {{ form.submission_link }}
+      </div>
+
+      <div>
+        <label class="block text-sm font-semibold mb-2">Note to your instructor <span class="text-gray-400 font-normal">(optional)</span></label>
+        {{ form.note }}
+      </div>
+
+      <button type="submit" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-semibold py-3 rounded-xl transition">
+        {% if submission %}Update Submission{% else %}Submit Homework{% endif %}
+      </button>
+      {% if submission %}
+        <p class="text-xs text-gray-400 text-center">Submitted {{ submission.submitted_at|date:"M d, Y" }} &middot; you can update this until it's graded.</p>
+      {% endif %}
+    </form>
+  {% endif %}
+
+</div>
+{% endblock %}

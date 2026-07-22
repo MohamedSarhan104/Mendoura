@@ -1,0 +1,81 @@
+{% extends 'registration/auth_base.html' %}
+{% block title %}Student Sign Up — Mendoura{% endblock %}
+
+{% load static %}
+{% block illustration_content %}
+  <div class="flex items-center gap-3 mb-8">
+    <img src="{% static 'img/logo.png' %}" alt="" class="h-14 w-auto">
+    <span class="text-2xl font-bold tracking-wide text-white">Mendoura</span>
+  </div>
+  <h1 class="text-4xl font-extrabold leading-tight mb-4">Learn skills that<br>actually matter.</h1>
+  <p class="text-white/80 text-lg max-w-sm mb-8">Join thousands of students building real careers with courses from working professionals.</p>
+  <ul class="space-y-3 text-white/90">
+    <li><i class="fa-solid fa-circle-check mr-2"></i> Free and paid courses across 12 tracks</li>
+    <li><i class="fa-solid fa-circle-check mr-2"></i> Verified certificates on completion</li>
+    <li><i class="fa-solid fa-circle-check mr-2"></i> Learn at your own pace, on any device</li>
+  </ul>
+{% endblock %}
+
+{% block auth_form_content %}
+  {% include 'registration/_role_toggle.html' with active='student' %}
+
+  <h2 class="text-2xl font-bold mb-1">Create your student account</h2>
+  <p class="text-gray-500 dark:text-gray-400 text-sm mb-6">Start learning today, free forever.</p>
+
+  {% if form.non_field_errors %}
+    <div class="mb-4 p-3 rounded-lg bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 text-sm">
+      {{ form.non_field_errors.0 }}
+    </div>
+  {% endif %}
+
+  <form method="POST" id="auth-form" class="space-y-4">
+    {% csrf_token %}
+
+    <div>
+      <label class="block text-sm font-medium mb-1">{{ form.username.label }}</label>
+      {{ form.username }}
+      {% if form.username.errors %}<p class="text-red-500 text-xs mt-1">{{ form.username.errors.0 }}</p>{% endif %}
+    </div>
+
+    <div>
+      <label class="block text-sm font-medium mb-1">{{ form.email.label }}</label>
+      {{ form.email }}
+      {% if form.email.errors %}<p class="text-red-500 text-xs mt-1">{{ form.email.errors.0 }}</p>{% endif %}
+    </div>
+
+    <div>
+      <label class="block text-sm font-medium mb-1">{{ form.phone_number.label }}</label>
+      {{ form.phone_number }}
+      {% if form.phone_number.errors %}<p class="text-red-500 text-xs mt-1">{{ form.phone_number.errors.0 }}</p>{% endif %}
+    </div>
+
+    <div>
+      <label class="block text-sm font-medium mb-1">{{ form.password1.label }}</label>
+      {{ form.password1 }}
+      <div class="h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full mt-2 overflow-hidden">
+        <div id="password-strength-meter" class="h-full rounded-full transition-all" style="width:0%"></div>
+      </div>
+      <p id="password-strength-label" class="text-xs mt-1 text-gray-400"></p>
+      {% if form.password1.errors %}<p class="text-red-500 text-xs mt-1">{{ form.password1.errors.0 }}</p>{% endif %}
+    </div>
+
+    <div>
+      <label class="block text-sm font-medium mb-1">{{ form.password2.label }}</label>
+      {{ form.password2 }}
+      <p id="password-match-hint" class="text-xs mt-1"></p>
+      {% if form.password2.errors %}<p class="text-red-500 text-xs mt-1">{{ form.password2.errors.0 }}</p>{% endif %}
+    </div>
+
+    <button type="submit" class="w-full py-3 rounded-lg bg-brand-600 text-white font-semibold hover:bg-brand-700 transition flex items-center justify-center gap-2">
+      Create Account
+    </button>
+  </form>
+
+  <p class="text-center text-sm text-gray-500 dark:text-gray-400 mt-6">
+    Already have an account? <a href="{% url 'login' %}" class="text-brand-600 dark:text-brand-400 font-semibold">Log in</a>
+  </p>
+{% endblock %}
+
+{% block extra_js %}
+  {% include 'registration/_auth_scripts.html' %}
+{% endblock %}

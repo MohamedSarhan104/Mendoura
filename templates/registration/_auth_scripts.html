@@ -1,0 +1,60 @@
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const form = document.querySelector('#auth-form');
+  if (!form) return;
+
+  const submitBtn = form.querySelector('button[type=submit]');
+  form.addEventListener('submit', function () {
+    if (form.checkValidity() && submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.dataset.originalText = submitBtn.innerHTML;
+      submitBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Please wait...';
+    }
+  });
+
+  const pw1 = document.querySelector('#id_password1');
+  const pw2 = document.querySelector('#id_password2');
+  const meter = document.querySelector('#password-strength-meter');
+  const meterLabel = document.querySelector('#password-strength-label');
+  const matchHint = document.querySelector('#password-match-hint');
+
+  function scorePassword(value) {
+    let score = 0;
+    if (value.length >= 8) score++;
+    if (value.length >= 12) score++;
+    if (/[A-Z]/.test(value)) score++;
+    if (/[0-9]/.test(value)) score++;
+    if (/[^A-Za-z0-9]/.test(value)) score++;
+    return score;
+  }
+
+  const levels = [
+    { width: '0%', color: 'bg-gray-200 dark:bg-gray-700', label: '' },
+    { width: '20%', color: 'bg-red-500', label: 'Very weak' },
+    { width: '40%', color: 'bg-red-500', label: 'Weak' },
+    { width: '60%', color: 'bg-yellow-500', label: 'Fair' },
+    { width: '80%', color: 'bg-green-500', label: 'Good' },
+    { width: '100%', color: 'bg-green-600', label: 'Strong' },
+  ];
+
+  if (pw1 && meter) {
+    pw1.addEventListener('input', function () {
+      const level = levels[Math.min(scorePassword(pw1.value), 5)];
+      meter.style.width = level.width;
+      meter.className = 'h-full rounded-full transition-all ' + level.color;
+      if (meterLabel) meterLabel.textContent = pw1.value ? level.label : '';
+    });
+  }
+
+  if (pw1 && pw2 && matchHint) {
+    function checkMatch() {
+      if (!pw2.value) { matchHint.textContent = ''; return; }
+      const match = pw1.value === pw2.value;
+      matchHint.textContent = match ? 'Passwords match' : 'Passwords do not match';
+      matchHint.className = 'text-xs mt-1 ' + (match ? 'text-green-600' : 'text-red-500');
+    }
+    pw1.addEventListener('input', checkMatch);
+    pw2.addEventListener('input', checkMatch);
+  }
+});
+</script>

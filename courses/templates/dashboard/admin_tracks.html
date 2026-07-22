@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+{% load i18n %}
+{% block title %}Tracks - Mendoura Admin{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-6 py-12">
+
+  <a href="{% url 'admin_dashboard' %}" class="text-sm text-brand-600 hover:underline">
+    <i class="fa-solid fa-arrow-left"></i> {% trans "Back to Admin Overview" %}
+  </a>
+
+  <h1 class="text-3xl font-extrabold mt-4 mb-8">{% trans "Tracks" %}</h1>
+
+  <div class="space-y-3 mb-12">
+    {% for track in tracks %}
+      <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5 flex items-center justify-between flex-wrap gap-3 {% if track.parent %}ml-8{% endif %}">
+        <div>
+          <p class="font-semibold">
+            {% if track.parent %}<span class="text-gray-400 font-normal">{{ track.parent.name }} /</span> {% endif %}
+            {{ track.name }}
+          </p>
+          <p class="text-xs text-gray-400 mt-1">{% blocktrans count counter=track.courses.count %}{{ counter }} course{% plural %}{{ counter }} courses{% endblocktrans %}</p>
+        </div>
+        <div class="flex items-center gap-3">
+          {% if track.is_active %}
+            <span class="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs font-semibold">{% trans "Active" %}</span>
+          {% else %}
+            <span class="bg-gray-100 text-gray-700 px-2 py-1 rounded-full text-xs font-semibold">{% trans "Inactive" %}</span>
+          {% endif %}
+          <form method="post" action="{% url 'toggle_track_active' track.id %}">
+            {% csrf_token %}
+            <button type="submit" class="text-sm font-semibold text-brand-600 hover:underline">
+              {% if track.is_active %}{% trans "Deactivate" %}{% else %}{% trans "Activate" %}{% endif %}
+            </button>
+          </form>
+        </div>
+      </div>
+    {% empty %}
+      <div class="bg-white dark:bg-gray-900 border border-dashed border-gray-300 dark:border-gray-700 rounded-xl p-8 text-center text-gray-400">
+        {% trans "No tracks yet." %}
+      </div>
+    {% endfor %}
+  </div>
+
+  <h2 class="text-xl font-bold mb-4">{% trans "Add New Track" %}</h2>
+  <form method="post" class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-8 space-y-5">
+    {% csrf_token %}
+    <div>
+      <label class="block text-sm font-semibold mb-2">{% trans "Parent track (leave blank for a top-level category)" %}</label>
+      {{ form.parent }}
+    </div>
+    <div>
+      <label class="block text-sm font-semibold mb-2">{% trans "Name" %}</label>
+      {{ form.name }}
+    </div>
+    <div>
+      <label class="block text-sm font-semibold mb-2">{% trans "Description" %}</label>
+      {{ form.description }}
+    </div>
+    <div class="grid grid-cols-2 gap-4">
+      <div>
+        <label class="block text-sm font-semibold mb-2">{% trans "Icon (Font Awesome class)" %}</label>
+        {{ form.icon }}
+      </div>
+      <div>
+        <label class="block text-sm font-semibold mb-2">{% trans "Order" %}</label>
+        {{ form.order }}
+      </div>
+    </div>
+    <button type="submit" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-semibold py-3 rounded-xl transition">
+      {% trans "Add Track" %}
+    </button>
+  </form>
+
+</div>
+{% endblock %}

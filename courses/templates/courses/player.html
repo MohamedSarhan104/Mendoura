@@ -1,0 +1,267 @@
+{% extends 'base.html' %}
+{% block title %}{{ lecture.title }} - {{ course.title }}{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-6 py-10 grid grid-cols-1 lg:grid-cols-3 gap-8 animate-fade-in">
+
+  <div class="lg:col-span-2">
+    <a href="{% url 'course_detail' course.id %}" class="text-sm text-brand-600 hover:underline">
+      <i class="fa-solid fa-arrow-left"></i> {{ course.title }}
+    </a>
+
+    <div id="video-container" class="relative mt-4 aspect-video bg-black rounded-2xl overflow-hidden flex items-center justify-center">
+      {% if bunny_embed_url %}
+        <div id="video-skeleton" class="absolute inset-0 bg-gray-800 overflow-hidden">
+          <div class="absolute inset-0 -translate-x-full animate-shimmer bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
+        </div>
+        <iframe class="relative w-full h-full" src="{{ bunny_embed_url }}"
+                loading="lazy"
+                allow="accelerometer;gyroscope;autoplay;encrypted-media;picture-in-picture;"
+                allowfullscreen
+                onload="document.getElementById('video-skeleton')?.remove()"></iframe>
+      {% elif lecture.video_file %}
+        <div id="video-skeleton" class="absolute inset-0 bg-gray-800 overflow-hidden">
+          <div class="absolute inset-0 -translate-x-full animate-shimmer bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
+        </div>
+        <video controls class="relative w-full h-full" src="{{ lecture.video_file.url }}"
+               onloadeddata="document.getElementById('video-skeleton')?.remove()"
+               onerror="document.getElementById('video-skeleton')?.remove()"></video>
+      {% elif lecture.video_url %}
+        <div id="video-skeleton" class="absolute inset-0 bg-gray-800 overflow-hidden">
+          <div class="absolute inset-0 -translate-x-full animate-shimmer bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
+        </div>
+        <iframe class="relative w-full h-full" src="{{ lecture.video_url }}" allowfullscreen
+                onload="document.getElementById('video-skeleton')?.remove()"></iframe>
+      {% else %}
+        <p class="text-gray-500 text-sm">No video available for this lecture.</p>
+      {% endif %}
+
+      {% if enrollment and request.user.is_authenticated %}
+        {% comment %}
+          Forensic watermark: identifies whoever is watching, deters screen
+          recording/filming. Drifts + fades so it can't be framed out or
+          permanently covered, and a MutationObserver below re-asserts it
+          if tampered with.
+        {% endcomment %}
+        <div id="watermark" class="absolute select-none pointer-events-none whitespace-nowrap font-semibold text-sm sm:text-base z-40"
+             style="opacity:0.18; color:#ffffff; text-shadow:0 1px 4px rgba(0,0,0,0.85), 0 0 2px rgba(0,0,0,0.6); transition:opacity 0.6s ease, top 0.6s ease, left 0.6s ease; top:10%; left:10%;">
+          {{ request.user.get_full_name|default:request.user.username }}{% if request.user.email %} &middot; {{ request.user.email }}{% endif %}{% if request.user.phone_number %} &middot; {{ request.user.phone_number }}{% endif %}
+        </div>
+        <div id="watermark-blackout" class="absolute inset-0 z-50 bg-black hidden flex-col items-center justify-center text-center text-white text-sm p-6">
+          <i class="fa-solid fa-shield-halved text-2xl mb-3"></i>
+          <p class="font-semibold mb-1">Playback protection triggered</p>
+          <p class="text-white/70">Reload the page to keep watching.</p>
+        </div>
+      {% endif %}
+    </div>
+
+    <h1 class="text-2xl font-extrabold mt-6">{{ lecture.title }}</h1>
+
+    {% if enrollment %}
+      <form method="post" action="{% url 'mark_lecture_complete' course.id lecture.id %}" class="mt-4">
+        {% csrf_token %}
+        {% if progress.completed %}
+          <span class="inline-flex items-center gap-2 px-5 py-2 rounded-lg bg-green-50 dark:bg-green-600/10 text-green-600 font-semibold">
+            <i class="fa-solid fa-circle-check"></i> Completed
+          </span>
+        {% else %}
+          <button type="submit" class="px-5 py-2 rounded-lg bg-brand-600 text-white font-semibold hover:bg-brand-700 transition">
+            Mark as Complete
+          </button>
+        {% endif %}
+      </form>
+    {% endif %}
+
+    {% if lecture.accepts_submission and enrollment %}
+      <div class="mt-8 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-5 flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <p class="font-semibold">Homework</p>
+          <p class="text-xs text-gray-400 mt-1">This lecture has a homework submission.</p>
+        </div>
+        <a href="{% url 'submit_homework' course.id lecture.id %}" class="px-5 py-2 rounded-lg bg-brand-600 text-white font-semibold hover:bg-brand-700 transition text-sm">
+          <i class="fa-solid fa-file-arrow-up mr-1"></i> Submit / View Homework
+        </a>
+      </div>
+    {% endif %}
+
+    {% if lecture.resources.all %}
+      <h2 class="text-lg font-bold mt-8 mb-3">Resources</h2>
+      <div class="space-y-2">
+        {% for resource in lecture.resources.all %}
+          <a href="{{ resource.file.url }}" target="_blank" class="flex items-center gap-3 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-3 hover:shadow-sm transition">
+            <i class="fa-solid fa-paperclip text-brand-600"></i>
+            <span class="text-sm">{{ resource.title|default:"Download" }}</span>
+          </a>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <div class="flex items-center justify-between mt-8">
+      {% if prev_lecture %}
+        <a href="{% url 'course_player' course.id prev_lecture.id %}" class="text-sm font-semibold text-brand-600 hover:underline">
+          <i class="fa-solid fa-arrow-left"></i> Previous
+        </a>
+      {% else %}<span></span>{% endif %}
+      {% if next_lecture %}
+        <a href="{% url 'course_player' course.id next_lecture.id %}" class="text-sm font-semibold text-brand-600 hover:underline">
+          Next <i class="fa-solid fa-arrow-right"></i>
+        </a>
+      {% endif %}
+    </div>
+  </div>
+
+  <div>
+    <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-4 sticky top-24 max-h-[80vh] overflow-y-auto">
+      <h2 class="font-bold mb-3">Curriculum</h2>
+      {% for module in modules %}
+        <p class="text-xs font-semibold text-gray-400 uppercase mt-4 mb-2">{{ module.title }}</p>
+        {% for l in module.lectures.all %}
+          <a href="{% url 'course_player' course.id l.id %}" class="flex items-center gap-2 py-2 px-2 rounded-lg text-sm transition {% if l.id == lecture.id %}bg-brand-50 dark:bg-brand-600/10 text-brand-600 font-semibold{% else %}hover:bg-gray-50 dark:hover:bg-gray-800{% endif %}">
+            {% if l.id in completed_lecture_ids %}
+              <i class="fa-solid fa-circle-check text-xs text-green-500"></i>
+            {% else %}
+              <i class="fa-solid fa-circle-play text-xs"></i>
+            {% endif %}
+            {{ l.title }}
+          </a>
+        {% empty %}
+          <p class="text-xs text-gray-400 px-2">No lectures in this module yet.</p>
+        {% endfor %}
+      {% empty %}
+        <p class="text-sm text-gray-400">No curriculum added yet.</p>
+      {% endfor %}
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% if enrollment %}
+<script>
+  // Aggregates watch-time client-side and flushes every ~30s -- never one
+  // request per second. Only counts while the tab is actually visible, so
+  // leaving the lecture open in a background tab doesn't accrue credit.
+  (function () {
+    const FLUSH_INTERVAL_MS = 30000;
+    const url = "{% url 'record_watch_event' course.id lecture.id %}";
+    let accumulatedSeconds = 0;
+
+    setInterval(() => {
+      if (document.visibilityState === 'visible') accumulatedSeconds += 1;
+    }, 1000);
+
+    function flush() {
+      if (accumulatedSeconds <= 0) return;
+      const seconds = accumulatedSeconds;
+      accumulatedSeconds = 0;
+      fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '',
+        },
+        body: JSON.stringify({ seconds }),
+        keepalive: true,
+      }).catch(() => {});
+    }
+
+    setInterval(flush, FLUSH_INTERVAL_MS);
+    window.addEventListener('pagehide', flush);
+  })();
+</script>
+{% endif %}
+{% if enrollment and request.user.is_authenticated %}
+<script>
+  // Dynamic watermark: drifts to a new spot every 10-15s (fading out/in
+  // rather than jump-cutting) so it can't be cropped or blocked by a
+  // sticker over one fixed corner. A MutationObserver re-asserts it the
+  // instant anyone tries to hide, dim, or remove it via devtools.
+  (function () {
+    const container = document.getElementById('video-container');
+    const watermark = document.getElementById('watermark');
+    const blackout = document.getElementById('watermark-blackout');
+    if (!container || !watermark) return;
+
+    const TARGET_OPACITY = '0.18';
+    const MIN_MS = 10000, MAX_MS = 15000;
+    // Keep the mark within the frame, clear of corner UI (fullscreen button, etc).
+    const POS_BOUNDS = { top: [8, 78], left: [6, 68] };
+
+    const containerObserver = new MutationObserver(onContainerMutation);
+    const watermarkObserver = new MutationObserver(onWatermarkMutation);
+    startObserving();
+
+    function startObserving() {
+      containerObserver.observe(container, { childList: true });
+      watermarkObserver.observe(watermark, { attributes: true, attributeFilter: ['style', 'class', 'hidden'] });
+    }
+
+    // Our own animation legitimately changes watermark.style every cycle --
+    // disconnect first so the observer never sees (and can't misfire on)
+    // mutations we made ourselves. Re-observe right after.
+    function withObserversPaused(fn) {
+      watermarkObserver.disconnect();
+      containerObserver.disconnect();
+      fn();
+      startObserving();
+    }
+
+    function scheduleNext() {
+      const delay = MIN_MS + Math.random() * (MAX_MS - MIN_MS);
+      return setTimeout(drift, delay);
+    }
+
+    function drift() {
+      withObserversPaused(() => { watermark.style.opacity = '0'; });
+      setTimeout(() => {
+        withObserversPaused(() => {
+          const top = POS_BOUNDS.top[0] + Math.random() * (POS_BOUNDS.top[1] - POS_BOUNDS.top[0]);
+          const left = POS_BOUNDS.left[0] + Math.random() * (POS_BOUNDS.left[1] - POS_BOUNDS.left[0]);
+          watermark.style.top = top + '%';
+          watermark.style.left = left + '%';
+          watermark.style.opacity = TARGET_OPACITY;
+        });
+      }, 350);
+      timerHandle = scheduleNext();
+    }
+
+    let timerHandle = scheduleNext();
+
+    function triggerTamperResponse() {
+      clearTimeout(timerHandle);
+      // Real <video> tags are same-origin and can actually be paused; the
+      // Bunny/external embed is a cross-origin iframe we have no control
+      // over, so the blackout overlay is the enforcement for that case.
+      container.querySelector('video')?.pause();
+      if (blackout) blackout.style.display = 'flex';
+      withObserversPaused(() => {
+        if (!watermark.isConnected) container.appendChild(watermark);
+        watermark.removeAttribute('class');
+        watermark.className = 'absolute select-none pointer-events-none whitespace-nowrap font-semibold text-sm sm:text-base z-40';
+        watermark.style.display = '';
+        watermark.style.opacity = TARGET_OPACITY;
+      });
+    }
+
+    function onContainerMutation(mutations) {
+      for (const m of mutations) {
+        if (Array.from(m.removedNodes).includes(watermark)) {
+          triggerTamperResponse();
+          return;
+        }
+      }
+    }
+
+    function onWatermarkMutation() {
+      const tampered = watermark.style.display === 'none'
+        || watermark.style.visibility === 'hidden'
+        || parseFloat(watermark.style.opacity || TARGET_OPACITY) < 0.1
+        || watermark.className.indexOf('hidden') !== -1
+        || watermark.hidden === true;
+      if (tampered) triggerTamperResponse();
+    }
+  })();
+</script>
+{% endif %}
+{% endblock %}

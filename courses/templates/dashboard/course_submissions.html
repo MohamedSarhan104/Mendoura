@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+{% load i18n %}
+{% block title %}Submissions - {{ course.title }}{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-6 py-12">
+
+  <a href="{% url 'instructor_dashboard' %}" class="text-sm text-brand-600 hover:underline">
+    <i class="fa-solid fa-arrow-left"></i> {% trans "Back to Dashboard" %}
+  </a>
+
+  <h1 class="text-3xl font-extrabold mt-4 mb-1">{{ course.title }}</h1>
+  <p class="text-gray-500 dark:text-gray-400 mb-10">{% blocktrans count counter=submissions|length %}{{ counter }} homework submission{% plural %}{{ counter }} homework submissions{% endblocktrans %}</p>
+
+  <div class="space-y-4">
+    {% for submission in submissions %}
+      <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-6">
+        <div class="flex items-center justify-between flex-wrap gap-2 mb-3">
+          <div>
+            <p class="font-semibold">{{ submission.student.username }}</p>
+            <p class="text-xs text-gray-400">{% blocktrans with lecture=submission.lecture.title date=submission.submitted_at|date:"M d, Y" %}{{ lecture }} &middot; submitted {{ date }}{% endblocktrans %}</p>
+          </div>
+          {% if submission.is_graded %}
+            <span class="bg-green-100 dark:bg-green-600/10 text-green-700 dark:text-green-400 px-3 py-1 rounded-full text-xs font-semibold">
+              {% blocktrans with grade=submission.grade|default:"—" %}Graded: {{ grade }}{% endblocktrans %}
+            </span>
+          {% else %}
+            <span class="bg-yellow-100 dark:bg-yellow-600/10 text-yellow-700 dark:text-yellow-400 px-3 py-1 rounded-full text-xs font-semibold">
+              {% trans "Ungraded" %}
+            </span>
+          {% endif %}
+        </div>
+
+        <div class="text-sm space-y-1 mb-4">
+          {% if submission.submitted_file %}
+            <a href="{{ submission.submitted_file.url }}" target="_blank" class="text-brand-600 hover:underline block">
+              <i class="fa-solid fa-paperclip"></i> {% trans "Submitted file" %}
+            </a>
+          {% endif %}
+          {% if submission.submission_link %}
+            <a href="{{ submission.submission_link }}" target="_blank" class="text-brand-600 hover:underline block">
+              <i class="fa-solid fa-link"></i> {{ submission.submission_link }}
+            </a>
+          {% endif %}
+          {% if submission.note %}
+            <p class="text-gray-500 dark:text-gray-400 mt-2">"{{ submission.note }}"</p>
+          {% endif %}
+        </div>
+
+        {% if submission.is_graded %}
+          {% if submission.feedback %}
+            <p class="text-sm text-gray-500 dark:text-gray-400 border-t border-gray-100 dark:border-gray-800 pt-4">
+              <span class="font-semibold text-gray-700 dark:text-gray-300">{% trans "Feedback:" %}</span> {{ submission.feedback }}
+            </p>
+          {% endif %}
+        {% else %}
+          <form method="post" action="{% url 'grade_submission' submission.id %}"
+                class="border-t border-gray-100 dark:border-gray-800 pt-4 flex flex-col sm:flex-row gap-3">
+            {% csrf_token %}
+            <input type="text" name="grade" placeholder="{% trans "e.g. 18/20 or A-" %}" required
+                   class="sm:w-40 border border-gray-300 dark:border-gray-700 bg-transparent rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-brand-500 outline-none">
+            <input type="text" name="feedback" placeholder="{% trans "Feedback (optional)" %}"
+                   class="flex-1 border border-gray-300 dark:border-gray-700 bg-transparent rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-brand-500 outline-none">
+            <button type="submit" class="px-5 py-2.5 rounded-lg bg-brand-600 text-white font-semibold text-sm hover:bg-brand-700 transition whitespace-nowrap">
+              {% trans "Submit Grade" %}
+            </button>
+          </form>
+        {% endif %}
+      </div>
+    {% empty %}
+      <div class="bg-white dark:bg-gray-900 border border-dashed border-gray-300 dark:border-gray-700 rounded-xl p-8 text-center text-gray-400">
+        {% trans "No submissions yet." %}
+      </div>
+    {% endfor %}
+  </div>
+
+</div>
+{% endblock %}

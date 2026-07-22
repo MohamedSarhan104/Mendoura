@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+{% load i18n %}
+{% block title %}Curriculum - {{ course.title }}{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-6 py-12">
+
+  <a href="{% url 'instructor_dashboard' %}" class="text-sm text-brand-600 hover:underline">
+    <i class="fa-solid fa-arrow-left"></i> {% trans "Back to Dashboard" %}
+  </a>
+
+  <h1 class="text-3xl font-extrabold mt-4 mb-1">{{ course.title }}</h1>
+  <p class="text-gray-500 dark:text-gray-400 mb-10">{% trans "Organize your course into modules, then add lectures to each one." %}</p>
+
+  <h2 class="text-xl font-bold mb-4">{% trans "Modules" %}</h2>
+  <div class="space-y-3 mb-12">
+    {% for module in modules %}
+      <div class="flex items-center justify-between bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5 hover:shadow-sm flex-wrap gap-3">
+        <a href="{% url 'manage_lectures' course.id module.id %}" class="flex items-center gap-3">
+          <span class="w-8 h-8 flex items-center justify-center rounded-full bg-brand-50 dark:bg-gray-800 text-brand-600 font-bold text-sm">{{ module.order }}</span>
+          <div>
+            <p class="font-semibold">{{ module.title }}</p>
+            <p class="text-xs text-gray-400">{% blocktrans count counter=module.lectures.count %}{{ counter }} lecture{% plural %}{{ counter }} lectures{% endblocktrans %}</p>
+          </div>
+        </a>
+        <div class="flex items-center gap-3">
+          <a href="{% url 'edit_module' course.id module.id %}" class="text-sm font-semibold text-brand-600 hover:underline">{% trans "Edit" %}</a>
+          <form method="post" action="{% url 'delete_module' course.id module.id %}"
+                onsubmit="return confirm('{% blocktrans with title=module.title|escapejs %}Delete {{ title }} and all its lectures?{% endblocktrans %}');">
+            {% csrf_token %}
+            <button type="submit" class="text-sm font-semibold text-red-600 hover:underline">{% trans "Delete" %}</button>
+          </form>
+        </div>
+      </div>
+    {% empty %}
+      <div class="bg-white dark:bg-gray-900 border border-dashed border-gray-300 dark:border-gray-700 rounded-xl p-8 text-center text-gray-400">
+        {% trans "No modules yet. Add your first one below." %}
+      </div>
+    {% endfor %}
+  </div>
+
+  <h2 class="text-xl font-bold mb-4">{% trans "Add New Module" %}</h2>
+  <form method="post" class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-8 space-y-5">
+    {% csrf_token %}
+    <div>
+      <label class="block text-sm font-semibold mb-2">{% trans "Module Title" %}</label>
+      {{ form.title }}
+    </div>
+    <div>
+      <label class="block text-sm font-semibold mb-2">{% trans "Order" %}</label>
+      {{ form.order }}
+    </div>
+    <button type="submit" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-semibold py-3 rounded-xl transition">
+      {% trans "Add Module" %}
+    </button>
+  </form>
+
+</div>
+{% endblock %}

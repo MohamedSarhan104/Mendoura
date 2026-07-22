@@ -1,0 +1,122 @@
+{% extends 'base.html' %}
+{% load i18n %}
+{% block title %}Admin Dashboard - Mendoura{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-6 py-10">
+
+  <div class="flex items-center justify-between mb-8 flex-wrap gap-4">
+    <h1 class="text-3xl font-extrabold">{% trans "Admin Overview" %}</h1>
+    <div class="flex items-center gap-4 text-sm font-semibold flex-wrap">
+      <a href="{% url 'course_approval_queue' %}" class="text-brand-600 hover:underline">
+        {% trans "Approval Queue" %} {% if pending_courses_count %}<span class="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">{{ pending_courses_count }}</span>{% endif %}
+      </a>
+      <a href="{% url 'admin_users' %}" class="text-brand-600 hover:underline">{% trans "Users" %}</a>
+      <a href="{% url 'admin_payments' %}" class="text-brand-600 hover:underline">{% trans "Payments" %}</a>
+      <a href="{% url 'admin_payouts' %}" class="text-brand-600 hover:underline">{% trans "Payouts" %}</a>
+      <a href="{% url 'admin_tracks' %}" class="text-brand-600 hover:underline">{% trans "Tracks" %}</a>
+    </div>
+  </div>
+
+  {% if misfiled_courses %}
+    <div class="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 rounded-2xl p-6 mb-8">
+      <p class="font-semibold text-red-700 dark:text-red-400 mb-3">
+        <i class="fa-solid fa-triangle-exclamation mr-2"></i>
+        {% blocktrans count counter=misfiled_courses|length %}{{ counter }} course won't appear on any student browse page{% plural %}{{ counter }} courses won't appear on any student browse page{% endblocktrans %}
+      </p>
+      <p class="text-sm text-red-600 dark:text-red-400/80 mb-4">
+        {% blocktrans %}Each course below is filed under a parent category (or has no track at all) instead of a specific track -- fix each one's Track in{% endblocktrans %}
+        <a href="/admin/courses/course/" class="underline font-semibold">{% trans "Django Admin" %}</a>.
+      </p>
+      <ul class="text-sm space-y-1">
+        {% for course in misfiled_courses %}
+          <li>
+            <span class="font-semibold">{{ course.title }}</span>
+            <span class="text-gray-500 dark:text-gray-400">{% blocktrans with instructor=course.instructor.username %}by {{ instructor }} --{% endblocktrans %}
+              {% if course.track %}{% blocktrans with track=course.track.name %}filed under "{{ track }}" (a parent category){% endblocktrans %}{% else %}{% trans "no track assigned" %}{% endif %}
+            </span>
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
+  {% endif %}
+
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
+    <div class="bg-white dark:bg-gray-900 rounded-2xl p-6 border border-gray-200 dark:border-gray-800">
+      <p class="text-sm text-gray-500 dark:text-gray-400">{% trans "Total Revenue" %}</p>
+      <p class="text-2xl font-bold mt-2">${{ total_revenue }}</p>
+    </div>
+    <div class="bg-white dark:bg-gray-900 rounded-2xl p-6 border border-gray-200 dark:border-gray-800">
+      <p class="text-sm text-gray-500 dark:text-gray-400">{% trans "Platform Revenue" %}</p>
+      <p class="text-2xl font-bold mt-2 text-brand-600">${{ platform_revenue }}</p>
+    </div>
+    <div class="bg-white dark:bg-gray-900 rounded-2xl p-6 border border-gray-200 dark:border-gray-800">
+      <p class="text-sm text-gray-500 dark:text-gray-400">{% trans "Instructor Payouts" %}</p>
+      <p class="text-2xl font-bold mt-2">${{ total_paid_out }}</p>
+    </div>
+    <div class="bg-white dark:bg-gray-900 rounded-2xl p-6 border border-gray-200 dark:border-gray-800">
+      <p class="text-sm text-gray-500 dark:text-gray-400">{% trans "Enrollments" %}</p>
+      <p class="text-2xl font-bold mt-2">{{ total_enrollments }}</p>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-2 md:grid-cols-3 gap-6 mb-12">
+    <div class="bg-white dark:bg-gray-900 rounded-2xl p-6 border border-gray-200 dark:border-gray-800">
+      <p class="text-sm text-gray-500 dark:text-gray-400">{% trans "Students" %}</p>
+      <p class="text-3xl font-bold mt-2">{{ total_students }}</p>
+    </div>
+    <div class="bg-white dark:bg-gray-900 rounded-2xl p-6 border border-gray-200 dark:border-gray-800">
+      <p class="text-sm text-gray-500 dark:text-gray-400">{% trans "Instructors" %}</p>
+      <p class="text-3xl font-bold mt-2">{{ total_instructors }}</p>
+    </div>
+    <div class="bg-white dark:bg-gray-900 rounded-2xl p-6 border border-gray-200 dark:border-gray-800">
+      <p class="text-sm text-gray-500 dark:text-gray-400">{% trans "Total Courses" %}</p>
+      <p class="text-3xl font-bold mt-2">{{ total_courses }}</p>
+    </div>
+  </div>
+
+  <h2 class="text-xl font-bold mb-4">{% trans "Revenue Over Time" %}</h2>
+  <div class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-6">
+    {% for point in monthly_revenue %}
+      <div class="flex items-center gap-4 mb-3">
+        <span class="w-20 text-xs text-gray-400 shrink-0">{{ point.label }}</span>
+        <div class="flex-1 h-4 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+          <div class="h-full bg-brand-600" style="width: {{ point.pct }}%"></div>
+        </div>
+        <span class="w-20 text-xs text-right font-semibold shrink-0">${{ point.revenue }}</span>
+      </div>
+    {% empty %}
+      <p class="text-gray-400 text-sm">{% trans "No revenue yet." %}</p>
+    {% endfor %}
+  </div>
+
+  <h2 class="text-xl font-bold mb-4 mt-12">{% trans "Subscription Revenue Distribution" %}</h2>
+  <div class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-6 flex items-center justify-between flex-wrap gap-4">
+    <div>
+      <p class="text-sm text-gray-500 dark:text-gray-400">
+        {% if due_subscription_periods_count %}
+          {% blocktrans count counter=due_subscription_periods_count %}<span class="font-semibold text-brand-600">{{ counter }}</span> subscription period ready to distribute to instructors.{% plural %}<span class="font-semibold text-brand-600">{{ counter }}</span> subscription periods ready to distribute to instructors.{% endblocktrans %}
+        {% else %}
+          {% trans "No subscription periods are due for distribution right now." %}
+        {% endif %}
+      </p>
+      <p class="text-xs text-gray-400 mt-1">
+        {% trans "No automatic scheduler is wired up on the free Render plan (no Cron Jobs) -- run this manually on a regular basis." %}
+      </p>
+    </div>
+    <div class="flex items-center gap-3">
+      <a href="{% url 'admin_subscription_revenue' %}" class="px-5 py-2 rounded-lg border border-gray-300 dark:border-gray-700 font-semibold hover:bg-gray-100 dark:hover:bg-gray-800 transition">
+        {% trans "View Breakdown" %}
+      </a>
+      <form method="post" action="{% url 'run_subscription_distribution' %}">
+        {% csrf_token %}
+        <button type="submit" class="px-5 py-2 rounded-lg bg-brand-600 text-white font-semibold hover:bg-brand-700 transition"
+                {% if not due_subscription_periods_count %}disabled{% endif %}>
+          {% trans "Run Distribution Now" %}
+        </button>
+      </form>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

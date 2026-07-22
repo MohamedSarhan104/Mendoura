@@ -1,0 +1,11 @@
+.env
+*.pyc
+__pycache__/
+venv/
+db.sqlite3
+media/
+staticfiles/
+*.deb
+node_modules/
+static/css/tailwind.css
+.tailwindcss-linux-x64

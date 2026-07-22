@@ -1,0 +1,173 @@
+{% extends 'base.html' %}
+{% load static i18n %}
+{% block title %}Edit {{ lecture.title }} - {{ course.title }}{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto px-6 py-12">
+
+  <a href="{% url 'manage_lectures' course.id module.id %}" class="text-sm text-brand-600 hover:underline">
+    <i class="fa-solid fa-arrow-left"></i> {{ module.title }}
+  </a>
+
+  <h1 class="text-3xl font-extrabold mt-4 mb-8">{% trans "Edit Lecture" %}</h1>
+
+  <form method="post" class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-8 space-y-5">
+    {% csrf_token %}
+
+    <div>
+      <label class="block text-sm font-semibold mb-2">{% trans "Lecture Title" %}</label>
+      {{ form.title }}
+    </div>
+
+    <div>
+      <label class="block text-sm font-semibold mb-2">{% trans "Order (position in module)" %}</label>
+      {{ form.order }}
+    </div>
+
+    <div class="flex items-center gap-2">
+      {{ form.is_preview }}
+      <label class="text-sm font-semibold">{% trans "Free preview (viewable without enrollment)" %}</label>
+    </div>
+
+    <div class="flex items-center gap-2">
+      {{ form.accepts_submission }}
+      <label class="text-sm font-semibold">{% trans "Accepts homework submission" %}</label>
+    </div>
+
+    <div class="border-t border-gray-200 dark:border-gray-800 pt-5">
+      <label class="block text-sm font-semibold mb-2">{% trans "External Video URL" %} <span class="text-gray-400 font-normal">({% trans "only if not uploading to Bunny" %})</span></label>
+      {{ form.video_url }}
+    </div>
+
+    <button type="submit" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-semibold py-3 rounded-xl transition">
+      {% trans "Save Changes" %}
+    </button>
+  </form>
+
+  {# ── Bunny Stream video upload (direct browser → Bunny, never touches our server) ── #}
+  <div class="mt-8 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-8">
+    <h2 class="text-lg font-bold mb-1">{% trans "Course Video" %}</h2>
+    <p class="text-sm text-gray-500 dark:text-gray-400 mb-5">
+      {% trans "Uploads securely to Bunny Stream and streams to students through a protected player." %}
+    </p>
+
+    <div id="bunny-current" class="mb-5 text-sm">
+      {% if lecture.bunny_video_id %}
+        {% if lecture.bunny_ready %}
+          <span class="inline-flex items-center gap-2 text-green-600 font-semibold">
+            <i class="fa-solid fa-circle-check"></i> {% trans "Video ready" %}
+          </span>
+        {% else %}
+          <span class="inline-flex items-center gap-2 text-yellow-600 font-semibold">
+            <i class="fa-solid fa-spinner fa-spin"></i> {% trans "Video is still processing on Bunny — check back shortly." %}
+          </span>
+        {% endif %}
+        <p class="text-xs text-gray-400 mt-1">{% trans "Uploading a new file replaces the current video." %}</p>
+      {% else %}
+        <span class="text-gray-400">{% trans "No video uploaded yet." %}</span>
+      {% endif %}
+    </div>
+
+    <div id="bunny-uploader"
+         data-create-url="{% url 'create_bunny_video' lecture.id %}"
+         data-configured="{% if bunny_configured %}1{% else %}0{% endif %}">
+      {% if bunny_configured %}
+        <input type="file" id="bunny-file" accept="video/*"
+               class="w-full border border-gray-300 dark:border-gray-700 rounded-lg p-3 text-sm mb-3">
+        <button type="button" id="bunny-upload-btn"
+                class="px-5 py-2.5 rounded-lg bg-brand-600 text-white font-semibold hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed">
+          <i class="fa-solid fa-cloud-arrow-up mr-1"></i> {% trans "Upload Video" %}
+        </button>
+        <div id="bunny-progress-wrap" class="hidden mt-4">
+          <div class="w-full h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+            <div id="bunny-progress-bar" class="h-full bg-brand-600 transition-all" style="width:0%"></div>
+          </div>
+        </div>
+        <p id="bunny-status" class="text-sm text-gray-500 dark:text-gray-400 mt-3"></p>
+      {% else %}
+        <p class="text-sm text-yellow-600">
+          {% trans "Video hosting isn't configured yet (missing Bunny credentials). Add them on the server to enable uploads." %}
+        </p>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% if bunny_configured %}
+<script src="{% static 'js/tus.min.js' %}"></script>
+{% trans "Choose a video file first." as msg_choose_file %}
+{% trans "Preparing secure upload…" as msg_preparing %}
+{% trans "Could not start the upload. Please try again." as msg_start_failed %}
+{% trans "Upload library failed to load. Please refresh the page and try again." as msg_lib_failed %}
+{% trans "Upload failed. Please try again." as msg_upload_failed %}
+{% trans "Uploading… " as msg_uploading_prefix %}
+{% trans "Uploaded! Bunny is now processing the video — reload this page in a minute to confirm it's ready." as msg_uploaded %}
+<script>
+  (function () {
+    const root = document.getElementById('bunny-uploader');
+    const fileInput = document.getElementById('bunny-file');
+    const uploadBtn = document.getElementById('bunny-upload-btn');
+    const progressWrap = document.getElementById('bunny-progress-wrap');
+    const progressBar = document.getElementById('bunny-progress-bar');
+    const statusEl = document.getElementById('bunny-status');
+    const createUrl = root.dataset.createUrl;
+    const csrftoken = document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '';
+
+    uploadBtn.addEventListener('click', async () => {
+      const file = fileInput.files[0];
+      if (!file) { statusEl.textContent = '{{ msg_choose_file|escapejs }}'; return; }
+
+      uploadBtn.disabled = true;
+      statusEl.textContent = '{{ msg_preparing|escapejs }}';
+
+      let creds;
+      try {
+        const res = await fetch(createUrl, { method: 'POST', headers: { 'X-CSRFToken': csrftoken } });
+        if (!res.ok) throw new Error();
+        creds = await res.json();
+      } catch (e) {
+        statusEl.textContent = '{{ msg_start_failed|escapejs }}';
+        uploadBtn.disabled = false;
+        return;
+      }
+
+      if (typeof tus === 'undefined') {
+        statusEl.textContent = '{{ msg_lib_failed|escapejs }}';
+        uploadBtn.disabled = false;
+        return;
+      }
+
+      progressWrap.classList.remove('hidden');
+      const upload = new tus.Upload(file, {
+        endpoint: creds.endpoint,
+        retryDelays: [0, 3000, 5000, 10000, 20000],
+        headers: {
+          AuthorizationSignature: creds.signature,
+          AuthorizationExpire: creds.expiration,
+          VideoId: creds.video_id,
+          LibraryId: creds.library_id,
+        },
+        metadata: { filetype: file.type, title: file.name },
+        onError: () => {
+          statusEl.textContent = '{{ msg_upload_failed|escapejs }}';
+          uploadBtn.disabled = false;
+        },
+        onProgress: (sent, total) => {
+          const pct = Math.round((sent / total) * 100);
+          progressBar.style.width = pct + '%';
+          statusEl.textContent = '{{ msg_uploading_prefix|escapejs }}' + pct + '%';
+        },
+        onSuccess: () => {
+          progressBar.style.width = '100%';
+          statusEl.textContent = '{{ msg_uploaded|escapejs }}';
+        },
+      });
+      upload.start();
+    });
+  })();
+</script>
+{% endif %}
+{% endblock %}

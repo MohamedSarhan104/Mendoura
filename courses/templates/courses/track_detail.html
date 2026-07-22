@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+{% load i18n %}
+{% block title %}{{ track.name }} - Mendoura{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-6 py-12 animate-fade-in">
+
+  <a href="{% if track.parent %}{% url 'track_detail' track.parent.slug %}{% else %}{% url 'track_list' %}{% endif %}"
+     class="text-sm text-brand-600 hover:underline">
+    <i class="fa-solid fa-arrow-left"></i> {% if track.parent %}{{ track.parent.translated_name }}{% else %}{% trans "All Tracks" %}{% endif %}
+  </a>
+
+  <div class="mt-4 mb-10 flex items-center gap-4">
+    <div class="w-14 h-14 rounded-xl bg-brand-50 dark:bg-brand-600/10 flex items-center justify-center text-brand-600 dark:text-brand-400 text-2xl">
+      <i class="fa-solid {{ track.icon|default:'fa-layer-group' }}"></i>
+    </div>
+    <div>
+      <h1 class="text-3xl font-extrabold">{{ track.translated_name }}</h1>
+      {% if track.description %}<p class="text-gray-500 dark:text-gray-400 mt-1">{{ track.translated_description }}</p>{% endif %}
+    </div>
+  </div>
+
+  {% if is_parent %}
+    {# Parent track: show its child tracks #}
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      {% for child in children %}
+        <a href="{% url 'track_detail' child.slug %}" class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-6 hover:shadow-xl hover:-translate-y-1 transition block">
+          <div class="w-12 h-12 rounded-xl bg-brand-50 dark:bg-brand-600/10 flex items-center justify-center text-brand-600 dark:text-brand-400 text-xl mb-4">
+            <i class="fa-solid {{ child.icon|default:'fa-layer-group' }}"></i>
+          </div>
+          <h3 class="font-bold text-lg mb-1">{{ child.translated_name }}</h3>
+          <p class="text-sm text-gray-500 dark:text-gray-400 line-clamp-2">{{ child.translated_description }}</p>
+        </a>
+      {% empty %}
+        <div class="col-span-full bg-white dark:bg-gray-900 border border-dashed border-gray-300 dark:border-gray-700 rounded-2xl p-12 text-center">
+          <p class="text-lg font-semibold">{% trans "No tracks in this category yet" %}</p>
+        </div>
+      {% endfor %}
+    </div>
+
+  {% else %}
+    {# Leaf track: roadmap + published courses #}
+    {% if roadmap %}
+      <h2 class="text-xl font-bold mb-6">{% trans "Track Roadmap" %}</h2>
+      <div class="mb-14 overflow-x-auto">
+        <div class="flex items-start gap-2 min-w-max pb-2">
+          {% for node in roadmap %}
+            <div class="flex items-start">
+              <div class="flex flex-col items-center w-40 text-center px-2">
+                <div class="w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm border-2
+                  {% if node.state == 'complete' %}bg-brand-600 border-brand-600 text-white
+                  {% elif node.state == 'in_progress' %}border-brand-600 text-brand-600
+                  {% elif node.state == 'available' %}border-brand-300 dark:border-brand-700 text-brand-600
+                  {% elif node.state == 'locked' %}border-gray-300 dark:border-gray-700 text-gray-400
+                  {% else %}border-dashed border-gray-300 dark:border-gray-700 text-gray-400{% endif %}">
+                  {% if node.state == 'complete' %}<i class="fa-solid fa-check"></i>
+                  {% elif node.state == 'locked' %}<i class="fa-solid fa-lock text-xs"></i>
+                  {% else %}{{ forloop.counter }}{% endif %}
+                </div>
+                {% if node.step.course %}
+                  {% if node.state == 'locked' %}
+                    <span class="text-xs font-semibold mt-2 text-gray-400">{{ node.step.display_title }}</span>
+                  {% else %}
+                    <a href="{% url 'course_detail' node.step.course.id %}" class="text-xs font-semibold mt-2 hover:text-brand-600 hover:underline">{{ node.step.display_title }}</a>
+                  {% endif %}
+                {% else %}
+                  <span class="text-xs font-semibold mt-2 text-gray-400">{{ node.step.display_title }}</span>
+                  <span class="text-[10px] text-gray-400 mt-0.5">{% trans "Coming soon" %}</span>
+                {% endif %}
+                {% if node.step.is_optional %}<span class="text-[10px] text-gray-400 mt-0.5">{% trans "Optional" %}</span>{% endif %}
+              </div>
+              {% if not forloop.last %}
+                <div class="w-10 h-0.5 mt-5 {% if node.state == 'complete' %}bg-brand-600{% else %}bg-gray-200 dark:bg-gray-800{% endif %}"></div>
+              {% endif %}
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    {% endif %}
+
+    <h2 class="text-xl font-bold mb-6">{% trans "Courses" %}</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {% for course in courses %}
+        {% include 'courses/_course_card.html' %}
+      {% empty %}
+        <div class="col-span-full bg-white dark:bg-gray-900 border border-dashed border-gray-300 dark:border-gray-700 rounded-2xl p-12 text-center">
+          <i class="fa-solid fa-magnifying-glass text-4xl text-gray-300 mb-4"></i>
+          <p class="text-lg font-semibold">{% trans "No courses in this track yet" %}</p>
+          <p class="text-gray-500 dark:text-gray-400 text-sm mt-1">{% trans "Check back soon." %}</p>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+</div>
+{% endblock %}

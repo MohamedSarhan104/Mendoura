@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+{% load i18n %}
+{% block title %}Payments - Mendoura Admin{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto px-6 py-12">
+
+  <a href="{% url 'admin_dashboard' %}" class="text-sm text-brand-600 hover:underline">
+    <i class="fa-solid fa-arrow-left"></i> {% trans "Back to Admin Overview" %}
+  </a>
+
+  <h1 class="text-3xl font-extrabold mt-4 mb-8">{% trans "Payments" %}</h1>
+
+  <div class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead class="bg-gray-50 dark:bg-gray-800 text-left">
+        <tr>
+          <th class="p-4">{% trans "Student" %}</th>
+          <th class="p-4">{% trans "Course" %}</th>
+          <th class="p-4">{% trans "Total" %}</th>
+          <th class="p-4">{% trans "Instructor Share" %}</th>
+          <th class="p-4">{% trans "Platform Share" %}</th>
+          <th class="p-4">{% trans "Status" %}</th>
+          <th class="p-4">{% trans "Date" %}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for payment in payments %}
+          <tr class="border-t border-gray-100 dark:border-gray-800">
+            <td class="p-4 font-semibold">{{ payment.student.username }}</td>
+            <td class="p-4 text-gray-500">{{ payment.course.title }}</td>
+            <td class="p-4">${{ payment.total_amount }}</td>
+            <td class="p-4 text-green-600">${{ payment.instructor_amount }}</td>
+            <td class="p-4 text-brand-600">${{ payment.platform_amount }}</td>
+            <td class="p-4">{{ payment.get_status_display }}</td>
+            <td class="p-4 text-gray-400">{{ payment.created_at|date:"M d, Y" }}</td>
+          </tr>
+        {% empty %}
+          <tr><td class="p-4 text-gray-400" colspan="7">{% trans "No payments yet." %}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+</div>
+{% endblock %}

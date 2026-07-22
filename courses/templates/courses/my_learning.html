@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+{% load i18n %}
+{% block title %}My Learning - Mendoura{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto px-6 py-12 animate-fade-in">
+  <h1 class="text-3xl font-extrabold mb-8">{% trans "My Learning" %}</h1>
+
+  <div class="space-y-4">
+    {% for enrollment in enrollments %}
+      <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5">
+        <div class="flex items-center justify-between gap-4">
+          <div>
+            <h3 class="font-bold text-lg">{{ enrollment.course.title }}</h3>
+            <p class="text-xs text-gray-400 mt-1">{% blocktrans with date=enrollment.enrolled_at|date:"M d, Y" %}Enrolled {{ date }}{% endblocktrans %}</p>
+          </div>
+          <a href="{% url 'course_detail' enrollment.course.id %}" class="text-sm font-semibold text-brand-600 hover:underline whitespace-nowrap">
+            {% trans "View Course" %}
+          </a>
+        </div>
+        {% if enrollment.is_complete %}
+          <div class="mt-4 flex items-center justify-between gap-4 flex-wrap">
+            <span class="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/30 px-3 py-1 rounded-full">
+              <i class="fa-solid fa-circle-check"></i> {% trans "Course Completed" %}
+            </span>
+            <div class="flex items-center gap-4">
+              <a href="{% url 'certificate_view' enrollment.certificate.uuid %}" class="text-sm font-semibold text-brand-600 hover:underline">
+                {% trans "View Certificate" %}
+              </a>
+              <a href="{% url 'certificate_download' enrollment.certificate.uuid %}"
+                 class="inline-flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white font-semibold text-sm px-5 py-2.5 rounded-lg shadow-sm">
+                <i class="fa-solid fa-download"></i> {% trans "Download Certificate" %}
+              </a>
+            </div>
+          </div>
+        {% else %}
+          <div class="mt-4">
+            <div class="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
+              <span>{% trans "Progress" %}</span>
+              <span>{{ enrollment.progress_percent }}%</span>
+            </div>
+            <div class="w-full h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+              <div class="h-full bg-brand-600" style="width: {{ enrollment.progress_percent }}%"></div>
+            </div>
+          </div>
+        {% endif %}
+      </div>
+    {% empty %}
+      <div class="bg-white dark:bg-gray-900 border border-dashed border-gray-300 dark:border-gray-700 rounded-2xl p-12 text-center">
+        <p class="text-lg font-semibold">{% trans "You haven't enrolled in any courses yet." %}</p>
+        <a href="{% url 'track_list' %}" class="inline-block mt-4 px-6 py-2 rounded-lg bg-brand-600 text-white font-semibold hover:bg-brand-700">{% trans "Browse Tracks" %}</a>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

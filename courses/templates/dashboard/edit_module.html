@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% load i18n %}
+{% block title %}Edit {{ module.title }} - {{ course.title }}{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto px-6 py-12">
+
+  <a href="{% url 'manage_modules' course.id %}" class="text-sm text-brand-600 hover:underline">
+    <i class="fa-solid fa-arrow-left"></i> {% blocktrans with title=course.title %}{{ title }} Curriculum{% endblocktrans %}
+  </a>
+
+  <h1 class="text-3xl font-extrabold mt-4 mb-8">{% trans "Edit Module" %}</h1>
+
+  <form method="post" class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-8 space-y-5">
+    {% csrf_token %}
+    <div>
+      <label class="block text-sm font-semibold mb-2">{% trans "Module Title" %}</label>
+      {{ form.title }}
+    </div>
+    <div>
+      <label class="block text-sm font-semibold mb-2">{% trans "Order" %}</label>
+      {{ form.order }}
+    </div>
+    <button type="submit" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-semibold py-3 rounded-xl transition">
+      {% trans "Save Changes" %}
+    </button>
+  </form>
+
+</div>
+{% endblock %}

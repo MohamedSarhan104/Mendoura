@@ -1,0 +1,112 @@
+{% extends 'base.html' %}
+{% load i18n %}
+{% block title %}Instructor Dashboard - Mendoura{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-6 py-10">
+
+  <div class="flex items-center justify-between mb-8">
+    <h1 class="text-3xl font-extrabold">{% trans "Instructor Dashboard" %}</h1>
+    <a href="{% url 'create_course' %}" class="px-5 py-2.5 rounded-lg bg-brand-600 text-white font-semibold hover:bg-brand-700">
+      <i class="fa-solid fa-plus mr-1"></i> {% trans "Create New Course" %}
+    </a>
+  </div>
+
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-12">
+    <div class="bg-white dark:bg-gray-900 rounded-2xl p-6 border border-gray-200 dark:border-gray-800">
+      <p class="text-sm text-gray-500 dark:text-gray-400">{% trans "Total Earnings" %}</p>
+      <p class="text-2xl font-bold mt-2">${{ wallet.total_earnings }}</p>
+    </div>
+    <div class="bg-white dark:bg-gray-900 rounded-2xl p-6 border border-gray-200 dark:border-gray-800">
+      <p class="text-sm text-gray-500 dark:text-gray-400">{% trans "Available Balance" %}</p>
+      <p class="text-2xl font-bold mt-2 text-green-600">${{ wallet.available_balance }}</p>
+    </div>
+    <div class="bg-white dark:bg-gray-900 rounded-2xl p-6 border border-gray-200 dark:border-gray-800">
+      <p class="text-sm text-gray-500 dark:text-gray-400">{% trans "Students" %}</p>
+      <p class="text-2xl font-bold mt-2">{{ total_students }}</p>
+    </div>
+    <div class="bg-white dark:bg-gray-900 rounded-2xl p-6 border border-gray-200 dark:border-gray-800">
+      <p class="text-sm text-gray-500 dark:text-gray-400">{% trans "Courses" %}</p>
+      <p class="text-2xl font-bold mt-2">{{ courses|length }}</p>
+    </div>
+  </div>
+
+  <div class="flex items-center justify-between mb-4">
+    <h2 class="text-xl font-bold">{% trans "Your Courses" %}</h2>
+    <a href="{% url 'instructor_wallet' %}" class="text-sm font-semibold text-brand-600 hover:underline">
+      <i class="fa-solid fa-wallet mr-1"></i> {% trans "View Wallet" %}
+    </a>
+  </div>
+  <div class="space-y-3 mb-12">
+    {% for course in courses %}
+      <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5 flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <p class="font-semibold">{{ course.title }}</p>
+          <p class="text-xs text-gray-400 mt-1">{% blocktrans with created=course.created_at|date:"M d, Y" %}Created {{ created }}{% endblocktrans %}</p>
+        </div>
+        <div class="flex items-center gap-3 flex-wrap">
+          {% if course.status == 'published' %}
+            <span class="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs font-semibold">{% trans "Published" %}</span>
+          {% elif course.status == 'pending_review' %}
+            <span class="bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full text-xs font-semibold">{% trans "Pending Review" %}</span>
+          {% elif course.status == 'rejected' %}
+            <span class="bg-red-100 text-red-700 px-2 py-1 rounded-full text-xs font-semibold">{% trans "Rejected" %}</span>
+          {% elif course.status == 'archived' %}
+            <span class="bg-gray-100 text-gray-700 px-2 py-1 rounded-full text-xs font-semibold">{% trans "Archived" %}</span>
+          {% else %}
+            <span class="bg-gray-100 text-gray-700 px-2 py-1 rounded-full text-xs font-semibold">{% trans "Draft" %}</span>
+          {% endif %}
+          <a href="{% url 'manage_modules' course.id %}" class="text-sm font-semibold text-brand-600 hover:underline">{% trans "Curriculum" %}</a>
+          <a href="{% url 'course_students' course.id %}" class="text-sm font-semibold text-brand-600 hover:underline">{% trans "Students" %}</a>
+          <a href="{% url 'course_submissions' course.id %}" class="text-sm font-semibold text-brand-600 hover:underline">{% trans "Submissions" %}</a>
+          <a href="{% url 'edit_course' course.id %}" class="text-sm font-semibold text-brand-600 hover:underline">{% trans "Edit" %}</a>
+          {% if course.status == 'draft' or course.status == 'rejected' %}
+            <form method="post" action="{% url 'toggle_publish' course.id %}">
+              {% csrf_token %}
+              <button type="submit" class="text-sm font-semibold text-brand-600 hover:underline">{% trans "Submit for Review" %}</button>
+            </form>
+          {% endif %}
+          {% if course.status != 'archived' %}
+            <form method="post" action="{% url 'delete_course' course.id %}"
+                  onsubmit="return confirm('{% blocktrans with title=course.title|escapejs %}Delete {{ title }}? If it has any enrollment or payment history, it will be archived instead.{% endblocktrans %}');">
+              {% csrf_token %}
+              <button type="submit" class="text-sm font-semibold text-red-600 hover:underline">{% trans "Delete" %}</button>
+            </form>
+          {% endif %}
+        </div>
+      </div>
+    {% empty %}
+      <div class="bg-white dark:bg-gray-900 border border-dashed border-gray-300 dark:border-gray-700 rounded-2xl p-12 text-center text-gray-400">
+        {% blocktrans %}No courses created yet. Click "Create New Course" to get started.{% endblocktrans %}
+      </div>
+    {% endfor %}
+  </div>
+
+  <h2 class="text-xl font-bold mb-4">{% trans "Recent Sales" %}</h2>
+  <div class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead class="bg-gray-50 dark:bg-gray-800 text-left">
+        <tr>
+          <th class="p-4">{% trans "Course" %}</th>
+          <th class="p-4">{% trans "Student" %}</th>
+          <th class="p-4">{% trans "Your Share" %}</th>
+          <th class="p-4">{% trans "Date" %}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for sale in recent_sales %}
+          <tr class="border-t border-gray-100 dark:border-gray-800">
+            <td class="p-4 font-semibold">{{ sale.course.title }}</td>
+            <td class="p-4 text-gray-500">{{ sale.student.username }}</td>
+            <td class="p-4 text-green-600 font-semibold">${{ sale.instructor_amount }}</td>
+            <td class="p-4 text-gray-400">{{ sale.created_at|date:"M d, Y" }}</td>
+          </tr>
+        {% empty %}
+          <tr><td class="p-4 text-gray-400" colspan="4">{% trans "No sales yet." %}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+</div>
+{% endblock %}

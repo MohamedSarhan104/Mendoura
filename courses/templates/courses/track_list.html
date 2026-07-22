@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% load i18n %}
+{% block title %}Browse Tracks - Mendoura{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-6 py-12 animate-fade-in">
+
+  <div class="mb-10">
+    <h1 class="text-3xl font-extrabold">{% trans "Browse by Track" %}</h1>
+    <p class="text-gray-500 dark:text-gray-400 mt-1">{% trans "Pick a track to see its courses." %}</p>
+  </div>
+
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+    {% for track in tracks %}
+      <a href="{% url 'track_detail' track.slug %}" class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-6 hover:shadow-xl hover:-translate-y-1 transition block">
+        <div class="w-12 h-12 rounded-xl bg-brand-50 dark:bg-brand-600/10 flex items-center justify-center text-brand-600 dark:text-brand-400 text-xl mb-4">
+          <i class="fa-solid {{ track.icon|default:'fa-layer-group' }}"></i>
+        </div>
+        <h3 class="font-bold text-lg mb-1">{{ track.translated_name }}</h3>
+        <p class="text-sm text-gray-500 dark:text-gray-400 line-clamp-2">{{ track.translated_description }}</p>
+      </a>
+    {% empty %}
+      <div class="col-span-full bg-white dark:bg-gray-900 border border-dashed border-gray-300 dark:border-gray-700 rounded-2xl p-12 text-center">
+        <p class="text-lg font-semibold">{% trans "No tracks available yet" %}</p>
+      </div>
+    {% endfor %}
+  </div>
+
+</div>
+{% endblock %}

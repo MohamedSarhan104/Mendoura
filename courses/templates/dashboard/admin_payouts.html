@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+{% load i18n %}
+{% block title %}Payouts - Mendoura Admin{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto px-6 py-12">
+
+  <a href="{% url 'admin_dashboard' %}" class="text-sm text-brand-600 hover:underline">
+    <i class="fa-solid fa-arrow-left"></i> {% trans "Back to Admin Overview" %}
+  </a>
+
+  <h1 class="text-3xl font-extrabold mt-4 mb-8">{% trans "Payout Requests" %}</h1>
+
+  <div class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead class="bg-gray-50 dark:bg-gray-800 text-left">
+        <tr>
+          <th class="p-4">{% trans "Instructor" %}</th>
+          <th class="p-4">{% trans "Amount" %}</th>
+          <th class="p-4">{% trans "Method" %}</th>
+          <th class="p-4">{% trans "Status" %}</th>
+          <th class="p-4">{% trans "Requested" %}</th>
+          <th class="p-4">{% trans "Actions" %}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for payout in payouts %}
+          <tr class="border-t border-gray-100 dark:border-gray-800">
+            <td class="p-4 font-semibold">{{ payout.wallet.instructor.username }}</td>
+            <td class="p-4">${{ payout.amount }}</td>
+            <td class="p-4 text-gray-500">{{ payout.method|default:"—" }}</td>
+            <td class="p-4">{{ payout.get_status_display }}</td>
+            <td class="p-4 text-gray-400">{{ payout.requested_at|date:"M d, Y" }}</td>
+            <td class="p-4">
+              {% if payout.status == 'requested' %}
+                <div class="flex items-center gap-2">
+                  <form method="post" action="{% url 'approve_payout' payout.id %}">
+                    {% csrf_token %}
+                    <button type="submit" class="px-3 py-1.5 rounded-lg bg-green-600 text-white text-xs font-semibold hover:bg-green-700">{% trans "Approve" %}</button>
+                  </form>
+                  <form method="post" action="{% url 'reject_payout' payout.id %}">
+                    {% csrf_token %}
+                    <button type="submit" class="px-3 py-1.5 rounded-lg bg-red-600 text-white text-xs font-semibold hover:bg-red-700">{% trans "Reject" %}</button>
+                  </form>
+                </div>
+              {% elif payout.status == 'approved' %}
+                <form method="post" action="{% url 'mark_payout_paid' payout.id %}">
+                  {% csrf_token %}
+                  <button type="submit" class="px-3 py-1.5 rounded-lg bg-brand-600 text-white text-xs font-semibold hover:bg-brand-700">{% trans "Mark Paid" %}</button>
+                </form>
+              {% endif %}
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td class="p-4 text-gray-400" colspan="6">{% trans "No payout requests yet." %}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+</div>
+{% endblock %}

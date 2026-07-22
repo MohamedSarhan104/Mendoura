@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+{% load i18n %}
+{% block title %}Search{% if query %} - "{{ query }}"{% endif %} - Mendoura{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-6 py-12 animate-fade-in">
+
+  <h1 class="text-3xl font-extrabold mb-2">
+    {% if query %}{% blocktrans %}Results for "{{ query }}"{% endblocktrans %}{% else %}{% trans "Search" %}{% endif %}
+  </h1>
+  {% if query %}
+    <p class="text-gray-500 dark:text-gray-400 mb-10">
+      {% blocktrans count counter=tracks|length %}{{ counter }} track{% plural %}{{ counter }} tracks{% endblocktrans %}, {% blocktrans count counter=courses|length %}{{ counter }} course{% plural %}{{ counter }} courses{% endblocktrans %} {% trans "found." %}
+    </p>
+  {% endif %}
+
+  {% if not query %}
+    <div class="bg-white dark:bg-gray-900 border border-dashed border-gray-300 dark:border-gray-700 rounded-2xl p-12 text-center">
+      <i class="fa-solid fa-magnifying-glass text-4xl text-gray-300 mb-4"></i>
+      <p class="text-lg font-semibold">{% trans "Type something in the search box above" %}</p>
+    </div>
+  {% else %}
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+
+      <form method="get" class="lg:col-span-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-5 h-fit space-y-5">
+        <input type="hidden" name="q" value="{{ query }}">
+
+        <div>
+          <label class="text-xs font-semibold uppercase text-gray-400">{% trans "Track" %}</label>
+          <select name="track" onchange="this.form.submit()" class="w-full mt-1 rounded-lg border border-gray-200 dark:border-gray-700 bg-transparent px-3 py-2 text-sm">
+            <option value="">{% trans "All tracks" %}</option>
+            {% for t in all_tracks %}
+              <option value="{{ t.slug }}" {% if t.slug == selected_track %}selected{% endif %}>{{ t.translated_name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div>
+          <label class="text-xs font-semibold uppercase text-gray-400">{% trans "Level" %}</label>
+          <select name="level" onchange="this.form.submit()" class="w-full mt-1 rounded-lg border border-gray-200 dark:border-gray-700 bg-transparent px-3 py-2 text-sm">
+            <option value="">{% trans "Any level" %}</option>
+            {% for value, label in levels %}
+              <option value="{{ value }}" {% if value == selected_level %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div>
+          <label class="text-xs font-semibold uppercase text-gray-400">{% trans "Price" %}</label>
+          <select name="price" onchange="this.form.submit()" class="w-full mt-1 rounded-lg border border-gray-200 dark:border-gray-700 bg-transparent px-3 py-2 text-sm">
+            <option value="">{% trans "Any price" %}</option>
+            <option value="free" {% if selected_price == 'free' %}selected{% endif %}>{% trans "Free" %}</option>
+            <option value="paid" {% if selected_price == 'paid' %}selected{% endif %}>{% trans "Paid" %}</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="text-xs font-semibold uppercase text-gray-400">{% trans "Language" %}</label>
+          <input type="text" name="language" value="{{ selected_language }}" onchange="this.form.submit()"
+                 placeholder="{% trans "e.g. English" %}" class="w-full mt-1 rounded-lg border border-gray-200 dark:border-gray-700 bg-transparent px-3 py-2 text-sm">
+        </div>
+
+        <button type="submit" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-semibold py-2 rounded-lg text-sm">{% trans "Apply Filters" %}</button>
+      </form>
+
+      <div class="lg:col-span-3">
+        {% if tracks %}
+          <h2 class="text-lg font-bold mb-4">{% trans "Tracks" %}</h2>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-10">
+            {% for track in tracks %}
+              <a href="{% url 'track_detail' track.slug %}" class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-4 flex items-center gap-3 hover:shadow-lg transition">
+                <div class="w-10 h-10 rounded-lg bg-brand-50 dark:bg-brand-600/10 flex items-center justify-center text-brand-600 dark:text-brand-400">
+                  <i class="fa-solid {{ track.icon|default:'fa-layer-group' }}"></i>
+                </div>
+                <div>
+                  <p class="font-semibold">{{ track.translated_name }}</p>
+                  {% if track.parent %}<p class="text-xs text-gray-400">{{ track.parent.translated_name }}</p>{% endif %}
+                </div>
+              </a>
+            {% endfor %}
+          </div>
+        {% endif %}
+
+        <h2 class="text-lg font-bold mb-4">{% trans "Courses" %}</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {% for course in courses %}
+            {% include 'courses/_course_card.html' %}
+          {% empty %}
+            <div class="col-span-full bg-white dark:bg-gray-900 border border-dashed border-gray-300 dark:border-gray-700 rounded-2xl p-12 text-center">
+              <p class="text-lg font-semibold">{% trans "No courses match your search" %}</p>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+
+    </div>
+  {% endif %}
+
+</div>
+{% endblock %}

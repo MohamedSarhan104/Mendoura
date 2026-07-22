@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% load i18n %}
+{% block title %}Students - {{ course.title }}{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-6 py-12">
+
+  <a href="{% url 'instructor_dashboard' %}" class="text-sm text-brand-600 hover:underline">
+    <i class="fa-solid fa-arrow-left"></i> {% trans "Back to Dashboard" %}
+  </a>
+
+  <h1 class="text-3xl font-extrabold mt-4 mb-1">{{ course.title }}</h1>
+  <p class="text-gray-500 dark:text-gray-400 mb-10">{% blocktrans count counter=enrollments|length %}{{ counter }} enrolled student{% plural %}{{ counter }} enrolled students{% endblocktrans %}</p>
+
+  <div class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead class="bg-gray-50 dark:bg-gray-800 text-left">
+        <tr>
+          <th class="p-4">{% trans "Student" %}</th>
+          <th class="p-4">{% trans "Email" %}</th>
+          <th class="p-4">{% trans "Progress" %}</th>
+          <th class="p-4">{% trans "Enrolled" %}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for enrollment in enrollments %}
+          <tr class="border-t border-gray-100 dark:border-gray-800">
+            <td class="p-4 font-semibold">{{ enrollment.student.username }}</td>
+            <td class="p-4 text-gray-500">{{ enrollment.student.email }}</td>
+            <td class="p-4">{{ enrollment.progress_percent }}%</td>
+            <td class="p-4 text-gray-400">{{ enrollment.enrolled_at|date:"M d, Y" }}</td>
+          </tr>
+        {% empty %}
+          <tr><td class="p-4 text-gray-400" colspan="4">{% trans "No students enrolled yet." %}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+</div>
+{% endblock %}

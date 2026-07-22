@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+{% load i18n %}
+{% block title %}Course Approval Queue - Mendoura{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto px-6 py-12">
+
+  <a href="{% url 'admin_dashboard' %}" class="text-sm text-brand-600 hover:underline">
+    <i class="fa-solid fa-arrow-left"></i> {% trans "Back to Admin Overview" %}
+  </a>
+
+  <h1 class="text-3xl font-extrabold mt-4 mb-8">{% trans "Course Approval Queue" %}</h1>
+
+  <div class="space-y-4">
+    {% for course in courses %}
+      <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-6">
+        <div class="flex items-center justify-between flex-wrap gap-2">
+          <div>
+            <h3 class="font-bold text-lg">{{ course.title }}</h3>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+              {% blocktrans with instructor=course.instructor.username track=course.track.name %}by {{ instructor }} &middot; {{ track }} &middot;{% endblocktrans %}
+              {% if course.is_free %}{% trans "Free" %}{% else %}${{ course.price }}{% endif %} &middot;
+              {{ course.get_production_type_display }}
+            </p>
+          </div>
+          <span class="text-xs text-gray-400">{% blocktrans with date=course.created_at|date:"M d, Y" %}Submitted {{ date }}{% endblocktrans %}</span>
+        </div>
+        <p class="text-sm text-gray-600 dark:text-gray-300 mt-3">{{ course.description }}</p>
+        <div class="flex items-center gap-3 mt-5">
+          <form method="post" action="{% url 'approve_course' course.id %}">
+            {% csrf_token %}
+            <button type="submit" class="px-5 py-2 rounded-lg bg-green-600 text-white font-semibold hover:bg-green-700 text-sm">
+              {% trans "Approve" %}
+            </button>
+          </form>
+          <form method="post" action="{% url 'reject_course' course.id %}" class="flex items-center gap-2">
+            {% csrf_token %}
+            <input type="text" name="reason" placeholder="{% trans "Rejection reason" %}" class="border border-gray-300 dark:border-gray-700 bg-transparent rounded-lg px-3 py-2 text-sm">
+            <button type="submit" class="px-5 py-2 rounded-lg bg-red-600 text-white font-semibold hover:bg-red-700 text-sm">
+              {% trans "Reject" %}
+            </button>
+          </form>
+        </div>
+      </div>
+    {% empty %}
+      <div class="bg-white dark:bg-gray-900 border border-dashed border-gray-300 dark:border-gray-700 rounded-2xl p-12 text-center text-gray-400">
+        {% trans "No courses pending review." %}
+      </div>
+    {% endfor %}
+  </div>
+
+</div>
+{% endblock %}

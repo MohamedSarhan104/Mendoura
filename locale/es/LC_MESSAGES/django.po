@@ -1,0 +1,1769 @@
+# Spanish translations for Mendoura -- STUB ONLY.
+# Every msgstr below is intentionally blank: Django falls back to the
+# English msgid when a translation is empty, which is safer than shipping
+# a machine-translated guess under the Mendoura brand. Fill these in with
+# real, reviewed Spanish before treating this as a supported language.
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-07-17 16:27+0000\n"
+"PO-Revision-Date: 2026-07-14 21:14+0000\n"
+"Last-Translator: Mendoura\n"
+"Language-Team: Spanish\n"
+"Language: es\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=n == 1 ? 0 : n != 0 && n % 1000000 == 0 ? "
+"1 : 2;\n"
+
+#: courses/ai_coach.py:32
+msgid "The AI Coach is not configured yet."
+msgstr ""
+
+#: courses/forms.py:23
+msgid "An account with this username already exists."
+msgstr ""
+
+#: courses/forms.py:29
+msgid "An account with this email already exists."
+msgstr ""
+
+#: courses/forms.py:35
+msgid "An account with this phone number already exists."
+msgstr ""
+
+#: courses/forms.py:43 courses/forms.py:67
+msgid "Phone Number"
+msgstr ""
+
+#: courses/forms.py:103
+msgid "English"
+msgstr ""
+
+#: courses/forms.py:104
+msgid "Arabic"
+msgstr ""
+
+#: courses/forms.py:105
+msgid "French"
+msgstr ""
+
+#: courses/forms.py:106
+msgid "German"
+msgstr ""
+
+#: courses/forms.py:107
+msgid "Spanish"
+msgstr ""
+
+#: courses/forms.py:108
+msgid "Italian"
+msgstr ""
+
+#: courses/forms.py:109
+msgid "Turkish"
+msgstr ""
+
+#: courses/forms.py:123
+msgid "e.g. Introduction to Python"
+msgstr ""
+
+#: courses/forms.py:127
+msgid "What is this course about?"
+msgstr ""
+
+#: courses/forms.py:142
+msgid ""
+"Type the script here. Our AI will turn this text into a professional video "
+"lecture."
+msgstr ""
+
+#: courses/forms.py:165
+msgid "Share your experience with this course..."
+msgstr ""
+
+#: courses/forms.py:181
+msgid "Optional: Google Drive / GitHub link"
+msgstr ""
+
+#: courses/forms.py:186
+msgid "Any notes for your instructor?"
+msgstr ""
+
+#: courses/forms.py:199 courses/templates/dashboard/course_submissions.html:60
+msgid "e.g. 18/20 or A-"
+msgstr ""
+
+#: courses/forms.py:203
+msgid "Feedback for the student..."
+msgstr ""
+
+#: courses/forms.py:216
+msgid "e.g. Web Development"
+msgstr ""
+
+#: courses/forms.py:235
+msgid "e.g. Getting Started"
+msgstr ""
+
+#: courses/forms.py:251
+msgid "e.g. Slides.pdf"
+msgstr ""
+
+#: courses/forms.py:271
+msgid "e.g. Bank transfer, PayPal"
+msgstr ""
+
+#: courses/forms.py:287
+msgid "e.g. Introduction to Variables"
+msgstr ""
+
+#: courses/forms.py:291
+msgid "https://youtube.com/... (external embed, optional)"
+msgstr ""
+
+#: courses/models.py:54
+msgid "e.g. a Font Awesome class name"
+msgstr ""
+
+#: courses/models.py:81
+msgid "Used until a course is linked, or if none ever is."
+msgstr ""
+
+#: courses/models.py:98
+msgid "Beginner"
+msgstr ""
+
+#: courses/models.py:99
+msgid "Intermediate"
+msgstr ""
+
+#: courses/models.py:100
+msgid "Advanced"
+msgstr ""
+
+#: courses/models.py:103
+msgid "Full production by instructor"
+msgstr ""
+
+#: courses/models.py:104
+msgid "Script only (platform produces)"
+msgstr ""
+
+#: courses/models.py:107 courses/templates/dashboard/instructor.html:57
+msgid "Draft"
+msgstr ""
+
+#: courses/models.py:108 courses/templates/dashboard/instructor.html:51
+msgid "Pending Review"
+msgstr ""
+
+#: courses/models.py:109 courses/templates/dashboard/instructor.html:49
+msgid "Published"
+msgstr ""
+
+#: courses/models.py:110 courses/models.py:444
+#: courses/templates/dashboard/instructor.html:53
+msgid "Rejected"
+msgstr ""
+
+#: courses/models.py:115 courses/templates/dashboard/instructor.html:55
+msgid "Archived"
+msgstr ""
+
+#: courses/models.py:146
+msgid "The script for AI video generation"
+msgstr ""
+
+#: courses/models.py:176
+msgid ""
+"production_type is read-only once a course has its first successful sale."
+msgstr ""
+
+#: courses/models.py:195
+msgid "Video"
+msgstr ""
+
+#: courses/models.py:196
+msgid "Article"
+msgstr ""
+
+#: courses/models.py:197
+msgid "Quiz"
+msgstr ""
+
+#: courses/models.py:214
+msgid "Viewable for free without enrollment"
+msgstr ""
+
+#: courses/models.py:216
+msgid "Students can upload homework for this lecture"
+msgstr ""
+
+#: courses/models.py:241
+msgid "Any file: PDF, zip, image, audio, slides, etc."
+msgstr ""
+
+#: courses/models.py:243
+msgid "Size in bytes"
+msgstr ""
+
+#: courses/models.py:253
+msgid "Link to Google Drive, GitHub, etc."
+msgstr ""
+
+#: courses/models.py:278 courses/templates/dashboard/wallet.html:24
+msgid "Pending"
+msgstr ""
+
+#: courses/models.py:279
+msgid "Succeeded"
+msgstr ""
+
+#: courses/models.py:280
+msgid "Failed"
+msgstr ""
+
+#: courses/models.py:281
+msgid "Refunded"
+msgstr ""
+
+#: courses/models.py:333
+#, python-format
+msgid "'%(field)s' is immutable after creation."
+msgstr ""
+
+#: courses/models.py:410
+msgid "Sale Credit"
+msgstr ""
+
+#: courses/models.py:411
+msgid "Withdrawal"
+msgstr ""
+
+#: courses/models.py:412
+msgid "Adjustment"
+msgstr ""
+
+#: courses/models.py:413
+msgid "Refund Debit"
+msgstr ""
+
+#: courses/models.py:432
+msgid "WalletTransaction rows are append-only and cannot be modified."
+msgstr ""
+
+#: courses/models.py:436
+msgid "WalletTransaction rows are append-only and cannot be deleted."
+msgstr ""
+
+#: courses/models.py:441 courses/templates/dashboard/admin_payouts.html:22
+#: courses/templates/dashboard/wallet.html:61
+msgid "Requested"
+msgstr ""
+
+#: courses/models.py:442
+msgid "Approved"
+msgstr ""
+
+#: courses/models.py:443 courses/templates/courses/search_results.html:53
+msgid "Paid"
+msgstr ""
+
+#: courses/models.py:465
+msgid "Monthly"
+msgstr ""
+
+#: courses/models.py:466
+msgid "Annual"
+msgstr ""
+
+#: courses/models.py:484 courses/templates/dashboard/admin_tracks.html:26
+msgid "Active"
+msgstr ""
+
+#: courses/models.py:485
+msgid "Expired"
+msgstr ""
+
+#: courses/models.py:486 courses/models.py:540
+msgid "Canceled"
+msgstr ""
+
+#: courses/models.py:538
+msgid "Open"
+msgstr ""
+
+#: courses/models.py:539
+msgid "Distributed"
+msgstr ""
+
+#: courses/models.py:635
+msgid "User"
+msgstr ""
+
+#: courses/models.py:636
+msgid "Assistant"
+msgstr ""
+
+#: courses/templates/courses/_course_card.html:21
+#: courses/templates/courses/detail.html:28
+#, python-format
+msgid "%(counter)s student"
+msgid_plural "%(counter)s students"
+msgstr[0] ""
+msgstr[1] ""
+msgstr[2] ""
+
+#: courses/templates/courses/_course_card.html:27
+#: courses/templates/courses/detail.html:100
+#: courses/templates/courses/search_results.html:52
+#: courses/templates/dashboard/course_approval_queue.html:22
+msgid "Free"
+msgstr ""
+
+#: courses/templates/courses/catalog.html:9
+msgid "Browse Courses"
+msgstr ""
+
+#: courses/templates/courses/catalog.html:10
+msgid "Pick a course and start learning today."
+msgstr ""
+
+#: courses/templates/courses/catalog.html:19
+msgid "No courses available yet"
+msgstr ""
+
+#: courses/templates/courses/catalog.html:20
+msgid "Check back soon, instructors are cooking up something great."
+msgstr ""
+
+#: courses/templates/courses/detail.html:9
+#, python-format
+msgid "Back to %(track)s"
+msgstr ""
+
+#: courses/templates/courses/detail.html:35
+msgid "What You'll Learn"
+msgstr ""
+
+#: courses/templates/courses/detail.html:39
+msgid "Course Content"
+msgstr ""
+
+#: courses/templates/courses/detail.html:59
+msgid "Preview"
+msgstr ""
+
+#: courses/templates/courses/detail.html:69
+msgid "No lectures added yet for this course."
+msgstr ""
+
+#: courses/templates/courses/detail.html:73
+msgid "Reviews"
+msgstr ""
+
+#: courses/templates/courses/detail.html:79
+msgid "Submit Review"
+msgstr ""
+
+#: courses/templates/courses/detail.html:92
+msgid "No reviews yet."
+msgstr ""
+
+#: courses/templates/courses/detail.html:107
+msgid "Go to My Learning"
+msgstr ""
+
+#: courses/templates/courses/detail.html:113
+msgid "Enroll Now"
+msgstr ""
+
+#: courses/templates/courses/detail.html:113
+msgid "Buy Now"
+msgstr ""
+
+#: courses/templates/courses/detail.html:118
+#, python-format
+msgid "Instructor: %(instructor)s"
+msgstr ""
+
+#: courses/templates/courses/detail.html:120
+#, python-format
+msgid "Level: %(level)s"
+msgstr ""
+
+#: courses/templates/courses/detail.html:123
+#, python-format
+msgid "%(counter)s hour"
+msgid_plural "%(counter)s hours"
+msgstr[0] ""
+msgstr[1] ""
+msgstr[2] ""
+
+#: courses/templates/courses/my_learning.html:7 templates/base.html:76
+#: templates/base.html:131 templates/base.html:197
+msgid "My Learning"
+msgstr ""
+
+#: courses/templates/courses/my_learning.html:15
+#, python-format
+msgid "Enrolled %(date)s"
+msgstr ""
+
+#: courses/templates/courses/my_learning.html:18
+msgid "View Course"
+msgstr ""
+
+#: courses/templates/courses/my_learning.html:23
+#: courses/templates/dashboard/course_students.html:21
+msgid "Progress"
+msgstr ""
+
+#: courses/templates/courses/my_learning.html:32
+msgid "View Certificate"
+msgstr ""
+
+#: courses/templates/courses/my_learning.html:38
+msgid "You haven't enrolled in any courses yet."
+msgstr ""
+
+#: courses/templates/courses/my_learning.html:39
+msgid "Browse Tracks"
+msgstr ""
+
+#: courses/templates/courses/search_results.html:9
+#, python-format
+msgid "Results for \"%(query)s\""
+msgstr ""
+
+#: courses/templates/courses/search_results.html:9
+msgid "Search"
+msgstr ""
+
+#: courses/templates/courses/search_results.html:13
+#, python-format
+msgid "%(counter)s track"
+msgid_plural "%(counter)s tracks"
+msgstr[0] ""
+msgstr[1] ""
+msgstr[2] ""
+
+#: courses/templates/courses/search_results.html:13
+#: courses/templates/dashboard/admin_tracks.html:22
+#, python-format
+msgid "%(counter)s course"
+msgid_plural "%(counter)s courses"
+msgstr[0] ""
+msgstr[1] ""
+msgstr[2] ""
+
+#: courses/templates/courses/search_results.html:13
+msgid "found."
+msgstr ""
+
+#: courses/templates/courses/search_results.html:20
+msgid "Type something in the search box above"
+msgstr ""
+
+#: courses/templates/courses/search_results.html:29
+#: courses/templates/dashboard/create_course.html:31
+#: courses/templates/dashboard/edit_course.html:37
+msgid "Track"
+msgstr ""
+
+#: courses/templates/courses/search_results.html:31
+msgid "All tracks"
+msgstr ""
+
+#: courses/templates/courses/search_results.html:39
+#: courses/templates/dashboard/create_course.html:42
+#: courses/templates/dashboard/edit_course.html:48
+msgid "Level"
+msgstr ""
+
+#: courses/templates/courses/search_results.html:41
+msgid "Any level"
+msgstr ""
+
+#: courses/templates/courses/search_results.html:49
+msgid "Price"
+msgstr ""
+
+#: courses/templates/courses/search_results.html:51
+msgid "Any price"
+msgstr ""
+
+#: courses/templates/courses/search_results.html:58
+#: courses/templates/dashboard/create_course.html:35
+#: courses/templates/dashboard/edit_course.html:41
+#: templates/partials/_language_switcher.html:5
+msgid "Language"
+msgstr ""
+
+#: courses/templates/courses/search_results.html:60
+msgid "e.g. English"
+msgstr ""
+
+#: courses/templates/courses/search_results.html:63
+msgid "Apply Filters"
+msgstr ""
+
+#: courses/templates/courses/search_results.html:68
+#: courses/templates/dashboard/admin.html:17
+#: courses/templates/dashboard/admin_tracks.html:12 templates/base.html:43
+#: templates/base.html:177
+msgid "Tracks"
+msgstr ""
+
+#: courses/templates/courses/search_results.html:84
+#: courses/templates/courses/track_detail.html:81
+#: courses/templates/dashboard/instructor.html:29
+msgid "Courses"
+msgstr ""
+
+#: courses/templates/courses/search_results.html:90
+msgid "No courses match your search"
+msgstr ""
+
+#: courses/templates/courses/track_detail.html:10
+msgid "All Tracks"
+msgstr ""
+
+#: courses/templates/courses/track_detail.html:36
+msgid "No tracks in this category yet"
+msgstr ""
+
+#: courses/templates/courses/track_detail.html:44
+msgid "Track Roadmap"
+msgstr ""
+
+#: courses/templates/courses/track_detail.html:68
+msgid "Coming soon"
+msgstr ""
+
+#: courses/templates/courses/track_detail.html:70
+msgid "Optional"
+msgstr ""
+
+#: courses/templates/courses/track_detail.html:88
+msgid "No courses in this track yet"
+msgstr ""
+
+#: courses/templates/courses/track_detail.html:89
+msgid "Check back soon."
+msgstr ""
+
+#: courses/templates/courses/track_list.html:9 templates/platform_home.html:27
+msgid "Browse by Track"
+msgstr ""
+
+#: courses/templates/courses/track_list.html:10
+msgid "Pick a track to see its courses."
+msgstr ""
+
+#: courses/templates/courses/track_list.html:24
+msgid "No tracks available yet"
+msgstr ""
+
+#: courses/templates/dashboard/admin.html:9
+msgid "Admin Overview"
+msgstr ""
+
+#: courses/templates/dashboard/admin.html:12
+msgid "Approval Queue"
+msgstr ""
+
+#: courses/templates/dashboard/admin.html:14
+#: courses/templates/dashboard/admin_users.html:13
+msgid "Users"
+msgstr ""
+
+#: courses/templates/dashboard/admin.html:15
+#: courses/templates/dashboard/admin_payments.html:12
+msgid "Payments"
+msgstr ""
+
+#: courses/templates/dashboard/admin.html:16
+msgid "Payouts"
+msgstr ""
+
+#: courses/templates/dashboard/admin.html:25
+#, python-format
+msgid "%(counter)s course won't appear on any student browse page"
+msgid_plural "%(counter)s courses won't appear on any student browse page"
+msgstr[0] ""
+msgstr[1] ""
+msgstr[2] ""
+
+#: courses/templates/dashboard/admin.html:28
+msgid ""
+"Each course below is filed under a parent category (or has no track at all) "
+"instead of a specific track -- fix each one's Track in"
+msgstr ""
+
+#: courses/templates/dashboard/admin.html:29
+msgid "Django Admin"
+msgstr ""
+
+#: courses/templates/dashboard/admin.html:35
+#, python-format
+msgid "by %(instructor)s --"
+msgstr ""
+
+#: courses/templates/dashboard/admin.html:36
+#, python-format
+msgid "filed under \"%(track)s\" (a parent category)"
+msgstr ""
+
+#: courses/templates/dashboard/admin.html:36
+msgid "no track assigned"
+msgstr ""
+
+#: courses/templates/dashboard/admin.html:46
+msgid "Total Revenue"
+msgstr ""
+
+#: courses/templates/dashboard/admin.html:50
+msgid "Platform Revenue"
+msgstr ""
+
+#: courses/templates/dashboard/admin.html:54
+msgid "Instructor Payouts"
+msgstr ""
+
+#: courses/templates/dashboard/admin.html:58
+msgid "Enrollments"
+msgstr ""
+
+#: courses/templates/dashboard/admin.html:65
+#: courses/templates/dashboard/admin_users.html:16
+#: courses/templates/dashboard/instructor.html:25
+#: courses/templates/dashboard/instructor.html:60
+msgid "Students"
+msgstr ""
+
+#: courses/templates/dashboard/admin.html:69
+#: courses/templates/dashboard/admin_users.html:17
+msgid "Instructors"
+msgstr ""
+
+#: courses/templates/dashboard/admin.html:73
+msgid "Total Courses"
+msgstr ""
+
+#: courses/templates/dashboard/admin.html:78
+msgid "Revenue Over Time"
+msgstr ""
+
+#: courses/templates/dashboard/admin.html:89
+msgid "No revenue yet."
+msgstr ""
+
+#: courses/templates/dashboard/admin.html:93
+#: courses/templates/dashboard/admin_subscription_revenue.html:13
+msgid "Subscription Revenue Distribution"
+msgstr ""
+
+#: courses/templates/dashboard/admin.html:98
+#, python-format
+msgid ""
+"<span class=\"font-semibold text-brand-600\">%(counter)s</span> subscription "
+"period ready to distribute to instructors."
+msgid_plural ""
+"<span class=\"font-semibold text-brand-600\">%(counter)s</span> subscription "
+"periods ready to distribute to instructors."
+msgstr[0] ""
+msgstr[1] ""
+msgstr[2] ""
+
+#: courses/templates/dashboard/admin.html:100
+msgid "No subscription periods are due for distribution right now."
+msgstr ""
+
+#: courses/templates/dashboard/admin.html:104
+msgid ""
+"No automatic scheduler is wired up on the free Render plan (no Cron Jobs) -- "
+"run this manually on a regular basis."
+msgstr ""
+
+#: courses/templates/dashboard/admin.html:109
+msgid "View Breakdown"
+msgstr ""
+
+#: courses/templates/dashboard/admin.html:115
+#: courses/templates/dashboard/admin_subscription_revenue.html:18
+msgid "Run Distribution Now"
+msgstr ""
+
+#: courses/templates/dashboard/admin_payments.html:9
+#: courses/templates/dashboard/admin_payouts.html:9
+#: courses/templates/dashboard/admin_subscription_revenue.html:9
+#: courses/templates/dashboard/admin_tracks.html:9
+#: courses/templates/dashboard/admin_users.html:9
+#: courses/templates/dashboard/course_approval_queue.html:9
+msgid "Back to Admin Overview"
+msgstr ""
+
+#: courses/templates/dashboard/admin_payments.html:18
+#: courses/templates/dashboard/admin_users.html:41
+#: courses/templates/dashboard/course_students.html:19
+#: courses/templates/dashboard/instructor.html:91
+msgid "Student"
+msgstr ""
+
+#: courses/templates/dashboard/admin_payments.html:19
+#: courses/templates/dashboard/admin_subscription_revenue.html:46
+#: courses/templates/dashboard/instructor.html:90
+#: courses/templates/dashboard/wallet.html:84
+msgid "Course"
+msgstr ""
+
+#: courses/templates/dashboard/admin_payments.html:20
+msgid "Total"
+msgstr ""
+
+#: courses/templates/dashboard/admin_payments.html:21
+msgid "Instructor Share"
+msgstr ""
+
+#: courses/templates/dashboard/admin_payments.html:22
+msgid "Platform Share"
+msgstr ""
+
+#: courses/templates/dashboard/admin_payments.html:23
+#: courses/templates/dashboard/admin_payouts.html:21
+#: courses/templates/dashboard/wallet.html:60
+msgid "Status"
+msgstr ""
+
+#: courses/templates/dashboard/admin_payments.html:24
+#: courses/templates/dashboard/instructor.html:93
+#: courses/templates/dashboard/wallet.html:88
+#: courses/templates/dashboard/wallet.html:115
+msgid "Date"
+msgstr ""
+
+#: courses/templates/dashboard/admin_payments.html:39
+msgid "No payments yet."
+msgstr ""
+
+#: courses/templates/dashboard/admin_payouts.html:12
+#: courses/templates/dashboard/wallet.html:53
+msgid "Payout Requests"
+msgstr ""
+
+#: courses/templates/dashboard/admin_payouts.html:18
+#: courses/templates/dashboard/admin_subscription_revenue.html:47
+#: courses/templates/dashboard/admin_users.html:39
+msgid "Instructor"
+msgstr ""
+
+#: courses/templates/dashboard/admin_payouts.html:19
+#: courses/templates/dashboard/wallet.html:58
+#: courses/templates/dashboard/wallet.html:113
+msgid "Amount"
+msgstr ""
+
+#: courses/templates/dashboard/admin_payouts.html:20
+#: courses/templates/dashboard/wallet.html:44
+#: courses/templates/dashboard/wallet.html:59
+msgid "Method"
+msgstr ""
+
+#: courses/templates/dashboard/admin_payouts.html:23
+msgid "Actions"
+msgstr ""
+
+#: courses/templates/dashboard/admin_payouts.html:39
+#: courses/templates/dashboard/course_approval_queue.html:33
+msgid "Approve"
+msgstr ""
+
+#: courses/templates/dashboard/admin_payouts.html:43
+#: courses/templates/dashboard/course_approval_queue.html:40
+msgid "Reject"
+msgstr ""
+
+#: courses/templates/dashboard/admin_payouts.html:49
+msgid "Mark Paid"
+msgstr ""
+
+#: courses/templates/dashboard/admin_payouts.html:55
+#: courses/templates/dashboard/wallet.html:73
+msgid "No payout requests yet."
+msgstr ""
+
+#: courses/templates/dashboard/admin_subscription_revenue.html:18
+#, python-format
+msgid "(%(count)s due)"
+msgstr ""
+
+#: courses/templates/dashboard/admin_subscription_revenue.html:32
+msgid "pool"
+msgstr ""
+
+#: courses/templates/dashboard/admin_subscription_revenue.html:48
+#: courses/templates/dashboard/wallet.html:85
+msgid "Minutes Watched"
+msgstr ""
+
+#: courses/templates/dashboard/admin_subscription_revenue.html:49
+msgid "Share"
+msgstr ""
+
+#: courses/templates/dashboard/admin_subscription_revenue.html:50
+msgid "Instructor Gets"
+msgstr ""
+
+#: courses/templates/dashboard/admin_subscription_revenue.html:51
+msgid "Platform Keeps"
+msgstr ""
+
+#: courses/templates/dashboard/admin_subscription_revenue.html:69
+msgid ""
+"No watch-time during this period -- the full pool stayed with the platform."
+msgstr ""
+
+#: courses/templates/dashboard/admin_subscription_revenue.html:70
+msgid "Canceled before distribution (refunded)."
+msgstr ""
+
+#: courses/templates/dashboard/admin_subscription_revenue.html:71
+msgid "Not distributed yet."
+msgstr ""
+
+#: courses/templates/dashboard/admin_subscription_revenue.html:77
+msgid "No subscription periods yet."
+msgstr ""
+
+#: courses/templates/dashboard/admin_tracks.html:28
+msgid "Inactive"
+msgstr ""
+
+#: courses/templates/dashboard/admin_tracks.html:33
+msgid "Deactivate"
+msgstr ""
+
+#: courses/templates/dashboard/admin_tracks.html:33
+msgid "Activate"
+msgstr ""
+
+#: courses/templates/dashboard/admin_tracks.html:40
+msgid "No tracks yet."
+msgstr ""
+
+#: courses/templates/dashboard/admin_tracks.html:45
+msgid "Add New Track"
+msgstr ""
+
+#: courses/templates/dashboard/admin_tracks.html:49
+msgid "Parent track (leave blank for a top-level category)"
+msgstr ""
+
+#: courses/templates/dashboard/admin_tracks.html:53
+msgid "Name"
+msgstr ""
+
+#: courses/templates/dashboard/admin_tracks.html:57
+#: courses/templates/dashboard/create_course.html:25
+#: courses/templates/dashboard/edit_course.html:31
+msgid "Description"
+msgstr ""
+
+#: courses/templates/dashboard/admin_tracks.html:62
+msgid "Icon (Font Awesome class)"
+msgstr ""
+
+#: courses/templates/dashboard/admin_tracks.html:66
+#: courses/templates/dashboard/edit_module.html:21
+#: courses/templates/dashboard/manage_modules.html:50
+msgid "Order"
+msgstr ""
+
+#: courses/templates/dashboard/admin_tracks.html:71
+msgid "Add Track"
+msgstr ""
+
+#: courses/templates/dashboard/admin_users.html:15
+msgid "All"
+msgstr ""
+
+#: courses/templates/dashboard/admin_users.html:18
+msgid "Admins"
+msgstr ""
+
+#: courses/templates/dashboard/admin_users.html:26
+msgid "Username"
+msgstr ""
+
+#: courses/templates/dashboard/admin_users.html:27
+#: courses/templates/dashboard/course_students.html:20
+msgid "Email"
+msgstr ""
+
+#: courses/templates/dashboard/admin_users.html:28
+msgid "Role"
+msgstr ""
+
+#: courses/templates/dashboard/admin_users.html:29
+msgid "Joined"
+msgstr ""
+
+#: courses/templates/dashboard/admin_users.html:43
+msgid "Admin"
+msgstr ""
+
+#: courses/templates/dashboard/admin_users.html:49
+msgid "No users found."
+msgstr ""
+
+#: courses/templates/dashboard/ai_buddy.html:31
+msgid "Mendoura AI Coach"
+msgstr ""
+
+#: courses/templates/dashboard/ai_buddy.html:32
+msgid "Your 24/7 Study Partner"
+msgstr ""
+
+#: courses/templates/dashboard/ai_buddy.html:39
+msgid ""
+"AI Coach isn't configured yet -- an administrator needs to set "
+"<code>AI_API_KEY</code>."
+msgstr ""
+
+#: courses/templates/dashboard/ai_buddy.html:50
+msgid "Welcome to Mendoura AI Coach - Your 24/7 Study Partner"
+msgstr ""
+
+#: courses/templates/dashboard/ai_buddy.html:51
+msgid ""
+"Ask me to explain a tricky concept, summarize a lecture, build you a study "
+"schedule, or just talk through what you're stuck on. I'm here whenever you "
+"need me."
+msgstr ""
+
+#: courses/templates/dashboard/ai_buddy.html:73
+msgid "Ask your AI Coach anything..."
+msgstr ""
+
+#: courses/templates/dashboard/ai_buddy.html:88
+msgid "Something went wrong. Please try again."
+msgstr ""
+
+#: courses/templates/dashboard/ai_buddy.html:89
+msgid "Network error -- please try again."
+msgstr ""
+
+#: courses/templates/dashboard/course_approval_queue.html:12
+msgid "Course Approval Queue"
+msgstr ""
+
+#: courses/templates/dashboard/course_approval_queue.html:21
+#, python-format
+msgid "by %(instructor)s &middot; %(track)s &middot;"
+msgstr ""
+
+#: courses/templates/dashboard/course_approval_queue.html:26
+#, python-format
+msgid "Submitted %(date)s"
+msgstr ""
+
+#: courses/templates/dashboard/course_approval_queue.html:38
+msgid "Rejection reason"
+msgstr ""
+
+#: courses/templates/dashboard/course_approval_queue.html:47
+msgid "No courses pending review."
+msgstr ""
+
+#: courses/templates/dashboard/course_students.html:9
+#: courses/templates/dashboard/course_submissions.html:9
+#: courses/templates/dashboard/create_course.html:10
+#: courses/templates/dashboard/edit_course.html:10
+#: courses/templates/dashboard/manage_modules.html:9
+#: courses/templates/dashboard/wallet.html:9
+msgid "Back to Dashboard"
+msgstr ""
+
+#: courses/templates/dashboard/course_students.html:13
+#, python-format
+msgid "%(counter)s enrolled student"
+msgid_plural "%(counter)s enrolled students"
+msgstr[0] ""
+msgstr[1] ""
+msgstr[2] ""
+
+#: courses/templates/dashboard/course_students.html:22
+msgid "Enrolled"
+msgstr ""
+
+#: courses/templates/dashboard/course_students.html:34
+msgid "No students enrolled yet."
+msgstr ""
+
+#: courses/templates/dashboard/course_submissions.html:13
+#, python-format
+msgid "%(counter)s homework submission"
+msgid_plural "%(counter)s homework submissions"
+msgstr[0] ""
+msgstr[1] ""
+msgstr[2] ""
+
+#: courses/templates/dashboard/course_submissions.html:21
+#, python-format
+msgid "%(lecture)s &middot; submitted %(date)s"
+msgstr ""
+
+#: courses/templates/dashboard/course_submissions.html:25
+#, python-format
+msgid "Graded: %(grade)s"
+msgstr ""
+
+#: courses/templates/dashboard/course_submissions.html:29
+msgid "Ungraded"
+msgstr ""
+
+#: courses/templates/dashboard/course_submissions.html:37
+msgid "Submitted file"
+msgstr ""
+
+#: courses/templates/dashboard/course_submissions.html:53
+msgid "Feedback:"
+msgstr ""
+
+#: courses/templates/dashboard/course_submissions.html:62
+msgid "Feedback (optional)"
+msgstr ""
+
+#: courses/templates/dashboard/course_submissions.html:65
+msgid "Submit Grade"
+msgstr ""
+
+#: courses/templates/dashboard/course_submissions.html:72
+msgid "No submissions yet."
+msgstr ""
+
+#: courses/templates/dashboard/create_course.html:12
+msgid "Create a New Course"
+msgstr ""
+
+#: courses/templates/dashboard/create_course.html:13
+msgid ""
+"After saving, you'll add modules and lectures, then submit for admin review."
+msgstr ""
+
+#: courses/templates/dashboard/create_course.html:20
+#: courses/templates/dashboard/edit_course.html:26
+msgid "Course Title"
+msgstr ""
+
+#: courses/templates/dashboard/create_course.html:46
+#: courses/templates/dashboard/edit_course.html:52
+msgid "Price ($)"
+msgstr ""
+
+#: courses/templates/dashboard/create_course.html:53
+#: courses/templates/dashboard/edit_course.html:59
+msgid "This course is free"
+msgstr ""
+
+#: courses/templates/dashboard/create_course.html:57
+#: courses/templates/dashboard/edit_course.html:63
+msgid "Thumbnail"
+msgstr ""
+
+#: courses/templates/dashboard/create_course.html:62
+#: courses/templates/dashboard/edit_course.html:68
+msgid "Production Type"
+msgstr ""
+
+#: courses/templates/dashboard/create_course.html:63
+#: courses/templates/dashboard/edit_course.html:76
+msgid ""
+"This determines your revenue share and cannot be changed once the course has "
+"its first sale."
+msgstr ""
+
+#: courses/templates/dashboard/create_course.html:68
+#: courses/templates/dashboard/edit_course.html:81
+msgid "Full production (I edit and produce it myself)"
+msgstr ""
+
+#: courses/templates/dashboard/create_course.html:69
+#: courses/templates/dashboard/edit_course.html:82
+#, python-format
+msgid "You keep 70%%"
+msgstr ""
+
+#: courses/templates/dashboard/create_course.html:75
+#: courses/templates/dashboard/edit_course.html:88
+msgid "Script only (Mendoura handles production/montage)"
+msgstr ""
+
+#: courses/templates/dashboard/create_course.html:76
+#: courses/templates/dashboard/edit_course.html:89
+#, python-format
+msgid "You keep 50%%"
+msgstr ""
+
+#: courses/templates/dashboard/create_course.html:87
+#: courses/templates/dashboard/edit_course.html:101
+msgid "AI Video Script"
+msgstr ""
+
+#: courses/templates/dashboard/create_course.html:90
+msgid ""
+"Our AI will turn this text into a professional video lecture (coming soon)."
+msgstr ""
+
+#: courses/templates/dashboard/create_course.html:94
+msgid "Save Course & Continue"
+msgstr ""
+
+#: courses/templates/dashboard/edit_course.html:12
+msgid "Edit Course"
+msgstr ""
+
+#: courses/templates/dashboard/edit_course.html:15
+msgid "This course is live -- saving changes resubmits it for admin review."
+msgstr ""
+
+#: courses/templates/dashboard/edit_course.html:18
+msgid "Update your course details."
+msgstr ""
+
+#: courses/templates/dashboard/edit_course.html:70
+msgid ""
+"Locked -- this course already has a sale, so its revenue split can't change."
+msgstr ""
+
+#: courses/templates/dashboard/edit_course.html:73
+#, python-format
+msgid "You keep %(pct)s%%"
+msgstr ""
+
+#: courses/templates/dashboard/edit_course.html:107
+#: courses/templates/dashboard/edit_lecture.html:43
+#: courses/templates/dashboard/edit_module.html:25
+msgid "Save Changes"
+msgstr ""
+
+#: courses/templates/dashboard/edit_lecture.html:12
+msgid "Edit Lecture"
+msgstr ""
+
+#: courses/templates/dashboard/edit_lecture.html:18
+#: courses/templates/dashboard/manage_lectures.html:88
+msgid "Lecture Title"
+msgstr ""
+
+#: courses/templates/dashboard/edit_lecture.html:23
+#: courses/templates/dashboard/manage_lectures.html:93
+msgid "Order (position in module)"
+msgstr ""
+
+#: courses/templates/dashboard/edit_lecture.html:29
+#: courses/templates/dashboard/manage_lectures.html:107
+msgid "Free preview (viewable without enrollment)"
+msgstr ""
+
+#: courses/templates/dashboard/edit_lecture.html:34
+#: courses/templates/dashboard/manage_lectures.html:112
+msgid "Accepts homework submission"
+msgstr ""
+
+#: courses/templates/dashboard/edit_lecture.html:38
+#: courses/templates/dashboard/manage_lectures.html:98
+msgid "External Video URL"
+msgstr ""
+
+#: courses/templates/dashboard/edit_lecture.html:38
+msgid "only if not uploading to Bunny"
+msgstr ""
+
+#: courses/templates/dashboard/edit_lecture.html:49
+msgid "Course Video"
+msgstr ""
+
+#: courses/templates/dashboard/edit_lecture.html:51
+msgid ""
+"Uploads securely to Bunny Stream and streams to students through a protected "
+"player."
+msgstr ""
+
+#: courses/templates/dashboard/edit_lecture.html:58
+#: courses/templates/dashboard/manage_lectures.html:43
+msgid "Video ready"
+msgstr ""
+
+#: courses/templates/dashboard/edit_lecture.html:62
+msgid "Video is still processing on Bunny — check back shortly."
+msgstr ""
+
+#: courses/templates/dashboard/edit_lecture.html:65
+msgid "Uploading a new file replaces the current video."
+msgstr ""
+
+#: courses/templates/dashboard/edit_lecture.html:67
+msgid "No video uploaded yet."
+msgstr ""
+
+#: courses/templates/dashboard/edit_lecture.html:79
+msgid "Upload Video"
+msgstr ""
+
+#: courses/templates/dashboard/edit_lecture.html:89
+msgid ""
+"Video hosting isn't configured yet (missing Bunny credentials). Add them on "
+"the server to enable uploads."
+msgstr ""
+
+#: courses/templates/dashboard/edit_lecture.html:101
+msgid "Choose a video file first."
+msgstr ""
+
+#: courses/templates/dashboard/edit_lecture.html:102
+msgid "Preparing secure upload…"
+msgstr ""
+
+#: courses/templates/dashboard/edit_lecture.html:103 courses/views.py:1002
+msgid "Could not start the upload. Please try again."
+msgstr ""
+
+#: courses/templates/dashboard/edit_lecture.html:104
+msgid "Upload library failed to load. Please refresh the page and try again."
+msgstr ""
+
+#: courses/templates/dashboard/edit_lecture.html:105
+msgid "Upload failed. Please try again."
+msgstr ""
+
+#: courses/templates/dashboard/edit_lecture.html:106
+msgid "Uploading… "
+msgstr ""
+
+#: courses/templates/dashboard/edit_lecture.html:107
+msgid ""
+"Uploaded! Bunny is now processing the video — reload this page in a minute "
+"to confirm it's ready."
+msgstr ""
+
+#: courses/templates/dashboard/edit_module.html:9
+#: courses/templates/dashboard/manage_lectures.html:9
+#, python-format
+msgid "%(title)s Curriculum"
+msgstr ""
+
+#: courses/templates/dashboard/edit_module.html:12
+msgid "Edit Module"
+msgstr ""
+
+#: courses/templates/dashboard/edit_module.html:17
+#: courses/templates/dashboard/manage_modules.html:46
+msgid "Module Title"
+msgstr ""
+
+#: courses/templates/dashboard/instructor.html:9
+msgid "Instructor Dashboard"
+msgstr ""
+
+#: courses/templates/dashboard/instructor.html:11
+msgid "Create New Course"
+msgstr ""
+
+#: courses/templates/dashboard/instructor.html:17
+#: courses/templates/dashboard/wallet.html:16
+msgid "Total Earnings"
+msgstr ""
+
+#: courses/templates/dashboard/instructor.html:21
+msgid "Available Balance"
+msgstr ""
+
+#: courses/templates/dashboard/instructor.html:35
+msgid "Your Courses"
+msgstr ""
+
+#: courses/templates/dashboard/instructor.html:37
+msgid "View Wallet"
+msgstr ""
+
+#: courses/templates/dashboard/instructor.html:45
+#, python-format
+msgid "Created %(created)s"
+msgstr ""
+
+#: courses/templates/dashboard/instructor.html:59
+msgid "Curriculum"
+msgstr ""
+
+#: courses/templates/dashboard/instructor.html:61
+msgid "Submissions"
+msgstr ""
+
+#: courses/templates/dashboard/instructor.html:62
+#: courses/templates/dashboard/manage_lectures.html:32
+#: courses/templates/dashboard/manage_modules.html:27
+msgid "Edit"
+msgstr ""
+
+#: courses/templates/dashboard/instructor.html:66
+msgid "Submit for Review"
+msgstr ""
+
+#: courses/templates/dashboard/instructor.html:71
+#, python-format
+msgid ""
+"Delete %(title)s? If it has any enrollment or payment history, it will be "
+"archived instead."
+msgstr ""
+
+#: courses/templates/dashboard/instructor.html:73
+#: courses/templates/dashboard/manage_lectures.html:36
+#: courses/templates/dashboard/manage_modules.html:31
+msgid "Delete"
+msgstr ""
+
+#: courses/templates/dashboard/instructor.html:80
+msgid "No courses created yet. Click \"Create New Course\" to get started."
+msgstr ""
+
+#: courses/templates/dashboard/instructor.html:85
+msgid "Recent Sales"
+msgstr ""
+
+#: courses/templates/dashboard/instructor.html:92
+msgid "Your Share"
+msgstr ""
+
+#: courses/templates/dashboard/instructor.html:105
+msgid "No sales yet."
+msgstr ""
+
+#: courses/templates/dashboard/manage_lectures.html:13
+msgid "Add lectures, videos, and resources for this module."
+msgstr ""
+
+#: courses/templates/dashboard/manage_lectures.html:16
+#, python-format
+msgid "Lectures (%(count)s)"
+msgstr ""
+
+#: courses/templates/dashboard/manage_lectures.html:27
+msgid "Free Preview"
+msgstr ""
+
+#: courses/templates/dashboard/manage_lectures.html:30
+msgid "Homework"
+msgstr ""
+
+#: courses/templates/dashboard/manage_lectures.html:34
+#, python-format
+msgid "Delete %(title)s?"
+msgstr ""
+
+#: courses/templates/dashboard/manage_lectures.html:45
+msgid "Processing"
+msgstr ""
+
+#: courses/templates/dashboard/manage_lectures.html:48
+msgid "External Video"
+msgstr ""
+
+#: courses/templates/dashboard/manage_lectures.html:50
+msgid "Video File"
+msgstr ""
+
+#: courses/templates/dashboard/manage_lectures.html:52
+msgid "Add video"
+msgstr ""
+
+#: courses/templates/dashboard/manage_lectures.html:54
+msgid "Resource"
+msgstr ""
+
+#: courses/templates/dashboard/manage_lectures.html:59
+msgid "Remove this resource?"
+msgstr ""
+
+#: courses/templates/dashboard/manage_lectures.html:71
+msgid "Add Resource"
+msgstr ""
+
+#: courses/templates/dashboard/manage_lectures.html:77
+msgid "No lectures added yet. Add your first one below."
+msgstr ""
+
+#: courses/templates/dashboard/manage_lectures.html:83
+msgid "Add New Lecture"
+msgstr ""
+
+#: courses/templates/dashboard/manage_lectures.html:98
+msgid "optional"
+msgstr ""
+
+#: courses/templates/dashboard/manage_lectures.html:101
+msgid ""
+"To upload a video to Bunny Stream, save the lecture first, then click "
+"\"Edit\" on it."
+msgstr ""
+
+#: courses/templates/dashboard/manage_lectures.html:116
+msgid "Add Lecture"
+msgstr ""
+
+#: courses/templates/dashboard/manage_modules.html:13
+msgid "Organize your course into modules, then add lectures to each one."
+msgstr ""
+
+#: courses/templates/dashboard/manage_modules.html:15
+msgid "Modules"
+msgstr ""
+
+#: courses/templates/dashboard/manage_modules.html:23
+#, python-format
+msgid "%(counter)s lecture"
+msgid_plural "%(counter)s lectures"
+msgstr[0] ""
+msgstr[1] ""
+msgstr[2] ""
+
+#: courses/templates/dashboard/manage_modules.html:29
+#, python-format
+msgid "Delete %(title)s and all its lectures?"
+msgstr ""
+
+#: courses/templates/dashboard/manage_modules.html:37
+msgid "No modules yet. Add your first one below."
+msgstr ""
+
+#: courses/templates/dashboard/manage_modules.html:42
+msgid "Add New Module"
+msgstr ""
+
+#: courses/templates/dashboard/manage_modules.html:54
+msgid "Add Module"
+msgstr ""
+
+#: courses/templates/dashboard/profile.html:8 templates/base.html:127
+#: templates/base.html:196
+msgid "Profile"
+msgstr ""
+
+#: courses/templates/dashboard/profile.html:28
+msgid "Profile Picture"
+msgstr ""
+
+#: courses/templates/dashboard/profile.html:35
+msgid "Save"
+msgstr ""
+
+#: courses/templates/dashboard/wallet.html:12
+msgid "Wallet"
+msgstr ""
+
+#: courses/templates/dashboard/wallet.html:20
+msgid "Available"
+msgstr ""
+
+#: courses/templates/dashboard/wallet.html:28
+msgid "Withdrawn"
+msgstr ""
+
+#: courses/templates/dashboard/wallet.html:33
+#: courses/templates/dashboard/wallet.html:49
+msgid "Request Payout"
+msgstr ""
+
+#: courses/templates/dashboard/wallet.html:34
+msgid "You can request a payout once a week."
+msgstr ""
+
+#: courses/templates/dashboard/wallet.html:35
+#, python-format
+msgid "Next available: %(next_date)s."
+msgstr ""
+
+#: courses/templates/dashboard/wallet.html:40
+msgid "Amount ($)"
+msgstr ""
+
+#: courses/templates/dashboard/wallet.html:79
+msgid "Subscription Revenue Breakdown"
+msgstr ""
+
+#: courses/templates/dashboard/wallet.html:86
+msgid "Share of Period"
+msgstr ""
+
+#: courses/templates/dashboard/wallet.html:87
+msgid "You Earned"
+msgstr ""
+
+#: courses/templates/dashboard/wallet.html:95
+#, python-format
+msgid "%(minutes)s min"
+msgstr ""
+
+#: courses/templates/dashboard/wallet.html:97
+#, python-format
+msgid "(%(pct)s%% subscription pool)"
+msgstr ""
+
+#: courses/templates/dashboard/wallet.html:101
+msgid "No subscription revenue yet."
+msgstr ""
+
+#: courses/templates/dashboard/wallet.html:107
+msgid "Transaction Ledger"
+msgstr ""
+
+#: courses/templates/dashboard/wallet.html:112
+msgid "Type"
+msgstr ""
+
+#: courses/templates/dashboard/wallet.html:114
+msgid "Balance After"
+msgstr ""
+
+#: courses/templates/dashboard/wallet.html:127
+msgid "No transactions yet."
+msgstr ""
+
+#: courses/views.py:64
+msgid "Profile updated."
+msgstr ""
+
+#: courses/views.py:154
+#, python-format
+msgid ""
+"%(title)s was live, so this change has been resubmitted for admin review."
+msgstr ""
+
+#: courses/views.py:208 courses/views.py:214
+#, python-format
+msgid "You are now enrolled in %(title)s."
+msgstr ""
+
+#: courses/views.py:260
+msgid "Unable to start checkout right now. Please try again shortly."
+msgstr ""
+
+#: courses/views.py:481
+msgid "Enroll in this course to watch this lecture."
+msgstr ""
+
+#: courses/views.py:607
+msgid "Homework submitted."
+msgstr ""
+
+#: courses/views.py:656
+msgid "Malformed request."
+msgstr ""
+
+#: courses/views.py:659
+msgid "Message cannot be empty."
+msgstr ""
+
+#: courses/views.py:661
+msgid "That message is too long -- please shorten it."
+msgstr ""
+
+#: courses/views.py:831
+#, python-format
+msgid "%(title)s updated."
+msgstr ""
+
+#: courses/views.py:857
+#, python-format
+msgid ""
+"%(title)s has enrollment or payment history, so it has been archived instead "
+"of deleted."
+msgstr ""
+
+#: courses/views.py:862
+#, python-format
+msgid "%(title)s has been deleted."
+msgstr ""
+
+#: courses/views.py:868
+#, python-format
+msgid ""
+"%(title)s has watch-time or revenue history, so it has been archived instead "
+"of deleted."
+msgstr ""
+
+#: courses/views.py:921
+#, python-format
+msgid ""
+"\"%(title)s\" has watch-time history on one of its lectures and cannot be "
+"deleted."
+msgstr ""
+
+#: courses/views.py:982
+#, python-format
+msgid "\"%(title)s\" has watch-time history and cannot be deleted."
+msgstr ""
+
+#: courses/views.py:997
+msgid "Video hosting is not configured."
+msgstr ""
+
+#: courses/views.py:1069
+msgid "This submission has already been graded."
+msgstr ""
+
+#: courses/views.py:1077
+#, python-format
+msgid "Graded %(username)s's submission."
+msgstr ""
+
+#: courses/views.py:1127
+#, python-format
+msgid "You can request a payout once a week. Next available: %(date)s."
+msgstr ""
+
+#: courses/views.py:1143
+msgid "Payout request submitted."
+msgstr ""
+
+#: courses/views.py:1145
+msgid "Payout amount cannot exceed your available balance."
+msgstr ""
+
+#: courses/views.py:1147
+msgid "Please enter a valid payout amount."
+msgstr ""
+
+#: courses/views.py:1206
+msgid "Subscription revenue distribution ran successfully."
+msgstr ""
+
+#: courses/views.py:1243
+#, python-format
+msgid "%(title)s approved and published."
+msgstr ""
+
+#: courses/views.py:1254
+#, python-format
+msgid "%(title)s rejected."
+msgstr ""
+
+#: templates/base.html:38 templates/base.html:173
+msgid "Home"
+msgstr ""
+
+#: templates/base.html:77 templates/base.html:134 templates/base.html:198
+msgid "AI Coach"
+msgstr ""
+
+#: templates/base.html:80 templates/base.html:139 templates/base.html:199
+msgid "Dashboard"
+msgstr ""
+
+#: templates/base.html:83 templates/base.html:144 templates/base.html:200
+msgid "Admin Panel"
+msgstr ""
+
+#: templates/base.html:96 templates/base.html:169
+msgid "Search tracks & courses..."
+msgstr ""
+
+#: templates/base.html:150 templates/base.html:203
+msgid "Logout"
+msgstr ""
+
+#: templates/base.html:156 templates/base.html:206
+msgid "Login"
+msgstr ""
+
+#: templates/base.html:157 templates/base.html:207
+msgid "Sign Up"
+msgstr ""
+
+#: templates/platform_home.html:8
+msgid "AI-Powered Learning Platform"
+msgstr ""
+
+#: templates/platform_home.html:11
+msgid ""
+"Where your mind explores <span class=\"text-brand-600 dark:text-"
+"brand-400\">the new aura.</span>"
+msgstr ""
+
+#: templates/platform_home.html:14
+msgid ""
+"Courses built by real instructors, enhanced with AI. Track your progress, "
+"earn certificates, and grow your career."
+msgstr ""
+
+#: templates/platform_home.html:18
+msgid "Start Learning"
+msgstr ""
+
+#: templates/platform_home.html:21
+msgid "Become an Instructor"
+msgstr ""
+
+#: templates/platform_home.html:45
+msgid "AI-Enhanced Lectures"
+msgstr ""
+
+#: templates/platform_home.html:46
+msgid "Instructors write scripts, AI polishes them into engaging lectures."
+msgstr ""
+
+#: templates/platform_home.html:52
+msgid "Verified Certificates"
+msgstr ""
+
+#: templates/platform_home.html:53
+msgid "Complete courses and earn certificates to showcase your skills."
+msgstr ""
+
+#: templates/platform_home.html:59
+msgid "Instructor Earnings"
+msgstr ""
+
+#: templates/platform_home.html:60
+msgid "Track your sales and withdraw earnings straight from your dashboard."
+msgstr ""
+
+#: templates/platform_home.html:65
+msgid "Simple, transparent pricing"
+msgstr ""
+
+#: templates/platform_home.html:66
+msgid "Buy a single course, or unlock everything with a subscription."
+msgstr ""
+
+#: templates/platform_home.html:69
+msgid "Single Course"
+msgstr ""
+
+#: templates/platform_home.html:70
+msgid "Pay per course"
+msgstr ""
+
+#: templates/platform_home.html:71
+msgid "Lifetime access to just the course you need."
+msgstr ""
+
+#: templates/platform_home.html:77
+msgid "Best Value"
+msgstr ""
+
+#: templates/platform_home.html:81 templates/platform_home.html:83
+msgid "mo"
+msgstr ""
+
+#: templates/platform_home.html:81 templates/platform_home.html:83
+msgid "yr"
+msgstr ""
+
+#: templates/platform_home.html:84
+msgid "Unlimited access to every track and course."
+msgstr ""

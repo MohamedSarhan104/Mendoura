@@ -1,0 +1,134 @@
+{% extends 'base.html' %}
+{% load i18n %}
+{% block title %}Wallet - Mendoura{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-6 py-12">
+
+  <a href="{% url 'instructor_dashboard' %}" class="text-sm text-brand-600 hover:underline">
+    <i class="fa-solid fa-arrow-left"></i> {% trans "Back to Dashboard" %}
+  </a>
+
+  <h1 class="text-3xl font-extrabold mt-4 mb-8">{% trans "Wallet" %}</h1>
+
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-12">
+    <div class="bg-white dark:bg-gray-900 rounded-2xl p-6 border border-gray-200 dark:border-gray-800">
+      <p class="text-sm text-gray-500 dark:text-gray-400">{% trans "Total Earnings" %}</p>
+      <p class="text-2xl font-bold mt-2">${{ wallet.total_earnings }}</p>
+    </div>
+    <div class="bg-white dark:bg-gray-900 rounded-2xl p-6 border border-gray-200 dark:border-gray-800">
+      <p class="text-sm text-gray-500 dark:text-gray-400">{% trans "Available" %}</p>
+      <p class="text-2xl font-bold mt-2 text-green-600">${{ wallet.available_balance }}</p>
+    </div>
+    <div class="bg-white dark:bg-gray-900 rounded-2xl p-6 border border-gray-200 dark:border-gray-800">
+      <p class="text-sm text-gray-500 dark:text-gray-400">{% trans "Pending" %}</p>
+      <p class="text-2xl font-bold mt-2">${{ wallet.pending_balance }}</p>
+    </div>
+    <div class="bg-white dark:bg-gray-900 rounded-2xl p-6 border border-gray-200 dark:border-gray-800">
+      <p class="text-sm text-gray-500 dark:text-gray-400">{% trans "Withdrawn" %}</p>
+      <p class="text-2xl font-bold mt-2">${{ wallet.total_withdrawn }}</p>
+    </div>
+  </div>
+
+  <h2 class="text-xl font-bold mb-4">{% trans "Request Payout" %}</h2>
+  <p class="text-xs text-gray-400 mb-3">{% trans "You can request a payout once a week." %}
+    {% if next_payout_available_at %}{% blocktrans with next_date=next_payout_available_at|date:"M d, Y" %}Next available: {{ next_date }}.{% endblocktrans %}{% endif %}
+  </p>
+  <form method="post" action="{% url 'request_payout' %}" class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-6 mb-12 grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+    {% csrf_token %}
+    <div>
+      <label class="block text-sm font-semibold mb-2">{% trans "Amount ($)" %}</label>
+      {{ form.amount }}
+    </div>
+    <div>
+      <label class="block text-sm font-semibold mb-2">{% trans "Method" %}</label>
+      {{ form.method }}
+    </div>
+    <button type="submit" class="px-5 py-3 rounded-lg bg-brand-600 text-white font-semibold hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            {% if next_payout_available_at %}disabled{% endif %}>
+      {% trans "Request Payout" %}
+    </button>
+  </form>
+
+  <h2 class="text-xl font-bold mb-4">{% trans "Payout Requests" %}</h2>
+  <div class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 overflow-x-auto mb-12">
+    <table class="w-full text-sm">
+      <thead class="bg-gray-50 dark:bg-gray-800 text-left">
+        <tr>
+          <th class="p-4">{% trans "Amount" %}</th>
+          <th class="p-4">{% trans "Method" %}</th>
+          <th class="p-4">{% trans "Status" %}</th>
+          <th class="p-4">{% trans "Requested" %}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for payout in payouts %}
+          <tr class="border-t border-gray-100 dark:border-gray-800">
+            <td class="p-4 font-semibold">${{ payout.amount }}</td>
+            <td class="p-4 text-gray-500">{{ payout.method|default:"—" }}</td>
+            <td class="p-4">{{ payout.get_status_display }}</td>
+            <td class="p-4 text-gray-400">{{ payout.requested_at|date:"M d, Y" }}</td>
+          </tr>
+        {% empty %}
+          <tr><td class="p-4 text-gray-400" colspan="4">{% trans "No payout requests yet." %}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <h2 class="text-xl font-bold mb-4">{% trans "Subscription Revenue Breakdown" %}</h2>
+  <div class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 overflow-x-auto mb-12">
+    <table class="w-full text-sm">
+      <thead class="bg-gray-50 dark:bg-gray-800 text-left">
+        <tr>
+          <th class="p-4">{% trans "Course" %}</th>
+          <th class="p-4">{% trans "Minutes Watched" %}</th>
+          <th class="p-4">{% trans "Share of Period" %}</th>
+          <th class="p-4">{% trans "You Earned" %}</th>
+          <th class="p-4">{% trans "Date" %}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for dist in revenue_distributions %}
+          <tr class="border-t border-gray-100 dark:border-gray-800">
+            <td class="p-4 font-semibold">{{ dist.course.title }}</td>
+            <td class="p-4">{% blocktrans with minutes=dist.minutes_watched %}{{ minutes }} min{% endblocktrans %}</td>
+            <td class="p-4 text-gray-500">{{ dist.share_of_period_pct }}%</td>
+            <td class="p-4 font-semibold text-green-600">${{ dist.instructor_amount }} <span class="text-xs text-gray-400">{% blocktrans with pct=dist.instructor_share_pct|floatformat:0 %}({{ pct }}% subscription pool){% endblocktrans %}</span></td>
+            <td class="p-4 text-gray-400">{{ dist.created_at|date:"M d, Y" }}</td>
+          </tr>
+        {% empty %}
+          <tr><td class="p-4 text-gray-400" colspan="5">{% trans "No subscription revenue yet." %}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <h2 class="text-xl font-bold mb-4">{% trans "Transaction Ledger" %}</h2>
+  <div class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead class="bg-gray-50 dark:bg-gray-800 text-left">
+        <tr>
+          <th class="p-4">{% trans "Type" %}</th>
+          <th class="p-4">{% trans "Amount" %}</th>
+          <th class="p-4">{% trans "Balance After" %}</th>
+          <th class="p-4">{% trans "Date" %}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for txn in transactions %}
+          <tr class="border-t border-gray-100 dark:border-gray-800">
+            <td class="p-4">{{ txn.get_type_display }}</td>
+            <td class="p-4 font-semibold">${{ txn.amount }}</td>
+            <td class="p-4 text-gray-500">${{ txn.balance_after }}</td>
+            <td class="p-4 text-gray-400">{{ txn.created_at|date:"M d, Y" }}</td>
+          </tr>
+        {% empty %}
+          <tr><td class="p-4 text-gray-400" colspan="4">{% trans "No transactions yet." %}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+</div>
+{% endblock %}

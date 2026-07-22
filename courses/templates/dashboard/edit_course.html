@@ -1,0 +1,112 @@
+{% extends 'base.html' %}
+{% load i18n %}
+{% block title %}Edit {{ course.title }} - Mendoura{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto px-6 py-12">
+
+  <div class="mb-8">
+    <a href="{% url 'instructor_dashboard' %}" class="text-sm text-brand-600 hover:underline">
+      <i class="fa-solid fa-arrow-left"></i> {% trans "Back to Dashboard" %}
+    </a>
+    <h1 class="text-3xl font-extrabold mt-4">{% trans "Edit Course" %}</h1>
+    {% if course.status == 'published' %}
+      <p class="text-sm text-yellow-600 dark:text-yellow-500 mt-1">
+        <i class="fa-solid fa-triangle-exclamation"></i> {% trans "This course is live -- saving changes resubmits it for admin review." %}
+      </p>
+    {% else %}
+      <p class="text-gray-500 dark:text-gray-400 mt-1">{% trans "Update your course details." %}</p>
+    {% endif %}
+  </div>
+
+  <form method="post" enctype="multipart/form-data" class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-8 space-y-6">
+    {% csrf_token %}
+
+    <div>
+      <label class="block text-sm font-semibold mb-2">{% trans "Course Title" %}</label>
+      {{ form.title }}
+    </div>
+
+    <div>
+      <label class="block text-sm font-semibold mb-2">{% trans "Description" %}</label>
+      {{ form.description }}
+    </div>
+
+    <div class="grid grid-cols-2 gap-4">
+      <div>
+        <label class="block text-sm font-semibold mb-2">{% trans "Track" %}</label>
+        {{ form.track }}
+      </div>
+      <div>
+        <label class="block text-sm font-semibold mb-2">{% trans "Language" %}</label>
+        {{ form.language }}
+      </div>
+    </div>
+
+    <div class="grid grid-cols-2 gap-4">
+      <div>
+        <label class="block text-sm font-semibold mb-2">{% trans "Level" %}</label>
+        {{ form.level }}
+      </div>
+      <div>
+        <label class="block text-sm font-semibold mb-2">{% trans "Price ($)" %}</label>
+        {{ form.price }}
+      </div>
+    </div>
+
+    <div class="flex items-center gap-2">
+      {{ form.is_free }}
+      <label class="text-sm font-semibold">{% trans "This course is free" %}</label>
+    </div>
+
+    <div>
+      <label class="block text-sm font-semibold mb-2">{% trans "Thumbnail" %}</label>
+      {{ form.thumbnail }}
+    </div>
+
+    <div class="border-t border-gray-200 dark:border-gray-800 pt-6">
+      <label class="block text-sm font-semibold mb-3">{% trans "Production Type" %}</label>
+      {% if course.has_successful_sale %}
+        <p class="text-xs text-gray-400 mb-3">{% trans "Locked -- this course already has a sale, so its revenue split can't change." %}</p>
+        <div class="p-4 rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50">
+          <span class="block font-semibold">{{ course.get_production_type_display }}</span>
+          <span class="block text-brand-600 font-bold">{% blocktrans with pct=course.get_instructor_share_percentage %}You keep {{ pct }}%{% endblocktrans %}</span>
+        </div>
+      {% else %}
+        <p class="text-xs text-gray-400 mb-3">{% trans "This determines your revenue share and cannot be changed once the course has its first sale." %}</p>
+        <div class="space-y-3">
+          <label class="flex items-start gap-3 p-4 rounded-xl border border-gray-200 dark:border-gray-800 cursor-pointer">
+            <input type="radio" name="production_type" value="full" {% if form.production_type.value == 'full' %}checked{% endif %} class="mt-1">
+            <span>
+              <span class="block font-semibold">{% trans "Full production (I edit and produce it myself)" %}</span>
+              <span class="block text-brand-600 font-bold">{% trans "You keep 70%" %}</span>
+            </span>
+          </label>
+          <label class="flex items-start gap-3 p-4 rounded-xl border border-gray-200 dark:border-gray-800 cursor-pointer">
+            <input type="radio" name="production_type" value="script_only" {% if form.production_type.value == 'script_only' %}checked{% endif %} class="mt-1">
+            <span>
+              <span class="block font-semibold">{% trans "Script only (Mendoura handles production/montage)" %}</span>
+              <span class="block text-brand-600 font-bold">{% trans "You keep 50%" %}</span>
+            </span>
+          </label>
+        </div>
+        {% if form.production_type.errors %}
+          <p class="text-xs text-red-500 mt-2">{{ form.production_type.errors|join:", " }}</p>
+        {% endif %}
+      {% endif %}
+    </div>
+
+    <div class="border-t border-gray-200 dark:border-gray-800 pt-6">
+      <label class="block text-sm font-semibold mb-2">
+        <i class="fa-solid fa-wand-magic-sparkles text-brand-600"></i> {% trans "AI Video Script" %}
+      </label>
+      {{ form.ai_script }}
+    </div>
+
+    <button type="submit" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-semibold py-3 rounded-xl transition">
+      {% trans "Save Changes" %}
+    </button>
+  </form>
+
+</div>
+{% endblock %}
