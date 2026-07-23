@@ -5,6 +5,8 @@ from .forms import ApprovalAwareAuthenticationForm
 
 urlpatterns = [
     path('', views.platform_home, name='platform_home'),
+    path('terms/', views.terms, name='terms'),
+    path('privacy/', views.privacy, name='privacy'),
     path('signup/student/', views.student_signup, name='student_signup'),
     path('signup/instructor/', views.instructor_signup, name='instructor_signup'),
     path('login/', auth_views.LoginView.as_view(

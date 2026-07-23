@@ -52,6 +52,14 @@ def platform_home(request):
     plans = Plan.objects.filter(is_active=True)
     return render(request, 'platform_home.html', {'tracks': tracks, 'plans': plans})
 
+
+def terms(request):
+    return render(request, 'legal/terms.html')
+
+
+def privacy(request):
+    return render(request, 'legal/privacy.html')
+
 # Profile settings -- currently just the avatar, open to any authenticated
 # user regardless of role.
 @login_required
@@ -1288,9 +1296,15 @@ def admin_users(request):
 def approve_user(request, user_id):
     user = get_object_or_404(User, id=user_id, is_approved=False)
     if request.method == 'POST':
-        user.is_approved = True
-        user.save()
-        messages.success(request, _('%(username)s has been approved.') % {'username': user.username})
+        if user.is_international_instructor and not user.payoneer_account:
+            messages.error(
+                request,
+                _('%(username)s can\'t be approved yet -- a Payoneer account is required for '
+                  'instructors based outside Egypt.') % {'username': user.username})
+        else:
+            user.is_approved = True
+            user.save()
+            messages.success(request, _('%(username)s has been approved.') % {'username': user.username})
     return redirect('admin_users')
 
 

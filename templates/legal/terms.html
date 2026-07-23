@@ -1,0 +1,125 @@
+{% extends 'base.html' %}
+{% load i18n %}
+{% block title %}Terms & Conditions — Mendoura{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-6 py-16">
+  <p class="text-sm text-brand-600 dark:text-brand-400 font-semibold mb-2">{% trans "Legal" %}</p>
+  <h1 class="text-3xl md:text-4xl font-extrabold mb-8">{% trans "Terms & Conditions" %}</h1>
+
+  <article class="prose dark:prose-invert max-w-none
+    prose-headings:font-extrabold prose-a:text-brand-600 dark:prose-a:text-brand-400
+    prose-table:text-sm prose-th:bg-gray-50 dark:prose-th:bg-gray-800">
+
+    <blockquote>
+      <p><strong>Legal notice:</strong> This is a working draft, structured with reference to common practices on other educational platforms. It is not legal advice. Before publishing live, this must be reviewed by a lawyer qualified in Egyptian e-commerce law, Egyptian Data Protection Law (Law No. 151 of 2020), and cross-border tax/payment matters, since the platform serves instructors and students of all nationalities.</p>
+    </blockquote>
+
+    <h2 id="introduction">1. Introduction and Scope</h2>
+    <p><strong>Mendoura</strong> ("the Platform," "we," "us") is an online learning platform that allows registered users to access recorded and live educational content (Students), and allows content creators (Instructors) to publish and sell courses through the Platform. The Platform is open to Students and Instructors of any nationality or country of residence, unless otherwise stated.</p>
+    <p>By using the Platform, whether as a Student or an Instructor, you agree to these Terms &amp; Conditions in full. If you do not agree, you must stop using the Platform immediately.</p>
+
+    <h2 id="accounts">2. Accounts</h2>
+    <ul>
+      <li>Users must be 18 years or older to independently create an account. Minors (under 18, but above the age of consent for online services in their country) may only use the Platform under a parent or legal guardian's supervision and consent.</li>
+      <li>Users are solely responsible for the accuracy of the information they provide and for keeping their login credentials confidential.</li>
+      <li>Accounts are personal and may not be shared or transferred to any other party. Sharing an account may result in permanent account closure without refund.</li>
+      <li>The Platform reserves the right to suspend or terminate any account that violates these Terms without prior notice.</li>
+    </ul>
+
+    <h2 id="student-accounts">3. Student Accounts</h2>
+    <ul>
+      <li>A Student receives a limited, non-exclusive, non-transferable license to access content they have paid for (via a single-course purchase or a subscription), for personal, educational use only.</li>
+      <li>Copying, redistributing, reselling, screen-recording, or sharing any content accessed through the Platform with any third party is prohibited.</li>
+      <li><strong>Single-course purchase (Pay per course):</strong> grants lifetime access to that specific course, for as long as the content remains available on the Platform for legal or policy reasons.</li>
+      <li><strong>Subscription access:</strong> grants access to all courses included in the subscription plan for the duration of the active subscription only. Access ends when the subscription expires or is cancelled — this is not a lifetime access license.</li>
+    </ul>
+
+    <h2 id="instructor-accounts">4. Instructor Accounts</h2>
+    <ul>
+      <li>Individuals of any nationality may register as an Instructor, subject to the identity verification criteria set by the Platform.</li>
+      <li>Instructors retain full intellectual property ownership of the content they create, while granting the Platform a non-exclusive license to display, distribute, and promote that content through the Platform and its marketing channels.</li>
+      <li>Instructors warrant that their content is original and does not infringe any third party's intellectual property rights, and bear full legal responsibility for any such infringement.</li>
+      <li>The Platform reserves the right to review or remove any content that violates its policies or applicable law.</li>
+    </ul>
+
+    <h2 id="revenue-share">5. Instructor Revenue Share</h2>
+    <p>Instructor earnings from course sales are calculated as follows:</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Scenario</th>
+          <th>Instructor Share</th>
+          <th>Mendoura Share</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>1. Student subscribes (Monthly or Yearly)</strong> — revenue pooled from subscriptions is distributed across the courses consumed</td>
+          <td><strong>60%</strong></td>
+          <td><strong>40%</strong></td>
+        </tr>
+        <tr>
+          <td><strong>2. Student purchases a single course, and the Instructor edited/produced the video themselves</strong></td>
+          <td><strong>70%</strong></td>
+          <td><strong>30%</strong></td>
+        </tr>
+        <tr>
+          <td><strong>3. Student purchases a single course, and Mendoura produced/edited the video on the Instructor's behalf</strong></td>
+          <td><strong>50%</strong></td>
+          <td><strong>50%</strong></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p><strong>Notes on revenue distribution:</strong></p>
+    <ul>
+      <li>For subscriptions, each Instructor's share of pooled subscription revenue is calculated based on a fair usage/consumption methodology (e.g., minutes watched or lessons completed by subscribing students), detailed further in a separate Instructor Agreement.</li>
+      <li>Instructor payouts are processed on a defined payment cycle (monthly), after deduction of any payment gateway processing fees applicable to the transaction.</li>
+      <li>The Platform reserves the right to modify these revenue-share percentages in the future, provided Instructors are given reasonable advance notice, and no change applies retroactively to already-completed, paid transactions.</li>
+      <li>In case of a dispute over who produced/edited a given course, the documented record between the Instructor and the Platform's team at the time of course submission shall govern.</li>
+    </ul>
+
+    <h2 id="taxes">6. Taxes (Instructor Responsibility)</h2>
+    <ul>
+      <li><strong>Mendoura is not responsible for any Instructor's personal or business tax obligations.</strong> Each Instructor, regardless of nationality or country of residence, is solely and independently responsible for determining, declaring, and paying any income tax, VAT, withholding tax, or other applicable taxes arising from their earnings on the Platform, in accordance with the laws of their own country of tax residence.</li>
+      <li>Mendoura's responsibility is limited to its own corporate tax obligations as a platform operating under Egyptian law, and does not extend to acting as a tax withholding agent or tax advisor for any Instructor, unless required to do so by binding Egyptian law.</li>
+      <li>Instructors are encouraged to consult their own tax advisor regarding their specific obligations.</li>
+    </ul>
+
+    <h2 id="payments">7. Payments and Refunds</h2>
+    <ul>
+      <li>Displayed prices are final and include any applicable taxes under Egyptian law unless stated otherwise.</li>
+      <li><strong>Platform subscriptions (Monthly/Yearly) are non-refundable</strong> once payment is completed.</li>
+      <li><strong>Individually purchased courses</strong> are subject to a 14-day refund policy from the date of purchase, provided course-content consumption does not exceed a defined threshold (detailed in a separate Refund Policy).</li>
+      <li>Subscriptions renew automatically according to the selected plan (Monthly/Yearly) until the user cancels auto-renewal before the next renewal date.</li>
+      <li><strong>Payment processing:</strong> For users and Instructors inside Egypt, payments are processed through <strong>Paymob</strong>. For international transactions, payments are processed through <strong>Lemon Squeezy</strong> as the payment gateway. The Platform does not store full card details; all payment processing is handled by these licensed third-party providers, subject to their own security and processing policies.</li>
+      <li><strong>International Instructor payouts:</strong> International Instructors (outside Egypt) must maintain a valid, verified <strong>Payoneer</strong> account in order to register as an Instructor and receive payouts. The Platform pays out an Instructor's share of earnings to their registered Payoneer account on the defined payment cycle. The Platform is not responsible for delays or issues caused by the Instructor's own Payoneer account (e.g., verification holds, incorrect account details).</li>
+    </ul>
+
+    <h2 id="conduct">8. Conduct Rules</h2>
+    <p>Users (Students and Instructors) may not:</p>
+    <ul>
+      <li>Post content that violates Egyptian or international law, incites hatred, or discriminates based on religion, ethnicity, gender, or disability.</li>
+      <li>Impersonate others or provide misleading information.</li>
+      <li>Attempt to hack, manipulate, or scrape the Platform's systems using automated tools or bots without authorization.</li>
+      <li>Use the Platform for any unauthorized commercial purpose outside the agreed educational scope.</li>
+    </ul>
+
+    <h2 id="liability">9. Limitation of Liability</h2>
+    <p>The Platform's services are provided "as is" and "as available," without express or implied warranties regarding accuracy, continuity, or freedom from technical faults. The Platform is not liable for indirect or consequential damages arising from use of the Service, and its maximum liability in any case is limited to the amount the user paid during the 12 months preceding the claim.</p>
+
+    <h2 id="governing-law">10. Governing Law</h2>
+    <p>These Terms are governed by and construed in accordance with the laws of the Arab Republic of Egypt, and the courts of Egypt shall have jurisdiction over any dispute arising from them, without prejudice to the rights of users outside Egypt under any mandatory consumer-protection law of their own jurisdiction that may apply.</p>
+
+    <h2 id="changes">11. Changes to These Terms</h2>
+    <p>The Platform reserves the right to modify these Terms at any time, notifying users of material changes via registered email or an in-platform notice. Continued use of the Platform after such changes constitutes acceptance of them.</p>
+
+    <hr>
+
+    <p><strong>{% trans "Company location:" %}</strong> {% trans "Cairo, Egypt" %}<br>
+    <strong>{% trans "Contact:" %}</strong> <a href="mailto:support@mendoura.com">support@mendoura.com</a></p>
+    <p><em>{% trans "Last updated: July 2026" %}</em></p>
+  </article>
+</div>
+{% endblock %}

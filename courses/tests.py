@@ -697,7 +697,16 @@ class SignupApprovalFlowTests(TestCase):
         data = {
             'username': 'newbie', 'email': 'newbie@example.com', 'phone_number': '+201001112222',
             'password1': 'a-strong-password-1', 'password2': 'a-strong-password-1',
+            'agree_to_terms': 'on',
         }
+        data.update(overrides)
+        return data
+
+    def _instructor_signup_data(self, **overrides):
+        data = self._signup_data(
+            username='newbie_inst', country='Egypt',
+            agree_to_revenue_share='on', agree_to_tax_clause='on',
+        )
         data.update(overrides)
         return data
 
@@ -708,7 +717,7 @@ class SignupApprovalFlowTests(TestCase):
         self.assertFalse(user.is_approved)
 
     def test_instructor_signup_creates_unapproved_pending_account(self):
-        self.client.post(reverse('instructor_signup'), self._signup_data(username='newbie_inst'))
+        self.client.post(reverse('instructor_signup'), self._instructor_signup_data())
         user = User.objects.get(username='newbie_inst')
         self.assertTrue(user.is_instructor)
         self.assertFalse(user.is_approved)
@@ -733,6 +742,60 @@ class SignupApprovalFlowTests(TestCase):
         self.assertTrue(user.is_approved)
         response = self.client.post(reverse('login'), {'username': 'approved_stud', 'password': 'pw'}, follow=True)
         self.assertTrue(response.wsgi_request.user.is_authenticated)
+
+    def test_student_signup_requires_agreeing_to_terms(self):
+        data = self._signup_data()
+        del data['agree_to_terms']
+        self.client.post(reverse('student_signup'), data)
+        self.assertFalse(User.objects.filter(username='newbie').exists())
+
+    def test_student_signup_records_terms_accepted_timestamp(self):
+        self.client.post(reverse('student_signup'), self._signup_data())
+        user = User.objects.get(username='newbie')
+        self.assertIsNotNone(user.terms_accepted_at)
+
+    def test_instructor_signup_requires_revenue_share_and_tax_consent(self):
+        data = self._instructor_signup_data()
+        del data['agree_to_revenue_share']
+        self.client.post(reverse('instructor_signup'), data)
+        self.assertFalse(User.objects.filter(username='newbie_inst').exists())
+
+    def test_instructor_signup_records_consent_timestamps(self):
+        self.client.post(reverse('instructor_signup'), self._instructor_signup_data())
+        user = User.objects.get(username='newbie_inst')
+        self.assertIsNotNone(user.terms_accepted_at)
+        self.assertIsNotNone(user.revenue_share_accepted_at)
+        self.assertIsNotNone(user.tax_clause_accepted_at)
+
+    def test_international_instructor_requires_payoneer_account(self):
+        data = self._instructor_signup_data(country='France')
+        self.client.post(reverse('instructor_signup'), data)
+        self.assertFalse(User.objects.filter(username='newbie_inst').exists())
+
+    def test_international_instructor_with_payoneer_account_succeeds(self):
+        data = self._instructor_signup_data(country='France', payoneer_account='inst@payoneer.com')
+        self.client.post(reverse('instructor_signup'), data)
+        user = User.objects.get(username='newbie_inst')
+        self.assertTrue(user.is_international_instructor)
+        self.assertEqual(user.payoneer_account, 'inst@payoneer.com')
+
+    def test_egypt_based_instructor_does_not_require_payoneer_account(self):
+        self.client.post(reverse('instructor_signup'), self._instructor_signup_data(country='Egypt'))
+        user = User.objects.get(username='newbie_inst')
+        self.assertFalse(user.is_international_instructor)
+
+    def test_admin_cannot_approve_international_instructor_without_payoneer(self):
+        admin = User.objects.create_superuser(username='legal_admin', password='pw')
+        self.client.post(reverse('instructor_signup'),
+                          self._instructor_signup_data(country='Germany', payoneer_account='temp@payoneer.com'))
+        user = User.objects.get(username='newbie_inst')
+        user.payoneer_account = ''
+        user.save()
+
+        self.client.force_login(admin)
+        self.client.post(reverse('approve_user', args=[user.id]))
+        user.refresh_from_db()
+        self.assertFalse(user.is_approved)
 
 
 class AdminUserManagementTests(TestCase):

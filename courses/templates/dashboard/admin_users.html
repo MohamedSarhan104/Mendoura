@@ -24,6 +24,7 @@
           <th class="p-4">{% trans "Username" %}</th>
           <th class="p-4">{% trans "Email" %}</th>
           <th class="p-4">{% trans "Role" %}</th>
+          <th class="p-4">{% trans "Country / Payoneer" %}</th>
           <th class="p-4">{% trans "Joined" %}</th>
           <th class="p-4">{% trans "Actions" %}</th>
         </tr>
@@ -38,6 +39,18 @@
                 <span class="bg-purple-100 text-purple-700 px-2 py-1 rounded-full text-xs">{% trans "Instructor" %}</span>
               {% elif u.is_student %}
                 <span class="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs">{% trans "Student" %}</span>
+              {% endif %}
+            </td>
+            <td class="p-4 text-gray-500">
+              {% if u.is_instructor %}
+                {{ u.country|default:"—" }}
+                {% if u.is_international_instructor %}
+                  <br><span class="text-xs {% if u.payoneer_account %}text-green-600{% else %}text-red-600 font-semibold{% endif %}">
+                    {% if u.payoneer_account %}Payoneer: {{ u.payoneer_account }}{% else %}Missing Payoneer account{% endif %}
+                  </span>
+                {% endif %}
+              {% else %}
+                —
               {% endif %}
             </td>
             <td class="p-4 text-gray-400">{{ u.date_joined|date:"M d, Y" }}</td>
@@ -60,7 +73,7 @@
             </td>
           </tr>
         {% empty %}
-          <tr><td class="p-4 text-gray-400" colspan="5">{% trans "No pending registrations." %}</td></tr>
+          <tr><td class="p-4 text-gray-400" colspan="6">{% trans "No pending registrations." %}</td></tr>
         {% endfor %}
       </tbody>
     </table>

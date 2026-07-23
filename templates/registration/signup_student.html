@@ -66,6 +66,15 @@
       {% if form.password2.errors %}<p class="text-red-500 text-xs mt-1">{{ form.password2.errors.0 }}</p>{% endif %}
     </div>
 
+    <div class="flex items-start gap-2">
+      {{ form.agree_to_terms }}
+      <label for="{{ form.agree_to_terms.id_for_label }}" class="text-sm text-gray-600 dark:text-gray-400">
+        I agree to the <a href="{% url 'terms' %}" target="_blank" class="text-brand-600 dark:text-brand-400 font-semibold hover:underline">Terms & Conditions</a>
+        and <a href="{% url 'privacy' %}" target="_blank" class="text-brand-600 dark:text-brand-400 font-semibold hover:underline">Privacy Policy</a>.
+      </label>
+    </div>
+    {% if form.agree_to_terms.errors %}<p class="text-red-500 text-xs -mt-2">{{ form.agree_to_terms.errors.0 }}</p>{% endif %}
+
     <button type="submit" class="w-full py-3 rounded-lg bg-brand-600 text-white font-semibold hover:bg-brand-700 transition flex items-center justify-center gap-2">
       Create Account
     </button>

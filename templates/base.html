@@ -258,7 +258,12 @@
       <i class="fa-solid fa-envelope"></i>
     </a>
   </div>
+  <div class="flex items-center justify-center gap-6 mb-4">
+    <a href="{% url 'terms' %}" class="hover:text-brand-600 dark:hover:text-brand-400">{% trans "Terms & Conditions" %}</a>
+    <a href="{% url 'privacy' %}" class="hover:text-brand-600 dark:hover:text-brand-400">{% trans "Privacy Policy" %}</a>
+  </div>
   <p><a href="mailto:support@mendoura.com" class="hover:text-brand-600 dark:hover:text-brand-400">support@mendoura.com</a></p>
+  <p class="mt-1">{% trans "Cairo, Egypt" %}</p>
   <p class="mt-2">&copy; 2026 Mendoura. All rights reserved.</p>
 </footer>
 

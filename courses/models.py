@@ -15,6 +15,11 @@ from . import ai_translate, certificates
 from .money import SUBSCRIPTION_INSTRUCTOR_SHARE, calculate_split, get_instructor_share
 
 
+#: Values that count as "based in Egypt" for the instructor Payoneer gate --
+#: matched case-insensitively against the free-text country field.
+EGYPT_ALIASES = {'egypt', 'eg', 'arab republic of egypt', 'مصر', 'جمهورية مصر العربية'}
+
+
 class User(AbstractUser):
     is_student = models.BooleanField(default=False)
     is_instructor = models.BooleanField(default=False)
@@ -28,12 +33,33 @@ class User(AbstractUser):
     # putting new self-service signups into a pending-admin-review state.
     is_approved = models.BooleanField(default=True)
 
+    country = models.CharField(max_length=100, blank=True, default='')
+    # Required at signup for instructors based outside Egypt (see
+    # InstructorSignUpForm.clean) -- their payout destination.
+    payoneer_account = models.CharField(
+        max_length=255, blank=True, default='',
+        help_text=_('Payoneer email or account ID. Required for instructors based outside Egypt.'))
+
+    # Timestamped consent, set once at signup and never overwritten --
+    # proof of what a user agreed to and when, not just that they currently
+    # have an "agree" checkbox ticked somewhere.
+    terms_accepted_at = models.DateTimeField(null=True, blank=True)
+    # Instructor-only: separate, explicit acknowledgment of the Terms &
+    # Conditions' revenue-share (Section 5) and tax-responsibility
+    # (Section 6) clauses, distinct from the general terms acceptance above.
+    revenue_share_accepted_at = models.DateTimeField(null=True, blank=True)
+    tax_clause_accepted_at = models.DateTimeField(null=True, blank=True)
+
     def __str__(self):
         return self.username
 
     @property
     def initials(self):
         return (self.username[:1] or '?').upper()
+
+    @property
+    def is_international_instructor(self):
+        return self.is_instructor and self.country.strip().lower() not in EGYPT_ALIASES
 
 
 def _unique_slugify(instance, base_value, slug_field='slug'):

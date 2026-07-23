@@ -1,9 +1,10 @@
 from django import forms
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
+from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from .models import (
-    User, Course, InstructorWallet, Lecture, Module, Resource, Submission, Track,
-    Review, Payout,
+    EGYPT_ALIASES, User, Course, InstructorWallet, Lecture, Module, Resource, Submission,
+    Track, Review, Payout,
 )
 
 INPUT_CLASSES = 'w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent focus:ring-2 focus:ring-brand-500 outline-none'
@@ -36,11 +37,19 @@ class DuplicateGuardMixin:
         return phone
 
 
+AGREE_CHECKBOX_ATTRS = {'class': 'mt-1 h-4 w-4 rounded border-gray-300 dark:border-gray-700 text-brand-600 focus:ring-brand-500'}
+
+
 # 1. Student Registration Form
 class StudentSignUpForm(DuplicateGuardMixin, UserCreationForm):
     phone_number = forms.CharField(
         max_length=15, required=False,
         widget=forms.TextInput(attrs={'placeholder': _('Phone Number'), 'class': INPUT_CLASSES})
+    )
+    agree_to_terms = forms.BooleanField(
+        required=True,
+        widget=forms.CheckboxInput(attrs=AGREE_CHECKBOX_ATTRS),
+        error_messages={'required': _('You must accept the Terms & Conditions and Privacy Policy to create an account.')},
     )
 
     class Meta(UserCreationForm.Meta):
@@ -49,13 +58,15 @@ class StudentSignUpForm(DuplicateGuardMixin, UserCreationForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        for field in self.fields.values():
-            field.widget.attrs.setdefault('class', INPUT_CLASSES)
+        for name, field in self.fields.items():
+            if name != 'agree_to_terms':
+                field.widget.attrs.setdefault('class', INPUT_CLASSES)
 
     def save(self, commit=True):
         user = super().save(commit=False)
         user.is_student = True
         user.is_approved = False
+        user.terms_accepted_at = timezone.now()
         if commit:
             user.save()
         return user
@@ -67,6 +78,30 @@ class InstructorSignUpForm(DuplicateGuardMixin, UserCreationForm):
         max_length=15, required=True,
         widget=forms.TextInput(attrs={'placeholder': _('Phone Number'), 'class': INPUT_CLASSES})
     )
+    country = forms.CharField(
+        max_length=100, required=True,
+        widget=forms.TextInput(attrs={'placeholder': _('e.g. Egypt, Saudi Arabia, France...'), 'class': INPUT_CLASSES}),
+        help_text=_('Instructors based outside Egypt must also provide a Payoneer account below.'),
+    )
+    payoneer_account = forms.CharField(
+        max_length=255, required=False,
+        widget=forms.TextInput(attrs={'placeholder': _('Payoneer email or account ID'), 'class': INPUT_CLASSES}),
+    )
+    agree_to_terms = forms.BooleanField(
+        required=True,
+        widget=forms.CheckboxInput(attrs=AGREE_CHECKBOX_ATTRS),
+        error_messages={'required': _('You must accept the Terms & Conditions and Privacy Policy to create an account.')},
+    )
+    agree_to_revenue_share = forms.BooleanField(
+        required=True,
+        widget=forms.CheckboxInput(attrs=AGREE_CHECKBOX_ATTRS),
+        error_messages={'required': _('You must acknowledge the revenue-share terms to register as an instructor.')},
+    )
+    agree_to_tax_clause = forms.BooleanField(
+        required=True,
+        widget=forms.CheckboxInput(attrs=AGREE_CHECKBOX_ATTRS),
+        error_messages={'required': _('You must acknowledge the tax-responsibility clause to register as an instructor.')},
+    )
 
     class Meta(UserCreationForm.Meta):
         model = User
@@ -74,13 +109,30 @@ class InstructorSignUpForm(DuplicateGuardMixin, UserCreationForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        for field in self.fields.values():
-            field.widget.attrs.setdefault('class', INPUT_CLASSES)
+        checkbox_fields = ('agree_to_terms', 'agree_to_revenue_share', 'agree_to_tax_clause')
+        for name, field in self.fields.items():
+            if name not in checkbox_fields:
+                field.widget.attrs.setdefault('class', INPUT_CLASSES)
+
+    def clean(self):
+        cleaned_data = super().clean()
+        country = (cleaned_data.get('country') or '').strip()
+        payoneer_account = (cleaned_data.get('payoneer_account') or '').strip()
+        if country and country.lower() not in EGYPT_ALIASES and not payoneer_account:
+            self.add_error('payoneer_account', _(
+                'A Payoneer account (email or account ID) is required for instructors based outside Egypt.'))
+        return cleaned_data
 
     def save(self, commit=True):
         user = super().save(commit=False)
         user.is_instructor = True
         user.is_approved = False
+        user.country = self.cleaned_data['country']
+        user.payoneer_account = self.cleaned_data.get('payoneer_account', '')
+        now = timezone.now()
+        user.terms_accepted_at = now
+        user.revenue_share_accepted_at = now
+        user.tax_clause_accepted_at = now
         if commit:
             user.save()
             InstructorWallet.objects.get_or_create(instructor=user)
