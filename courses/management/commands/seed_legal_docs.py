@@ -102,6 +102,8 @@ The Platform reserves the right to modify these Terms at any time, notifying use
         'intro': '',
         'sections': [
             ('data-we-collect', '1. Data We Collect', """\
+The Platform collects the following categories of data:
+
 | Data Category | Description |
 |---|---|
 | **Account Data** | Name, email address, password (encrypted), phone number (optional) |

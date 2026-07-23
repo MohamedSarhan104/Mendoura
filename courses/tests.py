@@ -2465,3 +2465,25 @@ class LegalDocumentTests(TestCase):
         section_count_before = LegalSection.objects.count()
         call_command('seed_legal_docs')
         self.assertEqual(LegalSection.objects.count(), section_count_before)
+
+    def test_table_still_renders_when_translation_prefixes_the_body(self):
+        """python-markdown's table extension only recognizes a table as the
+        very first line of a block -- any leading text (e.g. a translation
+        that prepends a stray word) silently degrades it to plain text
+        instead of <table>. Regression test for the "Data We Collect"
+        section, whose body used to start directly with the table; it now
+        has a lead-in sentence, same as "Instructor Revenue Share" already
+        did, specifically so a translated prefix can't land on the same
+        line as the table header."""
+        section = self.privacy.sections.get(anchor='data-we-collect')
+
+        def fake_translate_fields(fields, target_languages):
+            return {field: {lang: f'[{lang.upper()}] {text}' for lang in target_languages}
+                    for field, text in fields.items()}
+
+        with override_settings(AI_API_KEY='test-key'), \
+                patch('courses.ai_translate.translate_fields', side_effect=fake_translate_fields):
+            section.save()
+
+        with translation_override('ar'):
+            self.assertIn('<table>', section.body_html)
