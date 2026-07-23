@@ -41,6 +41,22 @@ def build_tailwind_css():
     )
 
 
+def seed_reference_data():
+    """Sync the Track and Plan catalogs after migrate.
+
+    The configured Render build command runs `manage.py migrate` directly and
+    never runs build.sh, so seed_tracks/seed_plans were never being invoked at
+    all -- production has migrations applied but empty Track/Plan tables,
+    which is why the tracks nav menu and pricing cards render with no
+    content. Both commands are idempotent (update_or_create), so it's safe to
+    run them on every migrate.
+    """
+    from django.core.management import call_command
+
+    call_command('seed_tracks')
+    call_command('seed_plans')
+
+
 def main():
     """Run administrative tasks."""
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'lms_backend.settings')
@@ -57,6 +73,9 @@ def main():
         build_tailwind_css()
 
     execute_from_command_line(sys.argv)
+
+    if 'migrate' in sys.argv:
+        seed_reference_data()
 
 
 if __name__ == '__main__':
