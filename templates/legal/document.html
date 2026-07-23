@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% load i18n %}
+{% block title %}{{ document.translated_title }} — Mendoura{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-6 py-16">
+  <p class="text-sm text-brand-600 dark:text-brand-400 font-semibold mb-2">{% trans "Legal" %}</p>
+  <h1 class="text-3xl md:text-4xl font-extrabold mb-8">{{ document.translated_title }}</h1>
+
+  <article class="prose dark:prose-invert max-w-none
+    prose-headings:font-extrabold prose-a:text-brand-600 dark:prose-a:text-brand-400
+    prose-table:text-sm prose-th:bg-gray-50 dark:prose-th:bg-gray-800">
+
+    {% if document.translated_intro %}
+      <blockquote><p>{{ document.translated_intro }}</p></blockquote>
+    {% endif %}
+
+    {% for section in document.sections.all %}
+      <h2 id="{{ section.anchor }}">{{ section.translated_heading }}</h2>
+      {{ section.body_html|safe }}
+    {% endfor %}
+
+    <hr>
+
+    <p><strong>{% trans "Company location:" %}</strong> {% trans "Cairo, Egypt" %}<br>
+    <strong>{% trans "Contact:" %}</strong> <a href="mailto:support@mendoura.com">support@mendoura.com</a></p>
+    <p><em>{% blocktrans with date=document.last_updated|date:"F Y" %}Last updated: {{ date }}{% endblocktrans %}</em></p>
+  </article>
+</div>
+{% endblock %}

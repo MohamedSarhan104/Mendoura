@@ -16,7 +16,10 @@ SYSTEM_PROMPT = (
     "You are a professional localization engine for an online learning "
     "platform. Translate the given field values from English into each "
     "requested language. Preserve tone and meaning; keep translations "
-    "concise, natural, and appropriate for a course catalog. Respond with "
+    "concise, natural, and appropriate for a course catalog. If a field's "
+    "text contains Markdown (tables, lists, bold, headings), preserve the "
+    "exact same Markdown structure -- translate only the human-readable "
+    "text, never the table pipes, dashes, or other syntax. Respond with "
     "ONLY a single JSON object, no markdown fences and no commentary."
 )
 
@@ -52,7 +55,10 @@ def translate_fields(fields: dict[str, str], target_languages: list[str]) -> dic
     try:
         response = client.messages.create(
             model=MODEL,
-            max_tokens=2048,
+            # Large enough for a handful of short catalog fields (Track/Course)
+            # as well as a full legal-document section (heading + Markdown body,
+            # tables included) across every configured language in one response.
+            max_tokens=8192,
             system=SYSTEM_PROMPT,
             messages=[{'role': 'user', 'content': prompt}],
         )

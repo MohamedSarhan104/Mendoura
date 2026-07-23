@@ -1850,3 +1850,32 @@ msgstr "سنة"
 #: templates/platform_home.html:84
 msgid "Unlimited access to every track and course."
 msgstr "وصول غير محدود لكل المسارات والدورات."
+
+#: templates/base.html templates/legal/document.html
+msgid "Terms & Conditions"
+msgstr "الشروط والأحكام"
+
+#: templates/base.html
+msgid "Privacy Policy"
+msgstr "سياسة الخصوصية"
+
+#: templates/base.html templates/legal/document.html
+msgid "Cairo, Egypt"
+msgstr "القاهرة، مصر"
+
+#: templates/legal/document.html
+msgid "Legal"
+msgstr "قانوني"
+
+#: templates/legal/document.html
+msgid "Company location:"
+msgstr "موقع الشركة:"
+
+#: templates/legal/document.html
+msgid "Contact:"
+msgstr "التواصل:"
+
+#: templates/legal/document.html
+#, python-format
+msgid "Last updated: %(date)s"
+msgstr "آخر تحديث: %(date)s"

@@ -19,9 +19,9 @@ from django.utils.translation import override as translation_override
 
 from . import ai_coach, ai_translate, paymob
 from .models import (
-    AIConversation, AIMessage, Certificate, Course, Enrollment, InstructorWallet, Lecture, Module,
-    Payment, Payout, Plan, Resource, RevenueDistribution, Review, Subscription, SubscriptionPeriod,
-    Submission, Track, User, WalletTransaction, WatchEvent,
+    AIConversation, AIMessage, Certificate, Course, Enrollment, InstructorWallet, Lecture,
+    LegalDocument, LegalSection, Module, Payment, Payout, Plan, Resource, RevenueDistribution,
+    Review, Subscription, SubscriptionPeriod, Submission, Track, User, WalletTransaction, WatchEvent,
 )
 from .money import calculate_split
 
@@ -2399,3 +2399,69 @@ class AITranslateClientTests(TestCase):
     def test_translate_fields_returns_empty_without_calling_api_when_nothing_to_translate(self):
         self.assertEqual(ai_translate.translate_fields({}, ['ar']), {})
         self.assertEqual(ai_translate.translate_fields({'name': 'Robotics'}, []), {})
+
+
+class LegalDocumentTests(TestCase):
+    def setUp(self):
+        call_command('seed_legal_docs')
+        self.terms = LegalDocument.objects.get(slug='terms')
+        self.privacy = LegalDocument.objects.get(slug='privacy')
+
+    def test_terms_page_renders_sections_and_table(self):
+        response = self.client.get(reverse('terms'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Instructor Revenue Share')
+        self.assertContains(response, '<table>')
+        self.assertContains(response, '60%')
+        self.assertContains(response, 'id="revenue-share"')
+        self.assertContains(response, 'id="taxes"')
+
+    def test_privacy_page_renders_sections_and_table(self):
+        response = self.client.get(reverse('privacy'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Data We Collect')
+        self.assertContains(response, '<table>')
+
+    def test_privacy_page_does_not_name_infrastructure_vendors(self):
+        response = self.client.get(reverse('privacy'))
+        content = response.content.decode()
+        self.assertNotIn('Render', content)
+        self.assertNotIn('Cloudinary', content)
+
+    def test_footer_links_to_terms_and_privacy_on_every_page(self):
+        response = self.client.get(reverse('platform_home'))
+        self.assertContains(response, reverse('terms'))
+        self.assertContains(response, reverse('privacy'))
+        self.assertContains(response, 'support@mendoura.com')
+
+    @override_settings(AI_API_KEY='test-key')
+    def test_language_switch_renders_translated_content_via_ai_pipeline(self):
+        """Same mechanism Track uses: no hardcoded per-language template
+        text -- translated_heading/translated_body come from the AI
+        pipeline's stored JSON, keyed by the active language."""
+        def fake_translate_fields(fields, target_languages):
+            return {field: {lang: f'[{lang.upper()}] {text}' for lang in target_languages}
+                    for field, text in fields.items()}
+
+        section = self.terms.sections.get(anchor='revenue-share')
+        with patch('courses.ai_translate.translate_fields', side_effect=fake_translate_fields):
+            section.save()
+
+        with translation_override('ar'):
+            self.assertIn('[AR]', section.translated_heading)
+            self.assertIn('<table>', section.body_html)
+
+        # Exercise the real language-switch path (Accept-Language, same as
+        # LocaleMiddleware honors after the nav switcher sets its cookie),
+        # not just the translation_override() context manager directly.
+        response = self.client.get(reverse('terms'), HTTP_ACCEPT_LANGUAGE='ar')
+        self.assertEqual(response.wsgi_request.LANGUAGE_CODE, 'ar')
+        self.assertContains(response, '[AR]')
+
+        with translation_override('en'):
+            self.assertNotIn('[AR]', section.translated_heading)
+
+    def test_seed_legal_docs_is_idempotent(self):
+        section_count_before = LegalSection.objects.count()
+        call_command('seed_legal_docs')
+        self.assertEqual(LegalSection.objects.count(), section_count_before)

@@ -31,8 +31,8 @@ from .forms import (
 )
 from .models import (
     AIConversation, AIMessage, Certificate, Course, Enrollment, InstructorWallet, Lecture,
-    LectureProgress, Module, Payment, Payout, Plan, Resource, RevenueDistribution, Review,
-    Subscription, SubscriptionPeriod, Submission, Track, TrackRoadmapStep, User,
+    LectureProgress, LegalDocument, Module, Payment, Payout, Plan, Resource, RevenueDistribution,
+    Review, Subscription, SubscriptionPeriod, Submission, Track, TrackRoadmapStep, User,
     WalletTransaction, WatchEvent,
 )
 
@@ -53,12 +53,17 @@ def platform_home(request):
     return render(request, 'platform_home.html', {'tracks': tracks, 'plans': plans})
 
 
+def _legal_document(slug):
+    return get_object_or_404(
+        LegalDocument.objects.prefetch_related('sections'), slug=slug)
+
+
 def terms(request):
-    return render(request, 'legal/terms.html')
+    return render(request, 'legal/document.html', {'document': _legal_document('terms')})
 
 
 def privacy(request):
-    return render(request, 'legal/privacy.html')
+    return render(request, 'legal/document.html', {'document': _legal_document('privacy')})
 
 # Profile settings -- currently just the avatar, open to any authenticated
 # user regardless of role.

@@ -4,7 +4,7 @@ from .models import (
     User, Track, TrackRoadmapStep, Course, Module, Lecture, Resource, Submission,
     Payment, Enrollment, LectureProgress, InstructorWallet, WalletTransaction,
     Payout, Plan, Subscription, SubscriptionPeriod, RevenueDistribution, WatchEvent,
-    Review, Certificate,
+    Review, Certificate, LegalDocument, LegalSection,
 )
 
 
@@ -153,3 +153,15 @@ class ReviewAdmin(admin.ModelAdmin):
 @admin.register(Certificate)
 class CertificateAdmin(admin.ModelAdmin):
     list_display = ('enrollment', 'uuid', 'issued_at')
+
+
+class LegalSectionInline(admin.TabularInline):
+    model = LegalSection
+    extra = 0
+    fields = ('order', 'anchor', 'heading', 'body')
+
+
+@admin.register(LegalDocument)
+class LegalDocumentAdmin(admin.ModelAdmin):
+    list_display = ('title', 'slug', 'last_updated')
+    inlines = [LegalSectionInline]

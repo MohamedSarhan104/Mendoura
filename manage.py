@@ -42,21 +42,23 @@ def build_tailwind_css():
 
 
 def seed_reference_data():
-    """Sync the Track/Plan catalogs and the admin account after migrate.
+    """Sync the Track/Plan/legal-document catalogs and the admin account
+    after migrate.
 
     The configured Render build command runs `manage.py migrate` directly and
-    never runs build.sh, so seed_tracks/seed_plans/seed_admin were never being
-    invoked at all -- production has migrations applied but empty Track/Plan
-    tables (nav menu and pricing cards render with no content) and no way to
-    log into /admin/ on a Shell-less free plan. All three commands are
-    idempotent (update_or_create / get_or_create), so it's safe to run them
-    on every migrate. seed_admin itself no-ops unless DJANGO_SUPERUSER_*
-    environment variables are set.
+    never runs build.sh, so these seed commands were never being invoked at
+    all -- production has migrations applied but empty tables (nav menu,
+    pricing cards, and the /terms//privacy/ pages would render with no
+    content) and no way to log into /admin/ on a Shell-less free plan. All
+    four commands are idempotent (update_or_create / get_or_create), so it's
+    safe to run them on every migrate. seed_admin itself no-ops unless
+    DJANGO_SUPERUSER_* environment variables are set.
     """
     from django.core.management import call_command
 
     call_command('seed_tracks')
     call_command('seed_plans')
+    call_command('seed_legal_docs')
     call_command('seed_admin')
 
 

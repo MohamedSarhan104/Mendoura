@@ -1767,3 +1767,32 @@ msgstr ""
 #: templates/platform_home.html:84
 msgid "Unlimited access to every track and course."
 msgstr ""
+
+#: templates/base.html templates/legal/document.html
+msgid "Terms & Conditions"
+msgstr ""
+
+#: templates/base.html
+msgid "Privacy Policy"
+msgstr ""
+
+#: templates/base.html templates/legal/document.html
+msgid "Cairo, Egypt"
+msgstr ""
+
+#: templates/legal/document.html
+msgid "Legal"
+msgstr ""
+
+#: templates/legal/document.html
+msgid "Company location:"
+msgstr ""
+
+#: templates/legal/document.html
+msgid "Contact:"
+msgstr ""
+
+#: templates/legal/document.html
+#, python-format
+msgid "Last updated: %(date)s"
+msgstr ""

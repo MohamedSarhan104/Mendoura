@@ -787,3 +787,81 @@ class AIMessage(models.Model):
 
     def __str__(self):
         return f'{self.role}: {self.content[:50]}'
+
+
+class LegalDocument(AutoTranslatedFieldsMixin, models.Model):
+    """Terms & Conditions / Privacy Policy, etc. English is always the
+    source of truth (edited here or via seed_legal_docs); every other
+    LANGUAGES entry is populated by the same AI translation pipeline Track
+    uses -- never hand-translated."""
+    slug = models.SlugField(max_length=50, unique=True)
+    title = models.CharField(max_length=200)
+    # Optional lead-in shown above the sections, e.g. the Terms' draft/legal
+    # review notice. Plain text -- unlike LegalSection.body it's not expected
+    # to contain Markdown.
+    intro = models.TextField(blank=True, default='')
+    last_updated = models.DateField()
+
+    title_translations = models.JSONField(default=dict, blank=True)
+    intro_translations = models.JSONField(default=dict, blank=True)
+    TRANSLATABLE_FIELDS = ('title', 'intro')
+
+    class Meta:
+        ordering = ['slug']
+
+    def __str__(self):
+        return self.title
+
+    @property
+    def translated_title(self):
+        return self._translated('title')
+
+    @property
+    def translated_intro(self):
+        return self._translated('intro')
+
+    def save(self, *args, **kwargs):
+        self._autotranslate()
+        super().save(*args, **kwargs)
+
+
+class LegalSection(AutoTranslatedFieldsMixin, models.Model):
+    """One numbered section of a LegalDocument. body is Markdown (this
+    project already renders instructor/AI-coach Markdown the same way, via
+    python-markdown's 'tables' extension) so a section can include a real
+    table -- e.g. the Section 5 revenue-share table -- without ever storing
+    raw HTML that an AI translation call could mangle."""
+    document = models.ForeignKey(LegalDocument, on_delete=models.CASCADE, related_name='sections')
+    order = models.PositiveIntegerField(default=0)
+    # Anchor for deep links, e.g. instructor signup linking straight to
+    # "#revenue-share". Not translated -- URLs stay stable across languages.
+    anchor = models.SlugField(max_length=100, blank=True)
+    heading = models.CharField(max_length=255)
+    body = models.TextField(help_text=_('Markdown -- supports tables, bold, and lists.'))
+
+    heading_translations = models.JSONField(default=dict, blank=True)
+    body_translations = models.JSONField(default=dict, blank=True)
+    TRANSLATABLE_FIELDS = ('heading', 'body')
+
+    class Meta:
+        ordering = ['order']
+
+    def __str__(self):
+        return f'{self.document.slug} #{self.order}: {self.heading}'
+
+    @property
+    def translated_heading(self):
+        return self._translated('heading')
+
+    @property
+    def translated_body(self):
+        return self._translated('body')
+
+    @property
+    def body_html(self):
+        import markdown
+        return markdown.markdown(self.translated_body, extensions=['fenced_code', 'tables', 'nl2br'])
+
+    def save(self, *args, **kwargs):
+        self._autotranslate()
+        super().save(*args, **kwargs)
