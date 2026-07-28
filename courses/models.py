@@ -1,3 +1,4 @@
+import logging
 import uuid
 from decimal import Decimal
 
@@ -13,6 +14,8 @@ from django.utils.translation import get_language
 
 from . import ai_translate, certificates
 from .money import SUBSCRIPTION_INSTRUCTOR_SHARE, calculate_split, get_instructor_share
+
+logger = logging.getLogger(__name__)
 
 
 #: Values that count as "based in Egypt" for the instructor Payoneer gate --
@@ -126,6 +129,15 @@ class AutoTranslatedFieldsMixin:
             try:
                 results = ai_translate.translate_fields(pending, target_languages)
             except ai_translate.TranslationError:
+                # Never blocks the save -- LOCAL_TRANSLATIONS/English still
+                # apply below -- but a failure here used to vanish with no
+                # trace anywhere, including in Render's logs. Log it so a
+                # persistently-broken key/model/network doesn't look
+                # identical to "translation just hasn't run yet".
+                logger.warning(
+                    'AI translation failed for %s pk=%s fields=%s -- falling back to '
+                    'LOCAL_TRANSLATIONS/English for now.',
+                    type(self).__name__, self.pk, list(pending), exc_info=True)
                 results = {}
 
         for field, source_value in pending.items():

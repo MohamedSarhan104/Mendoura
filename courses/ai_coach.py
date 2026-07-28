@@ -8,7 +8,7 @@ import re
 import anthropic
 from django.conf import settings
 
-MODEL = 'claude-opus-4-8'
+MODEL = 'claude-opus-5'
 
 SYSTEM_PROMPT = (
     "You are Mendoura AI Coach, a friendly, encouraging, and elite academic "
