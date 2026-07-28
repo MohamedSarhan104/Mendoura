@@ -9,5 +9,6 @@ django-cloudinary-storage==0.3.0
 Pillow==12.3.0
 requests==2.34.2
 anthropic==0.117.0
+deep-translator==1.11.4
 markdown==3.10.2
 reportlab==5.0.0

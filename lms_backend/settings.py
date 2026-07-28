@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
+import sys
 from pathlib import Path
 from decouple import config
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -239,6 +240,17 @@ EMAIL_BACKEND = (
 # AI Study Buddy -- Anthropic Claude API key. Blank in local dev/tests is
 # fine; the view surfaces a friendly error instead of crashing when it's unset.
 AI_API_KEY = config('AI_API_KEY', default='')
+
+# Auto-translation of Track/Course/legal content (courses/auto_translate.py)
+# uses deep-translator's free GoogleTranslator -- no key or billing needed,
+# on by default. Unrelated to AI_API_KEY above (that's only the separate AI
+# Study Buddy feature). Defaults to off under `manage.py test` so the
+# hundreds of tests that incidentally save a Track/Course/legal record as
+# test fixture setup don't all make real network calls -- the handful of
+# tests that specifically exercise translation opt back in with
+# @override_settings(AUTO_TRANSLATE_ENABLED=True).
+AUTO_TRANSLATE_ENABLED = config(
+    'AUTO_TRANSLATE_ENABLED', default=('test' not in sys.argv), cast=bool)
 
 # Without this, Django's default logging config sends 500 errors to
 # mail_admins (which does nothing since ADMINS isn't set) and prints nothing

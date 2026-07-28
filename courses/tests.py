@@ -17,7 +17,7 @@ from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode
 from django.utils.translation import override as translation_override
 
-from . import ai_coach, ai_translate, paymob
+from . import ai_coach, auto_translate, paymob
 from .models import (
     AIConversation, AIMessage, Certificate, Course, Enrollment, InstructorWallet, Lecture,
     LegalDocument, LegalSection, Module, Payment, Payout, Plan, Resource, RevenueDistribution,
@@ -1000,20 +1000,20 @@ class TrackCrudTests(TestCase):
 
 class TrackTranslationTests(TestCase):
     """Track.save() auto-translates name/description via the AI API. The
-    network call itself (ai_translate.translate_fields) is mocked -- these
+    network call itself (auto_translate.translate_fields) is mocked -- these
     tests are about the save()-time trigger/staleness/fallback logic, not
     the Anthropic integration (that's covered by mocking, same as
     AICoachTests)."""
 
     def test_without_ai_configured_save_succeeds_and_falls_back_to_source(self):
-        with override_settings(AI_API_KEY=''):
+        with override_settings(AUTO_TRANSLATE_ENABLED=False):
             track = Track.objects.create(name='Robotics', description='Build robots.')
         self.assertEqual(track.name_translations, {})
         self.assertEqual(track.translated_name, 'Robotics')
         self.assertEqual(track.translated_description, 'Build robots.')
 
-    @override_settings(AI_API_KEY='test-key')
-    @patch('courses.models.ai_translate.translate_fields')
+    @override_settings(AUTO_TRANSLATE_ENABLED=True)
+    @patch('courses.models.auto_translate.translate_fields')
     def test_save_populates_translations_for_every_active_language(self, mock_translate):
         mock_translate.return_value = {
             'name': {'ar': 'الروبوتات', 'fr': 'Robotique', 'es': 'Robótica'},
@@ -1031,8 +1031,8 @@ class TrackTranslationTests(TestCase):
         self.assertEqual(track.name_translations['es'], 'Robótica')
         self.assertEqual(track.description_translations['ar'], 'ابنِ روبوتات.')
 
-    @override_settings(AI_API_KEY='test-key')
-    @patch('courses.models.ai_translate.translate_fields')
+    @override_settings(AUTO_TRANSLATE_ENABLED=True)
+    @patch('courses.models.auto_translate.translate_fields')
     def test_translated_name_resolves_active_language_and_falls_back_to_english(self, mock_translate):
         mock_translate.return_value = {
             'name': {'ar': 'الروبوتات', 'fr': 'Robotique', 'es': 'Robótica'},
@@ -1050,8 +1050,8 @@ class TrackTranslationTests(TestCase):
         with translation_override('de'):
             self.assertEqual(track.translated_name, 'Robotics')
 
-    @override_settings(AI_API_KEY='test-key')
-    @patch('courses.models.ai_translate.translate_fields')
+    @override_settings(AUTO_TRANSLATE_ENABLED=True)
+    @patch('courses.models.auto_translate.translate_fields')
     def test_unchanged_name_does_not_retrigger_translation_on_next_save(self, mock_translate):
         mock_translate.return_value = {'name': {'ar': 'أ', 'fr': 'f', 'es': 'e'}, 'description': {}}
         track = Track.objects.create(name='Robotics', description='')
@@ -1061,8 +1061,8 @@ class TrackTranslationTests(TestCase):
         track.save()
         self.assertEqual(mock_translate.call_count, 1)
 
-    @override_settings(AI_API_KEY='test-key')
-    @patch('courses.models.ai_translate.translate_fields')
+    @override_settings(AUTO_TRANSLATE_ENABLED=True)
+    @patch('courses.models.auto_translate.translate_fields')
     def test_changed_name_retriggers_translation(self, mock_translate):
         mock_translate.return_value = {'name': {'ar': 'أ', 'fr': 'f', 'es': 'e'}, 'description': {}}
         track = Track.objects.create(name='Robotics', description='')
@@ -1074,50 +1074,50 @@ class TrackTranslationTests(TestCase):
         self.assertEqual(mock_translate.call_count, 2)
         self.assertEqual(track.name_translations['ar'], 'ب')
 
-    @override_settings(AI_API_KEY='test-key')
-    @patch('courses.models.ai_translate.translate_fields')
+    @override_settings(AUTO_TRANSLATE_ENABLED=True)
+    @patch('courses.models.auto_translate.translate_fields')
     def test_translation_error_does_not_break_save(self, mock_translate):
-        mock_translate.side_effect = ai_translate.TranslationError('boom')
+        mock_translate.side_effect = auto_translate.TranslationError('boom')
         track = Track.objects.create(name='Robotics', description='Build robots.')
         self.assertEqual(track.name_translations, {})
         self.assertEqual(track.translated_name, 'Robotics')
 
-    @override_settings(AI_API_KEY='')
+    @override_settings(AUTO_TRANSLATE_ENABLED=False)
     def test_local_fallback_translates_known_track_name_without_ai(self):
         track = Track.objects.create(name='Cybersecurity')
         self.assertEqual(track.name_translations['ar'], 'الأمن السيبراني')
         with translation_override('ar'):
             self.assertEqual(track.translated_name, 'الأمن السيبراني')
 
-    @override_settings(AI_API_KEY='test-key')
-    @patch('courses.models.ai_translate.translate_fields')
+    @override_settings(AUTO_TRANSLATE_ENABLED=True)
+    @patch('courses.models.auto_translate.translate_fields')
     def test_local_fallback_fills_gap_when_ai_call_fails(self, mock_translate):
-        mock_translate.side_effect = ai_translate.TranslationError('boom')
+        mock_translate.side_effect = auto_translate.TranslationError('boom')
         track = Track.objects.create(name='Web Development')
         self.assertEqual(track.name_translations['ar'], 'تطوير الويب')
 
-    @override_settings(AI_API_KEY='test-key')
-    @patch('courses.models.ai_translate.translate_fields')
+    @override_settings(AUTO_TRANSLATE_ENABLED=True)
+    @patch('courses.models.auto_translate.translate_fields')
     def test_real_ai_result_takes_priority_over_local_fallback(self, mock_translate):
         mock_translate.return_value = {'name': {'ar': 'ترجمة حقيقية', 'fr': 'f', 'es': 'e'}}
         track = Track.objects.create(name='Tech')
         # The AI's own Arabic translation wins over the local dictionary entry.
         self.assertEqual(track.name_translations['ar'], 'ترجمة حقيقية')
 
-    @override_settings(AI_API_KEY='')
+    @override_settings(AUTO_TRANSLATE_ENABLED=False)
     def test_unmapped_track_name_still_falls_back_to_english_without_ai(self):
         track = Track.objects.create(name='Robotics')
         self.assertEqual(track.name_translations, {})
         self.assertEqual(track.translated_name, 'Robotics')
 
-    @override_settings(AI_API_KEY='')
+    @override_settings(AUTO_TRANSLATE_ENABLED=False)
     def test_local_fallback_translates_languages_track_name_without_ai(self):
         track = Track.objects.create(name='Languages')
         self.assertEqual(track.name_translations['ar'], 'اللغات')
         with translation_override('ar'):
             self.assertEqual(track.translated_name, 'اللغات')
 
-    @override_settings(AI_API_KEY='')
+    @override_settings(AUTO_TRANSLATE_ENABLED=False)
     def test_local_fallback_only_covers_arabic_not_french_or_spanish(self):
         track = Track.objects.create(name='Marketing')
         self.assertEqual(track.name_translations, {'ar': 'تسويق', '__source__': 'Marketing'})
@@ -2383,27 +2383,79 @@ class AICoachClientTests(TestCase):
         self.assertIn('...', reply)
 
 
-class AITranslateClientTests(TestCase):
+class AutoTranslateClientTests(TestCase):
+    """auto_translate wraps deep-translator's free GoogleTranslator -- no
+    API key, no billing. These tests mock GoogleTranslator.translate itself
+    (the one network call) rather than hitting the real endpoint."""
+
     def test_is_configured_reflects_setting(self):
-        with override_settings(AI_API_KEY=''):
-            self.assertFalse(ai_translate.is_configured())
-        with override_settings(AI_API_KEY='some-key'):
-            self.assertTrue(ai_translate.is_configured())
+        with override_settings(AUTO_TRANSLATE_ENABLED=True):
+            self.assertTrue(auto_translate.is_configured())
+        with override_settings(AUTO_TRANSLATE_ENABLED=False):
+            self.assertFalse(auto_translate.is_configured())
 
-    def test_translate_fields_raises_when_not_configured(self):
-        with override_settings(AI_API_KEY=''):
-            with self.assertRaises(ai_translate.TranslationError):
-                ai_translate.translate_fields({'name': 'Robotics'}, ['ar'])
+    def test_translate_fields_returns_empty_for_no_fields_or_languages(self):
+        self.assertEqual(auto_translate.translate_fields({}, ['ar']), {})
+        self.assertEqual(auto_translate.translate_fields({'name': 'Robotics'}, []), {})
 
-    @override_settings(AI_API_KEY='test-key')
-    def test_translate_fields_returns_empty_without_calling_api_when_nothing_to_translate(self):
-        self.assertEqual(ai_translate.translate_fields({}, ['ar']), {})
-        self.assertEqual(ai_translate.translate_fields({'name': 'Robotics'}, []), {})
+    @patch('courses.auto_translate.GoogleTranslator.translate')
+    def test_translate_fields_translates_plain_text(self, mock_translate):
+        mock_translate.return_value = 'الروبوتات'
+        result = auto_translate.translate_fields({'name': 'Robotics'}, ['ar'])
+        self.assertEqual(result, {'name': {'ar': 'الروبوتات'}})
+
+    @patch('courses.auto_translate.GoogleTranslator.translate')
+    def test_translate_fields_raises_translation_error_on_failure(self, mock_translate):
+        mock_translate.side_effect = Exception('rate limited')
+        with self.assertRaises(auto_translate.TranslationError):
+            auto_translate.translate_fields({'name': 'Robotics'}, ['ar'])
+
+    @patch('courses.auto_translate.GoogleTranslator.translate')
+    def test_translate_fields_wraps_a_raw_network_error_from_requests(self, mock_translate):
+        """deep-translator only wraps its own known failure modes -- a raw
+        connection/proxy error from the underlying HTTP library must still
+        come out as TranslationError, not crash the caller."""
+        import requests
+        mock_translate.side_effect = requests.exceptions.ProxyError('tunnel failed')
+        with self.assertRaises(auto_translate.TranslationError):
+            auto_translate.translate_fields({'name': 'Robotics'}, ['ar'])
+
+    @patch('courses.auto_translate.GoogleTranslator.translate')
+    def test_markdown_table_structure_survives_translation(self, mock_translate):
+        mock_translate.side_effect = lambda text: f'[AR] {text}'
+        body = (
+            "Here's a table:\n\n"
+            "| Scenario | Share |\n"
+            "|---|---|\n"
+            "| **Monthly** | 60% |\n"
+        )
+        translated = auto_translate.translate_markdown(body, 'ar')
+        lines = translated.split('\n')
+        # Separator row is untouched -- nothing human-readable in it.
+        self.assertIn('|---|---|', lines)
+        # Header and data rows keep exactly 2 columns, each cell translated
+        # independently (never the pipe characters themselves).
+        header_cells = [c.strip() for c in lines[2].split('|') if c.strip()]
+        self.assertEqual(header_cells, ['[AR] Scenario', '[AR] Share'])
+        data_cells = [c.strip() for c in lines[4].split('|') if c.strip()]
+        self.assertEqual(data_cells, ['[AR] **Monthly**', '[AR] 60%'])
+
+    @patch('courses.auto_translate.GoogleTranslator.translate')
+    def test_bullet_list_lines_translated_individually(self, mock_translate):
+        mock_translate.side_effect = lambda text: f'[AR] {text}'
+        body = '- First point\n- Second point'
+        translated = auto_translate.translate_markdown(body, 'ar')
+        self.assertEqual(translated, '- [AR] First point\n- [AR] Second point')
 
 
 class LegalDocumentTests(TestCase):
     def setUp(self):
-        call_command('seed_legal_docs')
+        # Most of this class's tests only care that the English content
+        # exists and renders -- keep translation off for the seed itself so
+        # they don't make real network calls; the two tests that actually
+        # exercise translation turn it back on themselves.
+        with override_settings(AUTO_TRANSLATE_ENABLED=False):
+            call_command('seed_legal_docs')
         self.terms = LegalDocument.objects.get(slug='terms')
         self.privacy = LegalDocument.objects.get(slug='privacy')
 
@@ -2434,7 +2486,7 @@ class LegalDocumentTests(TestCase):
         self.assertContains(response, reverse('privacy'))
         self.assertContains(response, 'support@mendoura.com')
 
-    @override_settings(AI_API_KEY='test-key')
+    @override_settings(AUTO_TRANSLATE_ENABLED=True)
     def test_language_switch_renders_translated_content_via_ai_pipeline(self):
         """Same mechanism Track uses: no hardcoded per-language template
         text -- translated_heading/translated_body come from the AI
@@ -2444,7 +2496,7 @@ class LegalDocumentTests(TestCase):
                     for field, text in fields.items()}
 
         section = self.terms.sections.get(anchor='revenue-share')
-        with patch('courses.ai_translate.translate_fields', side_effect=fake_translate_fields):
+        with patch('courses.auto_translate.translate_fields', side_effect=fake_translate_fields):
             section.save()
 
         with translation_override('ar'):
@@ -2481,8 +2533,8 @@ class LegalDocumentTests(TestCase):
             return {field: {lang: f'[{lang.upper()}] {text}' for lang in target_languages}
                     for field, text in fields.items()}
 
-        with override_settings(AI_API_KEY='test-key'), \
-                patch('courses.ai_translate.translate_fields', side_effect=fake_translate_fields):
+        with override_settings(AUTO_TRANSLATE_ENABLED=True), \
+                patch('courses.auto_translate.translate_fields', side_effect=fake_translate_fields):
             section.save()
 
         with translation_override('ar'):

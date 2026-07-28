@@ -12,7 +12,7 @@ from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import get_language
 
-from . import ai_translate, certificates
+from . import auto_translate, certificates
 from .money import SUBSCRIPTION_INSTRUCTOR_SHARE, calculate_split, get_instructor_share
 
 logger = logging.getLogger(__name__)
@@ -78,26 +78,29 @@ def _unique_slugify(instance, base_value, slug_field='slug'):
 
 
 class AutoTranslatedFieldsMixin:
-    """AI-populated per-language JSON translations for a model's designated
-    text fields. The admin/instructor-entered value is always assumed to be
-    written in SOURCE_LANGUAGE (English); on save(), any field whose source
-    text has changed (or whose translations don't yet cover every active
-    non-source language) gets a single batched translation call. Subclasses
-    must define TRANSLATABLE_FIELDS and a `{field}_translations` JSONField
-    for each entry.
+    """Auto-populated per-language JSON translations for a model's designated
+    text fields, via auto_translate.py's free GoogleTranslator wrapper (no
+    API key or billing). The admin/instructor-entered value is always
+    assumed to be written in SOURCE_LANGUAGE (English); on save(), any field
+    whose source text has changed (or whose translations don't yet cover
+    every active non-source language) gets re-translated. Subclasses must
+    define TRANSLATABLE_FIELDS and a `{field}_translations` JSONField for
+    each entry.
 
-    Never blocks a save: if AI_API_KEY isn't configured, or the translation
-    call fails for any reason, a subclass-defined LOCAL_TRANSLATIONS
+    Never blocks a save: if the translation call fails for any reason (rate
+    limiting, no network, ...), a subclass-defined LOCAL_TRANSLATIONS
     dictionary (if any) fills in whatever it knows about, and anything
-    still missing falls back to the English source via `_translated()`."""
+    still missing falls back to the English source via `_translated()` --
+    retried again on the next save."""
     SOURCE_LANGUAGE = 'en'
     TRANSLATABLE_FIELDS = ()
     # Optional per-model static fallback, keyed by field then by exact
     # English source text: {"name": {"Cybersecurity": {"ar": "..."}}}.
-    # Used whenever the AI API is unavailable or fails, so a handful of
-    # well-known values (e.g. the seeded track catalog) show up translated
-    # immediately instead of waiting on a real API key. AI results always
-    # take priority over this when both are available.
+    # Used whenever the translation call is unavailable or fails, so a
+    # handful of well-known values (e.g. the seeded track catalog) show up
+    # translated immediately instead of waiting on a network round-trip.
+    # Live translation results always take priority over this when both are
+    # available.
     LOCAL_TRANSLATIONS = {}
 
     def _translated(self, field):
@@ -125,17 +128,17 @@ class AutoTranslatedFieldsMixin:
             return
 
         results = {}
-        if ai_translate.is_configured():
+        if auto_translate.is_configured():
             try:
-                results = ai_translate.translate_fields(pending, target_languages)
-            except ai_translate.TranslationError:
+                results = auto_translate.translate_fields(pending, target_languages)
+            except auto_translate.TranslationError:
                 # Never blocks the save -- LOCAL_TRANSLATIONS/English still
                 # apply below -- but a failure here used to vanish with no
                 # trace anywhere, including in Render's logs. Log it so a
-                # persistently-broken key/model/network doesn't look
+                # persistently-broken network/rate-limit doesn't look
                 # identical to "translation just hasn't run yet".
                 logger.warning(
-                    'AI translation failed for %s pk=%s fields=%s -- falling back to '
+                    'Automatic translation failed for %s pk=%s fields=%s -- falling back to '
                     'LOCAL_TRANSLATIONS/English for now.',
                     type(self).__name__, self.pk, list(pending), exc_info=True)
                 results = {}
