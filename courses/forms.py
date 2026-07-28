@@ -92,16 +92,6 @@ class InstructorSignUpForm(DuplicateGuardMixin, UserCreationForm):
         widget=forms.CheckboxInput(attrs=AGREE_CHECKBOX_ATTRS),
         error_messages={'required': _('You must accept the Terms & Conditions and Privacy Policy to create an account.')},
     )
-    agree_to_revenue_share = forms.BooleanField(
-        required=True,
-        widget=forms.CheckboxInput(attrs=AGREE_CHECKBOX_ATTRS),
-        error_messages={'required': _('You must acknowledge the revenue-share terms to register as an instructor.')},
-    )
-    agree_to_tax_clause = forms.BooleanField(
-        required=True,
-        widget=forms.CheckboxInput(attrs=AGREE_CHECKBOX_ATTRS),
-        error_messages={'required': _('You must acknowledge the tax-responsibility clause to register as an instructor.')},
-    )
 
     class Meta(UserCreationForm.Meta):
         model = User
@@ -109,9 +99,8 @@ class InstructorSignUpForm(DuplicateGuardMixin, UserCreationForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        checkbox_fields = ('agree_to_terms', 'agree_to_revenue_share', 'agree_to_tax_clause')
         for name, field in self.fields.items():
-            if name not in checkbox_fields:
+            if name != 'agree_to_terms':
                 field.widget.attrs.setdefault('class', INPUT_CLASSES)
 
     def clean(self):
@@ -129,10 +118,7 @@ class InstructorSignUpForm(DuplicateGuardMixin, UserCreationForm):
         user.is_approved = False
         user.country = self.cleaned_data['country']
         user.payoneer_account = self.cleaned_data.get('payoneer_account', '')
-        now = timezone.now()
-        user.terms_accepted_at = now
-        user.revenue_share_accepted_at = now
-        user.tax_clause_accepted_at = now
+        user.terms_accepted_at = timezone.now()
         if commit:
             user.save()
             InstructorWallet.objects.get_or_create(instructor=user)

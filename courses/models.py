@@ -45,13 +45,11 @@ class User(AbstractUser):
 
     # Timestamped consent, set once at signup and never overwritten --
     # proof of what a user agreed to and when, not just that they currently
-    # have an "agree" checkbox ticked somewhere.
+    # have an "agree" checkbox ticked somewhere. Covers the Terms &
+    # Conditions as a whole, including the revenue-share (Section 5) and
+    # tax-responsibility (Section 6) clauses -- those aren't acknowledged
+    # separately.
     terms_accepted_at = models.DateTimeField(null=True, blank=True)
-    # Instructor-only: separate, explicit acknowledgment of the Terms &
-    # Conditions' revenue-share (Section 5) and tax-responsibility
-    # (Section 6) clauses, distinct from the general terms acceptance above.
-    revenue_share_accepted_at = models.DateTimeField(null=True, blank=True)
-    tax_clause_accepted_at = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
         return self.username

@@ -12,15 +12,10 @@ from .models import (
 class CustomUserAdmin(UserAdmin):
     list_display = ('username', 'email', 'is_student', 'is_instructor', 'is_staff', 'country')
     list_filter = ('is_student', 'is_instructor', 'is_staff')
-    readonly_fields = UserAdmin.readonly_fields + (
-        'terms_accepted_at', 'revenue_share_accepted_at', 'tax_clause_accepted_at',
-    )
+    readonly_fields = UserAdmin.readonly_fields + ('terms_accepted_at',)
     fieldsets = UserAdmin.fieldsets + (
         ('LMS Info', {'fields': ('is_student', 'is_instructor', 'phone_number')}),
-        ('Legal / Onboarding', {'fields': (
-            'country', 'payoneer_account',
-            'terms_accepted_at', 'revenue_share_accepted_at', 'tax_clause_accepted_at',
-        )}),
+        ('Legal / Onboarding', {'fields': ('country', 'payoneer_account', 'terms_accepted_at')}),
     )
 
 

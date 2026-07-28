@@ -703,10 +703,7 @@ class SignupApprovalFlowTests(TestCase):
         return data
 
     def _instructor_signup_data(self, **overrides):
-        data = self._signup_data(
-            username='newbie_inst', country='Egypt',
-            agree_to_revenue_share='on', agree_to_tax_clause='on',
-        )
+        data = self._signup_data(username='newbie_inst', country='Egypt')
         data.update(overrides)
         return data
 
@@ -754,18 +751,16 @@ class SignupApprovalFlowTests(TestCase):
         user = User.objects.get(username='newbie')
         self.assertIsNotNone(user.terms_accepted_at)
 
-    def test_instructor_signup_requires_revenue_share_and_tax_consent(self):
+    def test_instructor_signup_requires_agreeing_to_terms(self):
         data = self._instructor_signup_data()
-        del data['agree_to_revenue_share']
+        del data['agree_to_terms']
         self.client.post(reverse('instructor_signup'), data)
         self.assertFalse(User.objects.filter(username='newbie_inst').exists())
 
-    def test_instructor_signup_records_consent_timestamps(self):
+    def test_instructor_signup_records_terms_accepted_timestamp(self):
         self.client.post(reverse('instructor_signup'), self._instructor_signup_data())
         user = User.objects.get(username='newbie_inst')
         self.assertIsNotNone(user.terms_accepted_at)
-        self.assertIsNotNone(user.revenue_share_accepted_at)
-        self.assertIsNotNone(user.tax_clause_accepted_at)
 
     def test_international_instructor_requires_payoneer_account(self):
         data = self._instructor_signup_data(country='France')

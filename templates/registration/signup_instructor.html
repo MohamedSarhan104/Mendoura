@@ -89,26 +89,6 @@
         </label>
       </div>
       {% if form.agree_to_terms.errors %}<p class="text-red-500 text-xs">{{ form.agree_to_terms.errors.0 }}</p>{% endif %}
-
-      <div class="flex items-start gap-2">
-        {{ form.agree_to_revenue_share }}
-        <label for="{{ form.agree_to_revenue_share.id_for_label }}" class="text-sm text-gray-600 dark:text-gray-400">
-          I acknowledge and accept the
-          <a href="{% url 'terms' %}#revenue-share" target="_blank" class="text-brand-600 dark:text-brand-400 font-semibold hover:underline">revenue-share terms</a>
-          (60/40 on subscription revenue, 70/30 on self-produced course sales, 50/50 on Mendoura-produced course sales).
-        </label>
-      </div>
-      {% if form.agree_to_revenue_share.errors %}<p class="text-red-500 text-xs">{{ form.agree_to_revenue_share.errors.0 }}</p>{% endif %}
-
-      <div class="flex items-start gap-2">
-        {{ form.agree_to_tax_clause }}
-        <label for="{{ form.agree_to_tax_clause.id_for_label }}" class="text-sm text-gray-600 dark:text-gray-400">
-          I acknowledge that I am solely responsible for my own
-          <a href="{% url 'terms' %}#taxes" target="_blank" class="text-brand-600 dark:text-brand-400 font-semibold hover:underline">taxes</a>
-          on earnings from the Platform, in my own country of tax residence.
-        </label>
-      </div>
-      {% if form.agree_to_tax_clause.errors %}<p class="text-red-500 text-xs">{{ form.agree_to_tax_clause.errors.0 }}</p>{% endif %}
     </div>
 
     <button type="submit" class="w-full py-3 rounded-lg bg-brand-600 text-white font-semibold hover:bg-brand-700 transition flex items-center justify-center gap-2">
