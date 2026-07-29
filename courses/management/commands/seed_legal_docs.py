@@ -61,24 +61,33 @@ Instructor earnings from course sales are calculated as follows:
 **Notes on revenue distribution:**
 
 - For subscriptions, each Instructor's share of pooled subscription revenue is calculated based on a fair usage/consumption methodology (e.g., minutes watched or lessons completed by subscribing students), detailed further in a separate Instructor Agreement.
-- Instructor payouts are processed on a defined payment cycle (monthly), after deduction of any payment gateway processing fees applicable to the transaction.
 - The Platform reserves the right to modify these revenue-share percentages in the future, provided Instructors are given reasonable advance notice, and no change applies retroactively to already-completed, paid transactions.
 - In case of a dispute over who produced/edited a given course, the documented record between the Instructor and the Platform's team at the time of course submission shall govern.
 """),
-            ('taxes', '6. Taxes (Instructor Responsibility)', """\
+            ('payment-mechanics', '6. Instructor Payment Mechanics', """\
+- **Payout schedule:** Instructor earnings are calculated monthly and paid out on the **30th of each month**, covering revenue earned or consumed during the previous calendar month.
+- **Minimum payout threshold:** Payouts are issued once an Instructor's accumulated, payable balance reaches **$25 USD (or the equivalent of 500 EGP)**. Balances below this threshold roll over to the next payment cycle, except at year-end where the Platform may, at its discretion, issue any remaining balance regardless of threshold.
+- **Payment method by location:**
+  - Instructors based in Egypt are paid via a licensed local payment processor, to a valid Egyptian bank account or supported payment method linked to their account.
+  - International Instructors (outside Egypt) are paid via **Payoneer**, and must maintain a valid, verified Payoneer account to receive payouts, as set out in Section 8 below.
+- **Accuracy of payout details:** Instructors are solely responsible for providing and maintaining accurate payout information (bank details, Payoneer account, etc.). The Platform is not liable for payment delays, losses, or misdirected funds resulting from inaccurate or outdated Instructor payout information.
+- **Right to withhold:** The Platform reserves the right to withhold, delay, or deny a payout in cases of suspected fraud, a pending refund/chargeback dispute, a violation of these Terms, or where required by law.
+- **Deductions before payout:** Payouts reflect the Instructor's revenue share (per Section 5) after deduction of any payment gateway or processing fees applicable to the underlying transaction.
+"""),
+            ('taxes', '7. Taxes (Instructor Responsibility)', """\
 - **Mendoura is not responsible for any Instructor's personal or business tax obligations.** Each Instructor, regardless of nationality or country of residence, is solely and independently responsible for determining, declaring, and paying any income tax, VAT, withholding tax, or other applicable taxes arising from their earnings on the Platform, in accordance with the laws of their own country of tax residence.
 - Mendoura's responsibility is limited to its own corporate tax obligations as a platform operating under Egyptian law, and does not extend to acting as a tax withholding agent or tax advisor for any Instructor, unless required to do so by binding Egyptian law.
 - Instructors are encouraged to consult their own tax advisor regarding their specific obligations.
 """),
-            ('payments', '7. Payments and Refunds', """\
+            ('payments', '8. Payments and Refunds', """\
 - Displayed prices are final and include any applicable taxes under Egyptian law unless stated otherwise.
 - **Platform subscriptions (Monthly/Yearly) are non-refundable** once payment is completed.
 - **Individually purchased courses** are subject to a 14-day refund policy from the date of purchase, provided course-content consumption does not exceed a defined threshold (detailed in a separate Refund Policy).
 - Subscriptions renew automatically according to the selected plan (Monthly/Yearly) until the user cancels auto-renewal before the next renewal date.
-- **Payment processing:** For users and Instructors inside Egypt, payments are processed through **Paymob**. For international transactions, payments are processed through **Lemon Squeezy** as the payment gateway. The Platform does not store full card details; all payment processing is handled by these licensed third-party providers, subject to their own security and processing policies.
+- **Payment processing:** Payments made on the Platform are processed through licensed third-party payment processors, which may differ depending on whether the transaction is local (inside Egypt) or international. The Platform does not store full card details; all payment processing is handled by these licensed providers, subject to their own security and processing policies.
 - **International Instructor payouts:** International Instructors (outside Egypt) must maintain a valid, verified **Payoneer** account in order to register as an Instructor and receive payouts. The Platform pays out an Instructor's share of earnings to their registered Payoneer account on the defined payment cycle. The Platform is not responsible for delays or issues caused by the Instructor's own Payoneer account (e.g., verification holds, incorrect account details).
 """),
-            ('conduct', '8. Conduct Rules', """\
+            ('conduct', '9. Conduct Rules', """\
 Users (Students and Instructors) may not:
 
 - Post content that violates Egyptian or international law, incites hatred, or discriminates based on religion, ethnicity, gender, or disability.
@@ -86,13 +95,13 @@ Users (Students and Instructors) may not:
 - Attempt to hack, manipulate, or scrape the Platform's systems using automated tools or bots without authorization.
 - Use the Platform for any unauthorized commercial purpose outside the agreed educational scope.
 """),
-            ('liability', '9. Limitation of Liability', """\
+            ('liability', '10. Limitation of Liability', """\
 The Platform's services are provided "as is" and "as available," without express or implied warranties regarding accuracy, continuity, or freedom from technical faults. The Platform is not liable for indirect or consequential damages arising from use of the Service, and its maximum liability in any case is limited to the amount the user paid during the 12 months preceding the claim.
 """),
-            ('governing-law', '10. Governing Law', """\
+            ('governing-law', '11. Governing Law', """\
 These Terms are governed by and construed in accordance with the laws of the Arab Republic of Egypt, and the courts of Egypt shall have jurisdiction over any dispute arising from them, without prejudice to the rights of users outside Egypt under any mandatory consumer-protection law of their own jurisdiction that may apply.
 """),
-            ('changes', '11. Changes to These Terms', """\
+            ('changes', '12. Changes to These Terms', """\
 The Platform reserves the right to modify these Terms at any time, notifying users of material changes via registered email or an in-platform notice. Continued use of the Platform after such changes constitutes acceptance of them.
 """),
         ],
@@ -125,9 +134,8 @@ We collect this data to:
             ('sharing-data', '3. Sharing Data with Third Parties', """\
 We may share limited data with:
 
-- **Payment gateway (Paymob)** to process payments.
-- **Hosting and infrastructure providers** to operate the Platform and store files.
-- **Payment processors** (Paymob for local transactions; Lemon Squeezy for international transactions; Payoneer for international Instructor payouts) to process payments and payouts.
+- **Hosting and infrastructure providers** that operate the Platform's servers and store files on our behalf.
+- **Payment processors** that handle transaction processing and Instructor payouts (including a Payoneer account for international Instructor payouts).
 - **Instructors**: limited data about a student (country, course progress) — never the student's personal email unless the student consents.
 - **Government or judicial authorities**, when required by a valid legal request.
 
