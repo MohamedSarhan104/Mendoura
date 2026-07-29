@@ -17,14 +17,7 @@ from courses.models import LegalDocument, LegalSection
 DOCUMENTS = {
     'terms': {
         'title': 'Terms & Conditions',
-        'intro': (
-            'Legal notice: This is a working draft, structured with reference to common '
-            'practices on other educational platforms. It is not legal advice. Before '
-            'publishing live, this must be reviewed by a lawyer qualified in Egyptian '
-            'e-commerce law, Egyptian Data Protection Law (Law No. 151 of 2020), and '
-            'cross-border tax/payment matters, since the platform serves instructors and '
-            'students of all nationalities.'
-        ),
+        'intro': '',
         'sections': [
             ('introduction', '1. Introduction and Scope', """\
 **Mendoura** ("the Platform," "we," "us") is an online learning platform that allows registered users to access recorded and live educational content (Students), and allows content creators (Instructors) to publish and sell courses through the Platform. The Platform is open to Students and Instructors of any nationality or country of residence, unless otherwise stated.
@@ -175,14 +168,21 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         for slug, data in DOCUMENTS.items():
+            defaults = {
+                'title': data['title'],
+                'intro': data['intro'],
+                'last_updated': LAST_UPDATED,
+            }
+            # AutoTranslatedFieldsMixin skips re-translating a field once its
+            # source text is empty -- it never clears out a translation that
+            # was already cached from a previous, non-empty value. Blank the
+            # cached intro translations here too, or a removed intro (like
+            # the "Legal notice" draft banner) could keep showing up
+            # translated even after the English source is gone.
+            if not data['intro']:
+                defaults['intro_translations'] = {}
             document, created = LegalDocument.objects.update_or_create(
-                slug=slug,
-                defaults={
-                    'title': data['title'],
-                    'intro': data['intro'],
-                    'last_updated': LAST_UPDATED,
-                },
-            )
+                slug=slug, defaults=defaults)
             self.stdout.write(
                 self.style.SUCCESS(f'{"Created" if created else "Synced"} legal document: {document.title}'))
 
