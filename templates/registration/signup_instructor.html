@@ -11,7 +11,7 @@
   <p class="text-white/80 text-lg max-w-sm mb-8">Contribute a course once, get compensated for as long as students keep enrolling.</p>
   <ul class="space-y-3 text-white/90">
     <li><i class="fa-solid fa-circle-check mr-2"></i> Compensation of up to 70% on content you produce</li>
-    <li><i class="fa-solid fa-circle-check mr-2"></i> Full wallet &amp; payout tracking</li>
+    <li><i class="fa-solid fa-circle-check mr-2"></i> Track your compensation in real time</li>
     <li><i class="fa-solid fa-circle-check mr-2"></i> Reach students across 12 tracks</li>
   </ul>
 {% endblock %}
@@ -59,7 +59,7 @@
     <div id="payoneer-field">
       <label class="block text-sm font-medium mb-1">Payoneer Account <span id="payoneer-required-hint" class="text-red-500 hidden">*</span></label>
       {{ form.payoneer_account }}
-      <p class="text-xs mt-1 text-gray-400">Required if you're based outside Egypt — this is where your earnings will be paid out.</p>
+      <p class="text-xs mt-1 text-gray-400">Required if you're based outside Egypt — Mendoura will transfer your compensation here directly.</p>
       {% if form.payoneer_account.errors %}<p class="text-red-500 text-xs mt-1">{{ form.payoneer_account.errors.0 }}</p>{% endif %}
     </div>
 
