@@ -20,7 +20,7 @@ DOCUMENTS = {
         'intro': '',
         'sections': [
             ('introduction', '1. Introduction and Scope', """\
-**Mendoura** ("the Platform," "we," "us") is an online learning platform that allows registered users to access recorded and live educational content (Students), and allows content creators (Instructors) to publish and sell courses through the Platform. The Platform is open to Students and Instructors of any nationality or country of residence, unless otherwise stated.
+**Mendoura** ("the Platform," "we," "us") is an online learning platform that allows registered users to access recorded and live educational content (Students), and allows content creators (Instructors) to contribute courses to the Platform's catalog, which Mendoura then offers to Students. Mendoura is the sole seller of record for all Platform transactions. The Platform is open to Students and Instructors of any nationality or country of residence, unless otherwise stated.
 
 By using the Platform, whether as a Student or an Instructor, you agree to these Terms & Conditions in full. If you do not agree, you must stop using the Platform immediately.
 """),
@@ -42,8 +42,8 @@ By using the Platform, whether as a Student or an Instructor, you agree to these
 - Instructors warrant that their content is original and does not infringe any third party's intellectual property rights, and bear full legal responsibility for any such infringement.
 - The Platform reserves the right to review or remove any content that violates its policies or applicable law.
 """),
-            ('revenue-share', '5. Instructor Revenue Share', """\
-Instructor earnings from course sales are calculated as follows:
+            ('revenue-share', '5. Instructor Compensation', """\
+Mendoura calculates Instructor compensation based on the following structure:
 
 | Scenario | Instructor Share | Mendoura Share |
 |---|---|---|
@@ -58,6 +58,7 @@ Instructor earnings from course sales are calculated as follows:
 - In case of a dispute over who produced/edited a given course, the documented record between the Instructor and the Platform's team at the time of course submission shall govern.
 """),
             ('payment-mechanics', '6. Instructor Payment Mechanics', """\
+- **Sole merchant of record:** Mendoura is the sole merchant of record for all Student payments and receives 100% of Student payments directly through its payment processor. Instructor compensation is calculated and transferred separately by Mendoura, and is not an automated split payment made through the payment processor.
 - **Payout schedule:** Instructor earnings are calculated monthly and paid out on the **30th of each month**, covering revenue earned or consumed during the previous calendar month.
 - **Minimum payout threshold:** Payouts are issued once an Instructor's accumulated, payable balance reaches **$25 USD (or the equivalent of 500 EGP)**. Balances below this threshold roll over to the next payment cycle, except at year-end where the Platform may, at its discretion, issue any remaining balance regardless of threshold.
 - **Payment method by location:**
@@ -77,8 +78,8 @@ Instructor earnings from course sales are calculated as follows:
 - **Platform subscriptions (Monthly/Yearly) are non-refundable** once payment is completed.
 - **Individually purchased courses** are subject to a 14-day refund policy from the date of purchase, provided course-content consumption does not exceed a defined threshold (detailed in a separate Refund Policy).
 - Subscriptions renew automatically according to the selected plan (Monthly/Yearly) until the user cancels auto-renewal before the next renewal date.
-- **Payment processing:** Payments made on the Platform are processed through licensed third-party payment processors, which may differ depending on whether the transaction is local (inside Egypt) or international. The Platform does not store full card details; all payment processing is handled by these licensed providers, subject to their own security and processing policies.
-- **International Instructor payouts:** International Instructors (outside Egypt) must maintain a valid, verified **Payoneer** account in order to register as an Instructor and receive payouts. The Platform pays out an Instructor's share of earnings to their registered Payoneer account on the defined payment cycle. The Platform is not responsible for delays or issues caused by the Instructor's own Payoneer account (e.g., verification holds, incorrect account details).
+- **Payment processing:** Payments made on the Platform are processed through licensed third-party payment processors, which may differ depending on whether the transaction is local (inside Egypt) or international. Mendoura is the sole merchant of record for these transactions and receives 100% of the Student payment directly. The Platform does not store full card details; all payment processing is handled by these licensed providers, subject to their own security and processing policies.
+- **International Instructor payouts:** International Instructors (outside Egypt) must maintain a valid, verified **Payoneer** account in order to register as an Instructor and receive payouts. Mendoura initiates and transfers Instructor compensation to the registered Payoneer account directly and independently of the payment processor, on the defined payment cycle. The Platform is not responsible for delays or issues caused by the Instructor's own Payoneer account (e.g., verification holds, incorrect account details).
 """),
             ('conduct', '9. Conduct Rules', """\
 Users (Students and Instructors) may not:
@@ -128,7 +129,8 @@ We collect this data to:
 We may share limited data with:
 
 - **Hosting and infrastructure providers** that operate the Platform's servers and store files on our behalf.
-- **Payment processors** that handle transaction processing and Instructor payouts (including a Payoneer account for international Instructor payouts).
+- **Payment processors** that handle transaction processing for Student payments, for which Mendoura is the sole merchant of record.
+- **Payoneer and local banking partners** used by Mendoura to transfer Instructor compensation, which is calculated and transferred separately from Student payment processing.
 - **Instructors**: limited data about a student (country, course progress) — never the student's personal email unless the student consents.
 - **Government or judicial authorities**, when required by a valid legal request.
 

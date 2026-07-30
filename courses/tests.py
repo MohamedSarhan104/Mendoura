@@ -2457,7 +2457,7 @@ class LegalDocumentTests(TestCase):
     def test_terms_page_renders_sections_and_table(self):
         response = self.client.get(reverse('terms'))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Instructor Revenue Share')
+        self.assertContains(response, 'Instructor Compensation')
         self.assertContains(response, '<table>')
         self.assertContains(response, '60%')
         self.assertContains(response, 'id="revenue-share"')
