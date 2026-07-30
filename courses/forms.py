@@ -192,7 +192,7 @@ class CourseCreationForm(forms.ModelForm):
             }),
             'ai_script': forms.Textarea(attrs={
                 'rows': 8,
-                'placeholder': _('Type the script here. Our AI will turn this text into a professional video lecture.'),
+                'placeholder': _('Type the script here. Mendoura will turn this text into a professional video lecture.'),
                 'class': COURSE_FORM_INPUT_CLASSES,
             }),
         }

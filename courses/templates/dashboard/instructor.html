@@ -82,14 +82,14 @@
     {% endfor %}
   </div>
 
-  <h2 class="text-xl font-bold mb-4">{% trans "Recent Sales" %}</h2>
+  <h2 class="text-xl font-bold mb-4">{% trans "Recent Compensation" %}</h2>
   <div class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 overflow-x-auto">
     <table class="w-full text-sm">
       <thead class="bg-gray-50 dark:bg-gray-800 text-left">
         <tr>
           <th class="p-4">{% trans "Course" %}</th>
           <th class="p-4">{% trans "Student" %}</th>
-          <th class="p-4">{% trans "Your Share" %}</th>
+          <th class="p-4">{% trans "Your Compensation" %}</th>
           <th class="p-4">{% trans "Date" %}</th>
         </tr>
       </thead>
@@ -102,7 +102,7 @@
             <td class="p-4 text-gray-400">{{ sale.created_at|date:"M d, Y" }}</td>
           </tr>
         {% empty %}
-          <tr><td class="p-4 text-gray-400" colspan="4">{% trans "No sales yet." %}</td></tr>
+          <tr><td class="p-4 text-gray-400" colspan="4">{% trans "No compensation recorded yet." %}</td></tr>
         {% endfor %}
       </tbody>
     </table>

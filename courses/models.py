@@ -287,7 +287,7 @@ class Course(models.Model):
     rejection_reason = models.TextField(blank=True, default='')
 
     thumbnail = models.ImageField(upload_to='course_thumbnails/', blank=True, null=True)
-    ai_script = models.TextField(help_text=_('The script for AI video generation'), blank=True, null=True)
+    ai_script = models.TextField(help_text=_('The script for Mendoura-produced video generation'), blank=True, null=True)
 
     rating = models.DecimalField(max_digits=3, decimal_places=2, default=Decimal('0.00'))
     students_count = models.PositiveIntegerField(default=0)
