@@ -8,9 +8,7 @@ from functools import wraps
 import markdown
 import requests
 from django.contrib import messages
-from django.conf import settings
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.forms import PasswordResetForm
 from django.contrib.auth.views import redirect_to_login
 from django.contrib.postgres.search import SearchQuery, SearchRank, SearchVector
 from django.core.management import call_command
@@ -103,8 +101,10 @@ def instructor_signup(request):
     if request.method == 'POST':
         form = InstructorSignUpForm(request.POST)
         if form.is_valid():
-            user = form.save()
-            emails.send_welcome_email(user)
+            # No welcome email here -- the Instructor welcome email promises
+            # dashboard access, which only becomes true once an admin
+            # approves the account. It's sent from approve_user() instead.
+            form.save()
             messages.success(
                 request,
                 _("Your account has been created and is pending administrator approval. "
@@ -1432,13 +1432,17 @@ def send_test_emails(request):
         target = request.POST.get('target_email', '').strip()
         which = request.POST.get('which')
 
-        if which in ('welcome', 'certificate') and not target:
+        if which in ('welcome', 'instructor_welcome', 'certificate') and not target:
             messages.error(request, _('Enter a target email address first.'))
             return redirect('send_test_emails')
 
         if which == 'welcome':
             emails.send_welcome_email(request.user, to_email=target)
-            messages.success(request, _('Welcome email sent to %(email)s.') % {'email': target})
+            messages.success(request, _('Student welcome email sent to %(email)s.') % {'email': target})
+
+        elif which == 'instructor_welcome':
+            emails.send_instructor_welcome_email(request.user, to_email=target)
+            messages.success(request, _('Instructor welcome email sent to %(email)s.') % {'email': target})
 
         elif which == 'certificate':
             certificate = (
@@ -1458,29 +1462,26 @@ def send_test_emails(request):
                     _('Certificate email sent to %(email)s (using real certificate data for '
                       '"%(course)s").') % {'email': target, 'course': certificate.enrollment.course.title})
 
-        elif which == 'password_reset':
-            # Always goes to the logged-in admin's own address, via Django's
-            # real PasswordResetForm -- this is a genuine, working reset
-            # link, so it can't be redirected to an arbitrary address.
+        elif which in ('password_reset_student', 'password_reset_instructor'):
+            # Always goes to the logged-in admin's own address -- a real,
+            # working reset link that can't be redirected to an arbitrary
+            # address. The Student/Instructor choice here only picks which
+            # template set to preview; it doesn't touch the account's real
+            # is_instructor flag or the real reset flow's own role
+            # detection (RoleAwarePasswordResetForm, used by the actual
+            # /password-reset/ page).
             if not request.user.email:
                 messages.error(request, _('Your admin account has no email address on file.'))
             else:
-                form = PasswordResetForm(data={'email': request.user.email})
-                if form.is_valid():
-                    form.save(
-                        request=request,
-                        email_template_name='registration/password_reset_email.txt',
-                        html_email_template_name='registration/password_reset_email.html',
-                        subject_template_name='registration/password_reset_subject.txt',
-                        extra_email_context={
-                            'expiry_time': emails.humanize_duration(settings.PASSWORD_RESET_TIMEOUT)},
-                    )
-                    messages.success(
-                        request,
-                        _('Password reset email sent to your own address (%(email)s) -- this is '
-                          'a real, working reset link.') % {'email': request.user.email})
-                else:
-                    messages.error(request, _('Could not send: check your admin account has a valid email.'))
+                emails.send_password_reset_preview(
+                    request.user, request, as_instructor=(which == 'password_reset_instructor'))
+                messages.success(
+                    request,
+                    _('Password reset email (%(role)s template) sent to your own address '
+                      '(%(email)s) -- this is a real, working reset link.') % {
+                        'role': _('Instructor') if which == 'password_reset_instructor' else _('Student'),
+                        'email': request.user.email,
+                    })
 
         return redirect('send_test_emails')
 
@@ -1573,6 +1574,8 @@ def approve_user(request, user_id):
         else:
             user.is_approved = True
             user.save()
+            if user.is_instructor:
+                emails.send_instructor_welcome_email(user)
             messages.success(request, _('%(username)s has been approved.') % {'username': user.username})
     return redirect('admin_users')
 

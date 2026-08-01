@@ -88,6 +88,47 @@ def send_welcome_email(user, *, to_email=None) -> None:
     _send(subject='Welcome to Mendoura! 🎉', text_body=text_body, html_body=html_body, to_email=to_email)
 
 
+def send_instructor_welcome_email(user, *, to_email=None) -> None:
+    """Sent once, when an Instructor account is approved -- not at
+    registration. The copy promises dashboard access ("You now have
+    access to your instructor dashboard"), which is only true once
+    approved; the generic Student welcome email fires at registration
+    instead because its content (browsing the public course catalog)
+    doesn't require an approved account.
+
+    to_email overrides the recipient, same escape hatch as
+    send_welcome_email -- used only by the admin test-email tool."""
+    to_email = to_email or user.email
+    if not to_email:
+        return
+
+    name = user.get_full_name() or user.username
+    context = {
+        'instructor_name': name,
+        'instructor_dashboard_link': f'{SITE_DOMAIN}{reverse("instructor_dashboard")}',
+    }
+    html_body = render_to_string('emails/instructor_welcome_email.html', context)
+    text_body = (
+        f'Hi {name},\n\n'
+        f'Welcome to Mendoura! We\'re excited to have you on board as an instructor.\n\n'
+        f'You now have access to your instructor dashboard, where you can create courses, '
+        f'track your compensation, and reach students across Egypt and around the world.\n\n'
+        f'Ready to get started? Here\'s what\'s next:\n'
+        f'1. Complete your instructor profile\n'
+        f'2. Create your first course\n'
+        f'3. Submit it for review\n\n'
+        f'Go to your dashboard: {context["instructor_dashboard_link"]}\n\n'
+        f'Questions about compensation, content guidelines, or anything else? Reach out to us '
+        f'at support@mendoura.com — we\'re here to help.\n\n'
+        f'Welcome aboard,\n'
+        f'The Mendoura Team'
+    )
+    _send(
+        subject='Welcome to Mendoura — Let\'s build your first course 🎓',
+        text_body=text_body, html_body=html_body, to_email=to_email,
+    )
+
+
 def send_certificate_email(certificate, *, to_email=None) -> None:
     """Emails the student their certificate PDF once it's been generated.
     Silently does nothing if the certificate has no PDF yet -- the caller
@@ -148,3 +189,52 @@ def send_certificate_email(certificate, *, to_email=None) -> None:
         text_body=text_body, html_body=html_body, to_email=to_email,
         attachments=[(f'certificate-{certificate.uuid}.pdf', pdf_bytes, 'application/pdf')],
     )
+
+
+STUDENT_RESET_TEMPLATES = (
+    'registration/password_reset_subject.txt',
+    'registration/password_reset_email.txt',
+    'registration/password_reset_email.html',
+)
+INSTRUCTOR_RESET_TEMPLATES = (
+    'registration/instructor_password_reset_subject.txt',
+    'registration/instructor_password_reset_email.txt',
+    'registration/instructor_password_reset_email.html',
+)
+
+
+def send_password_reset_preview(user, request, *, as_instructor: bool) -> None:
+    """Admin test-email tool only. Sends a real, working password-reset
+    link for `user`'s own account (never redirectable to another address),
+    but lets the admin force which template set to preview -- Student or
+    Instructor -- regardless of the account's actual is_instructor flag.
+    The real user-facing flow (RoleAwarePasswordResetForm in forms.py)
+    always auto-selects correctly from the account's real role and never
+    needs this override; this exists only so one admin account can preview
+    both copies without needing a second, real Instructor test account."""
+    from django.contrib.auth import get_user_model
+    from django.contrib.sites.shortcuts import get_current_site
+    from django.contrib.auth.tokens import default_token_generator
+    from django.utils.encoding import force_bytes
+    from django.utils.http import urlsafe_base64_encode
+
+    if not user.email:
+        return
+
+    UserModel = get_user_model()
+    current_site = get_current_site(request)
+    context = {
+        'email': user.email,
+        'domain': current_site.domain,
+        'site_name': current_site.name,
+        'uid': urlsafe_base64_encode(force_bytes(UserModel._meta.pk.value_to_string(user))),
+        'user': user,
+        'token': default_token_generator.make_token(user),
+        'protocol': 'https' if request.is_secure() else 'http',
+        'expiry_time': humanize_duration(settings.PASSWORD_RESET_TIMEOUT),
+    }
+    subject_t, text_t, html_t = INSTRUCTOR_RESET_TEMPLATES if as_instructor else STUDENT_RESET_TEMPLATES
+    subject = ''.join(render_to_string(subject_t, context).splitlines())
+    text_body = render_to_string(text_t, context)
+    html_body = render_to_string(html_t, context)
+    _send(subject=subject, text_body=text_body, html_body=html_body, to_email=user.email)

@@ -757,10 +757,12 @@ class SignupApprovalFlowTests(TestCase):
         self.assertIn('Ready to get started?', sent.body)
         self.assertTrue(any(content_type == 'text/html' for _, content_type in sent.alternatives))
 
-    def test_instructor_signup_sends_welcome_email(self):
+    def test_instructor_signup_does_not_send_welcome_email(self):
+        # Unlike students, Instructors get their welcome email on approval
+        # instead (see AdminUserManagementTests) -- its copy promises
+        # dashboard access, which isn't true until an admin approves them.
         self.client.post(reverse('instructor_signup'), self._instructor_signup_data())
-        self.assertEqual(len(mail.outbox), 1)
-        self.assertEqual(mail.outbox[0].to, ['newbie@example.com'])
+        self.assertEqual(len(mail.outbox), 0)
 
     def test_signup_without_email_does_not_crash_or_send(self):
         response = self.client.post(reverse('student_signup'), self._signup_data(email=''))
@@ -838,6 +840,38 @@ class AdminUserManagementTests(TestCase):
         self.assertRedirects(response, reverse('admin_users'))
         self.pending.refresh_from_db()
         self.assertTrue(self.pending.is_approved)
+
+    def test_approving_student_does_not_send_instructor_welcome_email(self):
+        self.client.force_login(self.admin)
+        self.client.post(reverse('approve_user', args=[self.pending.id]))
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_approving_instructor_sends_instructor_welcome_email(self):
+        pending_instructor = User.objects.create_user(
+            username='pending_inst', password='pw', is_instructor=True, is_approved=False,
+            email='pending_inst@example.com', country='Egypt', first_name='Ivy', last_name='Instructor')
+        self.client.force_login(self.admin)
+        response = self.client.post(reverse('approve_user', args=[pending_instructor.id]))
+        self.assertRedirects(response, reverse('admin_users'))
+        self.assertEqual(len(mail.outbox), 1)
+        sent = mail.outbox[0]
+        self.assertEqual(sent.subject, "Welcome to Mendoura — Let's build your first course 🎓")
+        self.assertEqual(sent.to, ['pending_inst@example.com'])
+        self.assertIn('instructor dashboard', sent.body)
+        self.assertIn(reverse('instructor_dashboard'), sent.body)
+
+    def test_instructor_signup_does_not_send_any_welcome_email(self):
+        """The Instructor welcome email fires on approval (see
+        test_approving_instructor_sends_instructor_welcome_email above),
+        not at registration -- its copy promises dashboard access, which
+        isn't true until an admin approves the account."""
+        response = self.client.post(reverse('instructor_signup'), {
+            'username': 'freshinst', 'email': 'freshinst@example.com', 'phone_number': '+201009998888',
+            'country': 'Egypt', 'password1': 'a-strong-password-1', 'password2': 'a-strong-password-1',
+            'agree_to_terms': 'on',
+        })
+        self.assertRedirects(response, reverse('login'))
+        self.assertEqual(len(mail.outbox), 0)
 
     def test_admin_can_reject_pending_user_and_it_is_deleted(self):
         self.client.force_login(self.admin)
@@ -2043,6 +2077,22 @@ class PasswordResetFlowTests(TestCase):
         expected = emails.humanize_duration(settings.PASSWORD_RESET_TIMEOUT)
         self.assertIn(f'expire in {expected}', body)
 
+    def test_student_account_gets_student_reset_template(self):
+        response = self.client.post(reverse('password_reset'), {'email': 'reset@example.com'})
+        self.assertRedirects(response, reverse('password_reset_done'))
+        self.assertEqual(mail.outbox[0].subject, 'Reset your Mendoura password')
+        self.assertNotIn('instructor account', mail.outbox[0].body)
+
+    def test_instructor_account_gets_instructor_reset_template(self):
+        User.objects.create_user(
+            username='pw_reset_inst', password='oldpassword123', email='reset_inst@example.com',
+            is_instructor=True)
+        response = self.client.post(reverse('password_reset'), {'email': 'reset_inst@example.com'})
+        self.assertRedirects(response, reverse('password_reset_done'))
+        self.assertEqual(mail.outbox[0].subject, 'Reset your Mendoura instructor password')
+        self.assertIn('instructor account', mail.outbox[0].body)
+        self.assertTrue(any(content_type == 'text/html' for _, content_type in mail.outbox[0].alternatives))
+
     def test_unknown_email_does_not_leak_account_existence(self):
         response = self.client.post(reverse('password_reset'), {'email': 'nobody@example.com'})
         self.assertRedirects(response, reverse('password_reset_done'))
@@ -2827,13 +2877,38 @@ class AdminTestEmailToolTests(TestCase):
         self.assertRedirects(response, reverse('send_test_emails'))
         self.assertEqual(len(mail.outbox), 0)
 
-    def test_password_reset_test_always_goes_to_admins_own_email(self):
+    def test_password_reset_student_test_always_goes_to_admins_own_email(self):
         response = self.client.post(reverse('send_test_emails'),
-                                     {'which': 'password_reset', 'target_email': 'someone-else@example.com'})
+                                     {'which': 'password_reset_student', 'target_email': 'someone-else@example.com'})
         self.assertRedirects(response, reverse('send_test_emails'))
         self.assertEqual(len(mail.outbox), 1)
         self.assertEqual(mail.outbox[0].to, ['admin@example.com'])
         self.assertNotIn('someone-else@example.com', mail.outbox[0].to)
+        self.assertEqual(mail.outbox[0].subject, 'Reset your Mendoura password')
+
+    def test_password_reset_instructor_test_previews_instructor_copy_regardless_of_admin_role(self):
+        # self.admin has is_instructor=False -- the preview override must
+        # still render the Instructor template when explicitly asked for.
+        self.assertFalse(self.admin.is_instructor)
+        response = self.client.post(reverse('send_test_emails'), {'which': 'password_reset_instructor'})
+        self.assertRedirects(response, reverse('send_test_emails'))
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].to, ['admin@example.com'])
+        self.assertEqual(mail.outbox[0].subject, 'Reset your Mendoura instructor password')
+        self.assertIn('instructor account', mail.outbox[0].body)
+
+    def test_instructor_welcome_test_send_goes_to_typed_target(self):
+        response = self.client.post(reverse('send_test_emails'),
+                                     {'which': 'instructor_welcome', 'target_email': 'wherever3@example.com'})
+        self.assertRedirects(response, reverse('send_test_emails'))
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].to, ['wherever3@example.com'])
+        self.assertEqual(mail.outbox[0].subject, "Welcome to Mendoura — Let's build your first course 🎓")
+
+    def test_instructor_welcome_test_requires_target_email(self):
+        response = self.client.post(reverse('send_test_emails'), {'which': 'instructor_welcome', 'target_email': ''})
+        self.assertRedirects(response, reverse('send_test_emails'))
+        self.assertEqual(len(mail.outbox), 0)
 
 
 @override_settings(STORAGES={

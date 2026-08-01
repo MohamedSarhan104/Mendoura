@@ -1,6 +1,11 @@
 from django import forms
-from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
+from django.contrib.auth.forms import AuthenticationForm, PasswordResetForm, UserCreationForm
+from django.contrib.auth.tokens import default_token_generator
+from django.contrib.auth import get_user_model
+from django.contrib.sites.shortcuts import get_current_site
 from django.utils import timezone
+from django.utils.encoding import force_bytes
+from django.utils.http import urlsafe_base64_encode
 from django.utils.translation import gettext_lazy as _
 from .models import (
     EGYPT_ALIASES, User, Course, InstructorWallet, Lecture, Module, Resource, Submission,
@@ -136,6 +141,55 @@ class ApprovalAwareAuthenticationForm(AuthenticationForm):
                 _('Your account is currently pending administrator approval.'),
                 code='pending_approval',
             )
+
+
+class RoleAwarePasswordResetForm(PasswordResetForm):
+    """Students and Instructors share one User model and one /password-reset/
+    flow, but get different email copy -- Django's own PasswordResetForm
+    only supports a single fixed template triple passed in from the view.
+    Overrides save() (copied from Django 5.2's implementation, since there's
+    no finer extension point) to pick the Instructor templates instead of
+    the view's defaults whenever the recipient is an Instructor."""
+
+    INSTRUCTOR_TEMPLATES = (
+        'registration/instructor_password_reset_subject.txt',
+        'registration/instructor_password_reset_email.txt',
+        'registration/instructor_password_reset_email.html',
+    )
+
+    def save(self, domain_override=None,
+              subject_template_name='registration/password_reset_subject.txt',
+              email_template_name='registration/password_reset_email.html',
+              use_https=False, token_generator=default_token_generator,
+              from_email=None, request=None, html_email_template_name=None,
+              extra_email_context=None):
+        UserModel = get_user_model()
+        email = self.cleaned_data['email']
+        if not domain_override:
+            current_site = get_current_site(request)
+            site_name = current_site.name
+            domain = current_site.domain
+        else:
+            site_name = domain = domain_override
+        email_field_name = UserModel.get_email_field_name()
+        for user in self.get_users(email):
+            user_email = getattr(user, email_field_name)
+            user_pk_bytes = force_bytes(UserModel._meta.pk.value_to_string(user))
+            context = {
+                'email': user_email,
+                'domain': domain,
+                'site_name': site_name,
+                'uid': urlsafe_base64_encode(user_pk_bytes),
+                'user': user,
+                'token': token_generator.make_token(user),
+                'protocol': 'https' if use_https else 'http',
+                **(extra_email_context or {}),
+            }
+            if user.is_instructor:
+                subj_t, txt_t, html_t = self.INSTRUCTOR_TEMPLATES
+            else:
+                subj_t, txt_t, html_t = subject_template_name, email_template_name, html_email_template_name
+            self.send_mail(subj_t, txt_t, context, from_email, user_email, html_email_template_name=html_t)
 
 
 # 3. Course Creation Form
