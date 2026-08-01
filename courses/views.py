@@ -8,7 +8,9 @@ from functools import wraps
 import markdown
 import requests
 from django.contrib import messages
+from django.conf import settings
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.forms import PasswordResetForm
 from django.contrib.auth.views import redirect_to_login
 from django.contrib.postgres.search import SearchQuery, SearchRank, SearchVector
 from django.core.management import call_command
@@ -22,7 +24,7 @@ from django.utils.translation import gettext as _
 from django.views.decorators.csrf import csrf_exempt
 
 from . import ai_coach as ai_coach_client
-from . import bunny, certificates, paymob
+from . import bunny, certificates, emails, paymob
 from .access import get_or_create_enrollment, student_has_access
 from .forms import (
     ChoiceForm, CourseCreationForm, GradeForm, InstructorSignUpForm, LectureForm, ModuleForm,
@@ -85,7 +87,8 @@ def student_signup(request):
     if request.method == 'POST':
         form = StudentSignUpForm(request.POST)
         if form.is_valid():
-            form.save()
+            user = form.save()
+            emails.send_welcome_email(user)
             messages.success(
                 request,
                 _("Your account has been created and is pending administrator approval. "
@@ -100,7 +103,8 @@ def instructor_signup(request):
     if request.method == 'POST':
         form = InstructorSignUpForm(request.POST)
         if form.is_valid():
-            form.save()
+            user = form.save()
+            emails.send_welcome_email(user)
             messages.success(
                 request,
                 _("Your account has been created and is pending administrator approval. "
@@ -1415,6 +1419,72 @@ def admin_dashboard(request):
             status=SubscriptionPeriod.Status.OPEN, period_end__lte=timezone.now()).count(),
     }
     return render(request, 'dashboard/admin.html', context)
+
+
+# Lets an admin trigger a real send of each of the three transactional email
+# templates, to confirm formatting/links/attachments before relying on them
+# in production. Same "no Shell on Render's free tier" workaround as
+# run_subscription_distribution below -- this is the only way to fire one on
+# demand without a shell.
+@admin_required
+def send_test_emails(request):
+    if request.method == 'POST':
+        target = request.POST.get('target_email', '').strip()
+        which = request.POST.get('which')
+
+        if which in ('welcome', 'certificate') and not target:
+            messages.error(request, _('Enter a target email address first.'))
+            return redirect('send_test_emails')
+
+        if which == 'welcome':
+            emails.send_welcome_email(request.user, to_email=target)
+            messages.success(request, _('Welcome email sent to %(email)s.') % {'email': target})
+
+        elif which == 'certificate':
+            certificate = (
+                Certificate.objects.select_related(
+                    'enrollment__student', 'enrollment__course__instructor', 'enrollment__course__track')
+                .order_by('-issued_at').first()
+            )
+            if not certificate:
+                messages.error(
+                    request,
+                    _('No certificates have been issued yet -- complete a course to generate '
+                      'one, then retry this test.'))
+            else:
+                emails.send_certificate_email(certificate, to_email=target)
+                messages.success(
+                    request,
+                    _('Certificate email sent to %(email)s (using real certificate data for '
+                      '"%(course)s").') % {'email': target, 'course': certificate.enrollment.course.title})
+
+        elif which == 'password_reset':
+            # Always goes to the logged-in admin's own address, via Django's
+            # real PasswordResetForm -- this is a genuine, working reset
+            # link, so it can't be redirected to an arbitrary address.
+            if not request.user.email:
+                messages.error(request, _('Your admin account has no email address on file.'))
+            else:
+                form = PasswordResetForm(data={'email': request.user.email})
+                if form.is_valid():
+                    form.save(
+                        request=request,
+                        email_template_name='registration/password_reset_email.txt',
+                        html_email_template_name='registration/password_reset_email.html',
+                        subject_template_name='registration/password_reset_subject.txt',
+                        extra_email_context={
+                            'expiry_time': emails.humanize_duration(settings.PASSWORD_RESET_TIMEOUT)},
+                    )
+                    messages.success(
+                        request,
+                        _('Password reset email sent to your own address (%(email)s) -- this is '
+                          'a real, working reset link.') % {'email': request.user.email})
+                else:
+                    messages.error(request, _('Could not send: check your admin account has a valid email.'))
+
+        return redirect('send_test_emails')
+
+    return render(request, 'dashboard/admin_test_emails.html', {'default_email': request.user.email})
 
 
 # Manually kicks off the subscription revenue-distribution job. The free

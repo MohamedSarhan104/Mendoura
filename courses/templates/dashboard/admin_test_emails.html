@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+{% load i18n %}
+{% block title %}Test Emails - Mendoura Admin{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto px-6 py-12">
+
+  <a href="{% url 'admin_dashboard' %}" class="text-sm text-brand-600 hover:underline">
+    <i class="fa-solid fa-arrow-left"></i> {% trans "Back to Admin Overview" %}
+  </a>
+
+  <h1 class="text-3xl font-extrabold mt-4 mb-1">{% trans "Test Emails" %}</h1>
+  <p class="text-gray-500 dark:text-gray-400 mb-10">
+    {% trans "Send a real copy of each transactional email so you can confirm formatting, links, and attachments before relying on them in production." %}
+  </p>
+
+  <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-6 mb-6">
+    <label class="block text-sm font-semibold mb-2">{% trans "Target email address" %}</label>
+    <input type="email" id="target_email" value="{{ default_email }}" placeholder="you@example.com"
+           class="w-full border border-gray-300 dark:border-gray-700 bg-transparent rounded-lg p-3 focus:ring-2 focus:ring-brand-500 outline-none">
+    <p class="text-xs text-gray-400 mt-2">
+      {% trans "Used for the Welcome and Certificate tests below. The Password Reset test always goes to your own account's email instead, since it contains a real, working reset link." %}
+    </p>
+  </div>
+
+  <div class="space-y-4">
+    <div class="flex items-center justify-between bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5 gap-4 flex-wrap">
+      <div>
+        <p class="font-semibold">{% trans "Welcome Email" %}</p>
+        <p class="text-xs text-gray-400 mt-1">{% trans "Sent on registration -- uses your own name in the sample." %}</p>
+      </div>
+      <form method="post" id="welcome-form">
+        {% csrf_token %}
+        <input type="hidden" name="which" value="welcome">
+        <input type="hidden" name="target_email" class="target-email-field">
+        <button type="submit" class="px-5 py-2 rounded-lg bg-brand-600 text-white font-semibold hover:bg-brand-700 transition text-sm">
+          {% trans "Send Test" %}
+        </button>
+      </form>
+    </div>
+
+    <div class="flex items-center justify-between bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5 gap-4 flex-wrap">
+      <div>
+        <p class="font-semibold">{% trans "Certificate Email" %}</p>
+        <p class="text-xs text-gray-400 mt-1">{% trans "Sent on course completion -- reuses the most recently issued real certificate, PDF attached." %}</p>
+      </div>
+      <form method="post" id="certificate-form">
+        {% csrf_token %}
+        <input type="hidden" name="which" value="certificate">
+        <input type="hidden" name="target_email" class="target-email-field">
+        <button type="submit" class="px-5 py-2 rounded-lg bg-brand-600 text-white font-semibold hover:bg-brand-700 transition text-sm">
+          {% trans "Send Test" %}
+        </button>
+      </form>
+    </div>
+
+    <div class="flex items-center justify-between bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5 gap-4 flex-wrap">
+      <div>
+        <p class="font-semibold">{% trans "Password Reset Email" %}</p>
+        <p class="text-xs text-gray-400 mt-1">{% trans "Real reset link, sent only to your own account's email." %} ({{ default_email }})</p>
+      </div>
+      <form method="post" action="{% url 'send_test_emails' %}">
+        {% csrf_token %}
+        <input type="hidden" name="which" value="password_reset">
+        <button type="submit" class="px-5 py-2 rounded-lg bg-brand-600 text-white font-semibold hover:bg-brand-700 transition text-sm">
+          {% trans "Send Test" %}
+        </button>
+      </form>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // Copies the "target email" input into each form's hidden field right
+  // before submit, so one visible field feeds both test-send buttons.
+  document.querySelectorAll('.target-email-field').forEach((field) => {
+    field.closest('form').addEventListener('submit', () => {
+      field.value = document.getElementById('target_email').value.trim();
+    });
+  });
+</script>
+{% endblock %}

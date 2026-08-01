@@ -6,6 +6,7 @@ from datetime import timedelta
 from decimal import Decimal
 from unittest.mock import patch
 
+from django.conf import settings
 from django.contrib.auth.tokens import default_token_generator
 from django.core import mail
 from django.core.exceptions import ValidationError
@@ -17,7 +18,7 @@ from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode
 from django.utils.translation import override as translation_override
 
-from . import ai_coach, auto_translate, paymob
+from . import ai_coach, auto_translate, emails, paymob
 from .models import (
     AIConversation, AIMessage, Certificate, Choice, Course, Enrollment, InstructorWallet, Lecture,
     LegalDocument, LegalSection, Module, Payment, Payout, Plan, Question, Quiz, QuizAttempt,
@@ -677,14 +678,14 @@ class AdminGuardTests(TestCase):
     def test_instructor_cannot_reach_admin_pages(self):
         self.client.force_login(self.instructor)
         for name in ('course_approval_queue', 'admin_users', 'admin_payments',
-                     'admin_payouts', 'admin_tracks'):
+                     'admin_payouts', 'admin_tracks', 'send_test_emails'):
             response = self.client.get(reverse(name))
             self.assertNotEqual(response.status_code, 200, f'{name} was reachable by a non-admin')
 
     def test_admin_can_reach_admin_pages(self):
         self.client.force_login(self.admin)
         for name in ('admin_dashboard', 'course_approval_queue', 'admin_users', 'admin_payments',
-                     'admin_payouts', 'admin_tracks'):
+                     'admin_payouts', 'admin_tracks', 'send_test_emails'):
             response = self.client.get(reverse(name))
             self.assertEqual(response.status_code, 200, f'{name} was not reachable by an admin')
 
@@ -746,6 +747,25 @@ class SignupApprovalFlowTests(TestCase):
         del data['agree_to_terms']
         self.client.post(reverse('student_signup'), data)
         self.assertFalse(User.objects.filter(username='newbie').exists())
+
+    def test_student_signup_sends_welcome_email(self):
+        self.client.post(reverse('student_signup'), self._signup_data())
+        self.assertEqual(len(mail.outbox), 1)
+        sent = mail.outbox[0]
+        self.assertEqual(sent.subject, 'Welcome to Mendoura! 🎉')
+        self.assertEqual(sent.to, ['newbie@example.com'])
+        self.assertIn('Ready to get started?', sent.body)
+        self.assertTrue(any(content_type == 'text/html' for _, content_type in sent.alternatives))
+
+    def test_instructor_signup_sends_welcome_email(self):
+        self.client.post(reverse('instructor_signup'), self._instructor_signup_data())
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].to, ['newbie@example.com'])
+
+    def test_signup_without_email_does_not_crash_or_send(self):
+        response = self.client.post(reverse('student_signup'), self._signup_data(email=''))
+        self.assertRedirects(response, reverse('login'))
+        self.assertEqual(len(mail.outbox), 0)
 
     def test_student_signup_records_terms_accepted_timestamp(self):
         self.client.post(reverse('student_signup'), self._signup_data())
@@ -2017,6 +2037,12 @@ class PasswordResetFlowTests(TestCase):
         # Multipart: plain-text body plus an HTML alternative.
         self.assertTrue(any(content_type == 'text/html' for _, content_type in mail.outbox[0].alternatives))
 
+    def test_reset_email_states_expiry_derived_from_settings(self):
+        self.client.post(reverse('password_reset'), {'email': 'reset@example.com'})
+        body = mail.outbox[0].body
+        expected = emails.humanize_duration(settings.PASSWORD_RESET_TIMEOUT)
+        self.assertIn(f'expire in {expected}', body)
+
     def test_unknown_email_does_not_leak_account_existence(self):
         response = self.client.post(reverse('password_reset'), {'email': 'nobody@example.com'})
         self.assertRedirects(response, reverse('password_reset_done'))
@@ -2725,6 +2751,89 @@ class QuizCertificateEmailTests(TestCase):
                 reverse('mark_lecture_complete', args=[self.course.id, self.lecture.id]))
         self.assertEqual(response.status_code, 302)
         self.assertTrue(Certificate.objects.filter(enrollment=self.enrollment).exists())
+
+    def test_certificate_email_uses_updated_copy_and_links(self):
+        self.client.force_login(self.student)
+        self.client.post(reverse('mark_lecture_complete', args=[self.course.id, self.lecture.id]))
+
+        sent = mail.outbox[0]
+        certificate = Certificate.objects.get(enrollment=self.enrollment)
+        self.assertEqual(sent.subject, "🎓 Congratulations! You've completed Email Course")
+        self.assertIn('Well done,', sent.body)
+        self.assertIn('related courses', sent.body)
+        self.assertIn('linkedin.com/profile/add', sent.body)
+        self.assertIn(f'verify/{certificate.uuid}', sent.body)
+
+
+@override_settings(STORAGES={
+    'default': {'BACKEND': 'django.core.files.storage.InMemoryStorage'},
+    'staticfiles': {'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage'},
+})
+class AdminTestEmailToolTests(TestCase):
+    """The admin-only 'send a real test email to yourself' utility --
+    exists because Render's free tier has no Shell, so this is the only way
+    to trigger a real send without deploying a one-off script."""
+
+    def setUp(self):
+        self.admin = User.objects.create_superuser(
+            username='email_tool_admin', password='pw', email='admin@example.com',
+            first_name='Ada', last_name='Admin')
+        self.client.force_login(self.admin)
+
+    def test_welcome_test_send_goes_to_typed_target(self):
+        response = self.client.post(reverse('send_test_emails'),
+                                     {'which': 'welcome', 'target_email': 'wherever@example.com'})
+        self.assertRedirects(response, reverse('send_test_emails'))
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].to, ['wherever@example.com'])
+        self.assertEqual(mail.outbox[0].subject, 'Welcome to Mendoura! 🎉')
+
+    def test_welcome_test_requires_target_email(self):
+        response = self.client.post(reverse('send_test_emails'), {'which': 'welcome', 'target_email': ''})
+        self.assertRedirects(response, reverse('send_test_emails'))
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_certificate_test_send_uses_real_certificate_and_typed_target(self):
+        instructor = User.objects.create_user(username='tool_inst', password='pw', is_instructor=True)
+        student = User.objects.create_user(
+            username='tool_stud', password='pw', is_student=True, email='real@example.com')
+        track = Track.objects.create(name='Tool Track')
+        course = Course.objects.create(
+            instructor=instructor, track=track, title='Tool Course', description='...',
+            production_type=Course.ProductionType.SCRIPT_ONLY, is_free=True,
+            status=Course.Status.PUBLISHED,
+        )
+        module = Module.objects.create(course=course, title='M1')
+        lecture = Lecture.objects.create(module=module, title='L1')
+        enrollment = Enrollment.objects.create(student=student, course=course)
+        self.client.force_login(student)
+        self.client.post(reverse('mark_lecture_complete', args=[course.id, lecture.id]))
+        mail.outbox.clear()
+
+        self.client.force_login(self.admin)
+        response = self.client.post(reverse('send_test_emails'),
+                                     {'which': 'certificate', 'target_email': 'wherever2@example.com'})
+        self.assertRedirects(response, reverse('send_test_emails'))
+        self.assertEqual(len(mail.outbox), 1)
+        sent = mail.outbox[0]
+        self.assertEqual(sent.to, ['wherever2@example.com'])
+        self.assertIn('Tool Course', sent.subject)
+        # Real student's email is never leaked as a recipient of the test send.
+        self.assertNotIn('real@example.com', sent.to)
+
+    def test_certificate_test_send_without_any_certificate_shows_error_not_crash(self):
+        response = self.client.post(reverse('send_test_emails'),
+                                     {'which': 'certificate', 'target_email': 'wherever@example.com'})
+        self.assertRedirects(response, reverse('send_test_emails'))
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_password_reset_test_always_goes_to_admins_own_email(self):
+        response = self.client.post(reverse('send_test_emails'),
+                                     {'which': 'password_reset', 'target_email': 'someone-else@example.com'})
+        self.assertRedirects(response, reverse('send_test_emails'))
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].to, ['admin@example.com'])
+        self.assertNotIn('someone-else@example.com', mail.outbox[0].to)
 
 
 @override_settings(STORAGES={

@@ -239,6 +239,12 @@ EMAIL_BACKEND = (
     else 'django.core.mail.backends.console.EmailBackend'
 )
 
+# How long a password reset link stays valid, in seconds. Explicit here
+# (rather than relying on Django's own 3-day default) so it's one source of
+# truth: courses/urls.py derives the "expires in X" wording in the reset
+# email from this same value instead of a second hardcoded copy of the number.
+PASSWORD_RESET_TIMEOUT = config('PASSWORD_RESET_TIMEOUT', default=60 * 60 * 24 * 3, cast=int)  # 3 days
+
 # AI Study Buddy -- Anthropic Claude API key. Blank in local dev/tests is
 # fine; the view surfaces a friendly error instead of crashing when it's unset.
 AI_API_KEY = config('AI_API_KEY', default='')

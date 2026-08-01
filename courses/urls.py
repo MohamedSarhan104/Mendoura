@@ -1,6 +1,7 @@
+from django.conf import settings
 from django.urls import path, reverse_lazy
 from django.contrib.auth import views as auth_views
-from . import views
+from . import emails, views
 from .forms import ApprovalAwareAuthenticationForm
 
 urlpatterns = [
@@ -16,12 +17,16 @@ urlpatterns = [
     path('logout/', auth_views.LogoutView.as_view(), name='logout'),
 
     # Password reset -- Django's built-in views, Mendoura's own templates.
+    # expiry_time is derived from settings.PASSWORD_RESET_TIMEOUT (the same
+    # value Django itself enforces when validating the token) so the "expires
+    # in X" wording in the email can never drift out of sync with reality.
     path('password-reset/', auth_views.PasswordResetView.as_view(
         template_name='registration/password_reset_form.html',
         email_template_name='registration/password_reset_email.txt',
         html_email_template_name='registration/password_reset_email.html',
         subject_template_name='registration/password_reset_subject.txt',
         success_url=reverse_lazy('password_reset_done'),
+        extra_email_context={'expiry_time': emails.humanize_duration(settings.PASSWORD_RESET_TIMEOUT)},
     ), name='password_reset'),
     path('password-reset/done/', auth_views.PasswordResetDoneView.as_view(
         template_name='registration/password_reset_done.html',
@@ -42,6 +47,7 @@ urlpatterns = [
     path('courses/<int:course_id>/', views.course_detail, name='course_detail'),
     path('course/<int:course_id>/toggle-publish/', views.toggle_publish, name='toggle_publish'),
     path('dashboard/admin/', views.admin_dashboard, name='admin_dashboard'),
+    path('dashboard/admin/test-emails/', views.send_test_emails, name='send_test_emails'),
     path('dashboard/admin/run-subscription-distribution/', views.run_subscription_distribution,
          name='run_subscription_distribution'),
     path('dashboard/admin/subscription-revenue/', views.admin_subscription_revenue,
