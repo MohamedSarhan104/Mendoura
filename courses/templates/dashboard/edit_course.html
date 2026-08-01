@@ -60,8 +60,11 @@
     </div>
 
     <div>
-      <label class="block text-sm font-semibold mb-2">{% trans "Thumbnail" %}</label>
+      <label class="block text-sm font-semibold mb-2">{% trans "Cover Photo" %}</label>
       {{ form.thumbnail }}
+      <p class="text-xs mt-2 text-gray-400">
+        {% blocktrans %}A plain photo -- your headshot or a relevant image works well. Shown on course cards, and used as the video player's cover, with the course title and your name automatically overlaid in Mendoura's style.{% endblocktrans %}
+      </p>
     </div>
 
     <div class="border-t border-gray-200 dark:border-gray-800 pt-6">

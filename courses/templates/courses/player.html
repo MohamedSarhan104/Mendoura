@@ -11,29 +11,51 @@
 
     <div id="video-container" class="relative mt-4 aspect-video bg-black rounded-2xl overflow-hidden flex items-center justify-center">
       {% if bunny_embed_url %}
-        <div id="video-skeleton" class="absolute inset-0 bg-gray-800 overflow-hidden">
+        <div id="video-skeleton" class="absolute inset-0 bg-gray-800 overflow-hidden hidden">
           <div class="absolute inset-0 -translate-x-full animate-shimmer bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
         </div>
-        <iframe class="relative w-full h-full" src="{{ bunny_embed_url }}"
-                loading="lazy"
+        <iframe id="lecture-video" class="relative w-full h-full hidden" data-src="{{ bunny_embed_url }}"
                 allow="accelerometer;gyroscope;autoplay;encrypted-media;picture-in-picture;"
                 allowfullscreen
                 onload="document.getElementById('video-skeleton')?.remove()"></iframe>
       {% elif lecture.video_file %}
-        <div id="video-skeleton" class="absolute inset-0 bg-gray-800 overflow-hidden">
+        <div id="video-skeleton" class="absolute inset-0 bg-gray-800 overflow-hidden hidden">
           <div class="absolute inset-0 -translate-x-full animate-shimmer bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
         </div>
-        <video controls class="relative w-full h-full" src="{{ lecture.video_file.url }}"
+        <video id="lecture-video" controls class="relative w-full h-full hidden" data-src="{{ lecture.video_file.url }}"
                onloadeddata="document.getElementById('video-skeleton')?.remove()"
                onerror="document.getElementById('video-skeleton')?.remove()"></video>
       {% elif lecture.video_url %}
-        <div id="video-skeleton" class="absolute inset-0 bg-gray-800 overflow-hidden">
+        <div id="video-skeleton" class="absolute inset-0 bg-gray-800 overflow-hidden hidden">
           <div class="absolute inset-0 -translate-x-full animate-shimmer bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
         </div>
-        <iframe class="relative w-full h-full" src="{{ lecture.video_url }}" allowfullscreen
+        <iframe id="lecture-video" class="relative w-full h-full hidden" data-src="{{ lecture.video_url }}" allowfullscreen
                 onload="document.getElementById('video-skeleton')?.remove()"></iframe>
       {% else %}
         <p class="text-gray-500 text-sm">No video available for this lecture.</p>
+      {% endif %}
+
+      {% if course.poster_image %}
+        {% if bunny_embed_url or lecture.video_file or lecture.video_url %}
+          {% comment %}
+            Cover screen shown before playback -- the poster already has the
+            course title and instructor's name composited in server-side, so
+            it works identically whether the underlying video is a Bunny
+            iframe, a native <video>, or an external iframe (none of which
+            the native poster="" attribute can reach into). Clicking it
+            lazily sets the real src, so the video/iframe never loads at all
+            until the student actually wants to watch.
+          {% endcomment %}
+          <button type="button" id="poster-cover" aria-label="Play video"
+                  class="absolute inset-0 z-[45] w-full h-full group cursor-pointer">
+            <img src="{{ course.poster_image.url }}" alt="" class="absolute inset-0 w-full h-full object-cover">
+            <div class="absolute inset-0 flex items-center justify-center bg-black/10 group-hover:bg-black/25 transition">
+              <div class="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-white/95 flex items-center justify-center shadow-xl group-hover:scale-105 transition">
+                <i class="fa-solid fa-play text-brand-600 text-2xl sm:text-3xl ml-1"></i>
+              </div>
+            </div>
+          </button>
+        {% endif %}
       {% endif %}
 
       {% if enrollment and request.user.is_authenticated %}
@@ -147,6 +169,24 @@
 {% endblock %}
 
 {% block extra_js %}
+<script>
+  // Click-to-reveal poster: swaps the real src in only once clicked, so
+  // the Bunny iframe/video/external iframe never loads until the student
+  // actually wants to watch.
+  (function () {
+    const cover = document.getElementById('poster-cover');
+    const videoEl = document.getElementById('lecture-video');
+    if (!cover || !videoEl) return;
+
+    cover.addEventListener('click', () => {
+      videoEl.src = videoEl.dataset.src;
+      videoEl.classList.remove('hidden');
+      document.getElementById('video-skeleton')?.classList.remove('hidden');
+      cover.remove();
+      if (videoEl.tagName === 'VIDEO') videoEl.play().catch(() => {});
+    });
+  })();
+</script>
 {% if enrollment %}
 <script>
   // Aggregates watch-time client-side and flushes every ~30s -- never one

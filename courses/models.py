@@ -12,7 +12,7 @@ from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import get_language
 
-from . import auto_translate, certificates, emails
+from . import auto_translate, certificates, emails, poster
 from .money import SUBSCRIPTION_INSTRUCTOR_SHARE, calculate_split, get_instructor_share
 
 logger = logging.getLogger(__name__)
@@ -287,6 +287,10 @@ class Course(models.Model):
     rejection_reason = models.TextField(blank=True, default='')
 
     thumbnail = models.ImageField(upload_to='course_thumbnails/', blank=True, null=True)
+    # Generated, never uploaded directly -- a 1280x720 composite of
+    # thumbnail (or a branded placeholder) with the course title and
+    # instructor name burned in. See Course.generate_poster().
+    poster_image = models.ImageField(upload_to='course_posters/', blank=True, null=True, editable=False)
     ai_script = models.TextField(help_text=_('The script for Mendoura-produced video generation'), blank=True, null=True)
 
     rating = models.DecimalField(max_digits=3, decimal_places=2, default=Decimal('0.00'))
@@ -320,6 +324,23 @@ class Course(models.Model):
                     _("production_type is read-only once a course has its first successful sale.")
                 )
         super().save(*args, **kwargs)
+
+    def generate_poster(self):
+        """(Re)renders the video-player poster from the current thumbnail
+        (or the branded placeholder, if none) and title, and saves it into
+        poster_image. Called explicitly by the create/edit-course views
+        after every save -- like Certificate.generate_pdf(), this is cheap
+        enough (no external API call, pure local compositing) that
+        unconditional regeneration is simpler and more reliably correct
+        than trying to detect exactly which field changed. Doesn't pick up
+        a later change to the instructor's own name -- an accepted, rare
+        staleness case, same as a certificate not re-rendering if the
+        student later renames their account."""
+        from django.core.files.base import ContentFile
+
+        image_bytes = poster.build_poster_image(self)
+        self.poster_image.save(f'poster-{self.pk}.jpg', ContentFile(image_bytes), save=True)
+        return self.poster_image
 
 
 class Module(models.Model):

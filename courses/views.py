@@ -1,4 +1,5 @@
 import json
+import logging
 import re
 import uuid
 from datetime import timedelta
@@ -36,6 +37,8 @@ from .models import (
     SubscriptionPeriod, Submission, Track, TrackRoadmapStep, User, WalletTransaction, WatchEvent,
 )
 
+logger = logging.getLogger(__name__)
+
 
 def admin_required(view_func):
     @wraps(view_func)
@@ -45,6 +48,18 @@ def admin_required(view_func):
             return redirect('platform_home')
         return view_func(request, *args, **kwargs)
     return wrapper
+
+
+def _generate_poster_safely(course):
+    """Course.generate_poster() involves a storage upload -- never let a
+    hiccup there (or a misconfigured storage backend) turn an otherwise
+    successful course create/edit/view into a hard error. The template
+    already copes with a missing poster_image by simply not showing the
+    cover screen, and it's retried on the next save or lecture view."""
+    try:
+        course.generate_poster()
+    except Exception:
+        logger.warning('Failed to generate poster for course id=%s', course.id, exc_info=True)
 
 # 1. Platform Homepage
 def platform_home(request):
@@ -148,6 +163,7 @@ def create_course(request):
             course = form.save(commit=False)
             course.instructor = request.user
             course.save()
+            _generate_poster_safely(course)
             return redirect('manage_modules', course_id=course.id)
     else:
         form = CourseCreationForm()
@@ -491,6 +507,13 @@ def my_learning(request):
 def course_player(request, course_id, lecture_id):
     course = get_object_or_404(Course, id=course_id)
     lecture = get_object_or_404(Lecture, id=lecture_id, module__course=course)
+
+    # Lazily backfills the poster for any course that predates this field
+    # (or was created outside the normal form, e.g. via Django admin) --
+    # same "generate on first access, cache the file" pattern as
+    # certificate_download's certificate.generate_pdf() fallback.
+    if not course.poster_image:
+        _generate_poster_safely(course)
 
     has_access = request.user.is_authenticated and student_has_access(request.user, course)
     is_owner_or_admin = _can_preview_unpublished(request.user, course)
@@ -929,7 +952,14 @@ def edit_course(request, course_id):
             form.fields['production_type'].disabled = True
         if form.is_valid():
             was_published = course.status == Course.Status.PUBLISHED
+            # Regenerating the poster is cheap, but re-uploading it to
+            # storage on every unrelated edit (price, description, ...)
+            # isn't free and leaves the previous file orphaned -- only do
+            # it when the source material for the poster actually changed.
+            poster_inputs_changed = bool({'title', 'thumbnail'} & set(form.changed_data))
             form.save()
+            if poster_inputs_changed or not course.poster_image:
+                _generate_poster_safely(course)
             if was_published:
                 _reenter_review_if_published(request, course)
             else:

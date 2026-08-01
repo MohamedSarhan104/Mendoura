@@ -482,6 +482,170 @@ class CourseCreationTrackScopeTests(TestCase):
         self.assertEqual(response.status_code, 200)  # re-renders the form with errors
 
 
+@override_settings(STORAGES={
+    'default': {'BACKEND': 'django.core.files.storage.InMemoryStorage'},
+    'staticfiles': {'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage'},
+})
+class CoursePosterTests(TestCase):
+    """The video-player poster: a 1280x720 composite of the course's
+    thumbnail (or a branded placeholder) with the title and instructor's
+    name burned in server-side -- see courses/poster.py."""
+
+    def setUp(self):
+        self.instructor = User.objects.create_user(
+            username='poster_test_inst', password='pw', is_instructor=True,
+            first_name='Nour', last_name='Adel')
+        self.parent_track = Track.objects.create(name='Poster Parent')
+        self.track = Track.objects.create(name='Poster Child', parent=self.parent_track)
+
+    def _uploaded_photo(self, size=(1200, 800), color=(90, 110, 200), name='cover.jpg'):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        from PIL import Image
+        import io
+        buf = io.BytesIO()
+        Image.new('RGB', size, color).save(buf, format='JPEG')
+        return SimpleUploadedFile(name, buf.getvalue(), content_type='image/jpeg')
+
+    def _create_course(self, thumbnail=None, title='Sample Course'):
+        return Course.objects.create(
+            instructor=self.instructor, track=self.track, title=title, description='d',
+            production_type=Course.ProductionType.FULL, status=Course.Status.PUBLISHED,
+            thumbnail=thumbnail,
+        )
+
+    def test_build_poster_image_without_thumbnail_uses_placeholder(self):
+        from PIL import Image
+        import io
+        from courses import poster
+
+        course = self._create_course()
+        image_bytes = poster.build_poster_image(course)
+        image = Image.open(io.BytesIO(image_bytes))
+        self.assertEqual(image.size, (poster.WIDTH, poster.HEIGHT))
+        self.assertEqual(image.format, 'JPEG')
+
+    def test_build_poster_image_with_thumbnail_crops_to_16_9(self):
+        from PIL import Image
+        import io
+        from courses import poster
+
+        course = self._create_course(thumbnail=self._uploaded_photo(size=(2000, 1000)))
+        image_bytes = poster.build_poster_image(course)
+        image = Image.open(io.BytesIO(image_bytes))
+        self.assertEqual(image.size, (poster.WIDTH, poster.HEIGHT))
+
+    def test_very_long_title_does_not_crash_and_stays_bounded(self):
+        from PIL import Image
+        import io
+        from courses import poster
+
+        course = self._create_course(
+            title='A ' + 'Very ' * 40 + 'Long Course Title That Should Wrap And Truncate')
+        image_bytes = poster.build_poster_image(course)
+        image = Image.open(io.BytesIO(image_bytes))
+        self.assertEqual(image.size, (poster.WIDTH, poster.HEIGHT))
+
+    def test_generate_poster_saves_to_poster_image_field(self):
+        course = self._create_course()
+        self.assertFalse(course.poster_image)
+        course.generate_poster()
+        self.assertTrue(course.poster_image)
+        course.poster_image.open('rb')
+        data = course.poster_image.read()
+        course.poster_image.close()
+        self.assertTrue(data.startswith(b'\xff\xd8'))  # JPEG magic bytes
+
+    def test_create_course_view_generates_poster(self):
+        self.client.force_login(self.instructor)
+        self.client.post(reverse('create_course'), {
+            'title': 'Freshly Created Course', 'description': 'd', 'track': self.track.id,
+            'level': Course.Level.BEGINNER, 'language': 'English',
+            'production_type': Course.ProductionType.FULL, 'price': '0.00', 'is_free': 'on',
+        })
+        course = Course.objects.get(title='Freshly Created Course')
+        self.assertTrue(course.poster_image)
+
+    def test_edit_course_unrelated_field_does_not_regenerate_poster(self):
+        course = self._create_course()
+        course.generate_poster()
+        original_name = course.poster_image.name
+
+        self.client.force_login(self.instructor)
+        self.client.post(reverse('edit_course', args=[course.id]), {
+            'title': course.title, 'description': course.description, 'track': self.track.id,
+            'level': Course.Level.BEGINNER, 'language': 'English',
+            'production_type': Course.ProductionType.FULL, 'price': '25.00',
+        })
+        course.refresh_from_db()
+        self.assertEqual(course.poster_image.name, original_name)
+
+    def test_edit_course_title_change_regenerates_poster(self):
+        course = self._create_course()
+        course.generate_poster()
+        original_name = course.poster_image.name
+
+        self.client.force_login(self.instructor)
+        self.client.post(reverse('edit_course', args=[course.id]), {
+            'title': 'A Brand New Title', 'description': course.description, 'track': self.track.id,
+            'level': Course.Level.BEGINNER, 'language': 'English',
+            'production_type': Course.ProductionType.FULL, 'price': '0.00',
+        })
+        course.refresh_from_db()
+        self.assertNotEqual(course.poster_image.name, original_name)
+
+    def test_edit_course_thumbnail_change_regenerates_poster(self):
+        course = self._create_course()
+        course.generate_poster()
+        original_name = course.poster_image.name
+
+        self.client.force_login(self.instructor)
+        self.client.post(reverse('edit_course', args=[course.id]), {
+            'title': course.title, 'description': course.description, 'track': self.track.id,
+            'level': Course.Level.BEGINNER, 'language': 'English',
+            'production_type': Course.ProductionType.FULL, 'price': '0.00',
+            'thumbnail': self._uploaded_photo(name='new_cover.jpg'),
+        })
+        course.refresh_from_db()
+        self.assertNotEqual(course.poster_image.name, original_name)
+
+    def test_player_page_backfills_missing_poster_lazily(self):
+        course = self._create_course()
+        module = Module.objects.create(course=course, title='M1')
+        lecture = Lecture.objects.create(
+            module=module, title='L1', video_url='https://example.com/v', is_preview=True)
+        self.assertFalse(course.poster_image)
+
+        response = self.client.get(reverse('course_player', args=[course.id, lecture.id]))
+        self.assertEqual(response.status_code, 200)
+        course.refresh_from_db()
+        self.assertTrue(course.poster_image)
+
+    def test_player_page_renders_poster_cover_with_lazy_video_src(self):
+        course = self._create_course()
+        course.generate_poster()
+        module = Module.objects.create(course=course, title='M1')
+        lecture = Lecture.objects.create(
+            module=module, title='L1', video_url='https://example.com/v', is_preview=True)
+
+        response = self.client.get(reverse('course_player', args=[course.id, lecture.id]))
+        self.assertContains(response, 'id="poster-cover"')
+        self.assertContains(response, course.poster_image.url)
+        self.assertContains(response, 'data-src="https://example.com/v"')
+        # "data-src=" contains "src=" as a substring, so this checks for a
+        # real, separate src="..." attribute (leading space) rather than
+        # naively asserting the whole URL string is absent.
+        self.assertNotContains(response, ' src="https://example.com/v"')
+
+    def test_player_page_without_video_source_shows_no_poster_cover(self):
+        course = self._create_course()
+        course.generate_poster()
+        module = Module.objects.create(course=course, title='M1')
+        lecture = Lecture.objects.create(module=module, title='No Video', is_preview=True)
+
+        response = self.client.get(reverse('course_player', args=[course.id, lecture.id]))
+        self.assertNotContains(response, 'id="poster-cover"')
+
+
 class CourseVersioningTests(TestCase):
     """Editing a published course must resubmit it for review without
     breaking access for students who already paid for it."""
