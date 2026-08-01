@@ -118,6 +118,51 @@ def send_instructor_application_received_email(user, *, to_email=None) -> None:
     )
 
 
+def send_instructor_application_notification(user, *, to_email=None) -> None:
+    """Internal notification, sent alongside
+    send_instructor_application_received_email, so a new application
+    doesn't sit unnoticed until someone happens to check the admin
+    dashboard. Links to the admin pending-approvals page rather than a
+    one-click approve action: the real approve_user endpoint is a
+    POST-only, CSRF-protected, login-required form, and a plain email
+    link can't submit that -- a one-click GET-based approve would also
+    risk being silently triggered by corporate email security scanners
+    or link-preview bots that auto-fetch every URL in an email.
+
+    to_email overrides the recipient (default:
+    settings.INSTRUCTOR_APPLICATION_NOTIFICATION_EMAIL) -- used only by
+    the admin test-email tool to preview at an arbitrary inbox."""
+    name = user.get_full_name() or user.username
+    context = {
+        'instructor_name': name,
+        'username': user.username,
+        'email': user.email or '—',
+        'phone_number': user.phone_number or '—',
+        'country': user.country or '—',
+        'payoneer_account': user.payoneer_account or '—',
+        'signup_date': user.date_joined,
+        'admin_review_link': f'{SITE_DOMAIN}{reverse("admin_users")}',
+    }
+    html_body = render_to_string('emails/instructor_application_notification.html', context)
+    text_body = (
+        f'New Instructor application on Mendoura\n\n'
+        f'Name: {name}\n'
+        f'Username: {context["username"]}\n'
+        f'Email: {context["email"]}\n'
+        f'Phone: {context["phone_number"]}\n'
+        f'Country: {context["country"]}\n'
+        f'Payoneer account: {context["payoneer_account"]}\n'
+        f'Applied: {user.date_joined.strftime("%B %d, %Y %H:%M UTC")}\n\n'
+        f'Review and approve or reject this application:\n'
+        f'{context["admin_review_link"]}'
+    )
+    _send(
+        subject=f'New Instructor application: {name}',
+        text_body=text_body, html_body=html_body,
+        to_email=to_email or settings.INSTRUCTOR_APPLICATION_NOTIFICATION_EMAIL,
+    )
+
+
 def send_instructor_welcome_email(user, *, to_email=None) -> None:
     """Sent once, when an Instructor account is approved -- not at
     registration. The copy promises dashboard access ("You now have

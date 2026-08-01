@@ -245,6 +245,13 @@ EMAIL_BACKEND = (
 # email from this same value instead of a second hardcoded copy of the number.
 PASSWORD_RESET_TIMEOUT = config('PASSWORD_RESET_TIMEOUT', default=60 * 60 * 24 * 3, cast=int)  # 3 days
 
+# Where the "new Instructor application" internal notification goes -- kept
+# separate from support@mendoura.com's use as the human reply-to contact
+# address elsewhere, in case this ever needs to route to a dedicated
+# admissions inbox instead.
+INSTRUCTOR_APPLICATION_NOTIFICATION_EMAIL = config(
+    'INSTRUCTOR_APPLICATION_NOTIFICATION_EMAIL', default='support@mendoura.com')
+
 # AI Study Buddy -- Anthropic Claude API key. Blank in local dev/tests is
 # fine; the view surfaces a friendly error instead of crashing when it's unset.
 AI_API_KEY = config('AI_API_KEY', default='')

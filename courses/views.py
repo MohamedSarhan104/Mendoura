@@ -107,6 +107,7 @@ def instructor_signup(request):
             # "application received" email is safe to send right away.
             user = form.save()
             emails.send_instructor_application_received_email(user)
+            emails.send_instructor_application_notification(user)
             messages.success(
                 request,
                 _("Your account has been created and is pending administrator approval. "
@@ -1434,8 +1435,8 @@ def send_test_emails(request):
         target = request.POST.get('target_email', '').strip()
         which = request.POST.get('which')
 
-        if which in ('welcome', 'instructor_application_received', 'instructor_welcome',
-                     'certificate') and not target:
+        if which in ('welcome', 'instructor_application_received', 'instructor_application_notification',
+                     'instructor_welcome', 'certificate') and not target:
             messages.error(request, _('Enter a target email address first.'))
             return redirect('send_test_emails')
 
@@ -1447,6 +1448,13 @@ def send_test_emails(request):
             emails.send_instructor_application_received_email(request.user, to_email=target)
             messages.success(
                 request, _('Instructor application-received email sent to %(email)s.') % {'email': target})
+
+        elif which == 'instructor_application_notification':
+            emails.send_instructor_application_notification(request.user, to_email=target)
+            messages.success(
+                request,
+                _('Internal application-notification email sent to %(email)s (using your own '
+                  'account\'s details as sample applicant data).') % {'email': target})
 
         elif which == 'instructor_welcome':
             emails.send_instructor_welcome_email(request.user, to_email=target)

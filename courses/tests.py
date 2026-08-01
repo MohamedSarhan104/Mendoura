@@ -760,13 +760,22 @@ class SignupApprovalFlowTests(TestCase):
     def test_instructor_signup_sends_application_received_not_welcome_email(self):
         # The full welcome email fires on approval instead (see
         # AdminUserManagementTests) -- its copy promises dashboard access,
-        # which isn't true until an admin approves them. Registration gets
-        # the lighter "we got your application" email instead.
+        # which isn't true until an admin approves them. Registration sends
+        # the lighter "we got your application" email to the applicant, plus
+        # an internal notification to the team (checked separately below).
         self.client.post(reverse('instructor_signup'), self._instructor_signup_data())
-        self.assertEqual(len(mail.outbox), 1)
-        sent = mail.outbox[0]
-        self.assertEqual(sent.subject, "We've received your Mendoura instructor application")
-        self.assertEqual(sent.to, ['newbie@example.com'])
+        applicant_email = next(m for m in mail.outbox if m.to == ['newbie@example.com'])
+        self.assertEqual(applicant_email.subject, "We've received your Mendoura instructor application")
+
+    def test_instructor_signup_sends_internal_notification_with_applicant_details(self):
+        self.client.post(reverse('instructor_signup'), self._instructor_signup_data())
+        notification = next(
+            m for m in mail.outbox
+            if m.to == [settings.INSTRUCTOR_APPLICATION_NOTIFICATION_EMAIL])
+        self.assertIn('newbie_inst', notification.subject)
+        self.assertIn('newbie_inst', notification.body)
+        self.assertIn('newbie@example.com', notification.body)
+        self.assertIn(reverse('admin_users'), notification.body)
 
     def test_signup_without_email_does_not_crash_or_send(self):
         response = self.client.post(reverse('student_signup'), self._signup_data(email=''))
@@ -876,8 +885,8 @@ class AdminUserManagementTests(TestCase):
             'agree_to_terms': 'on',
         })
         self.assertRedirects(response, reverse('login'))
-        self.assertEqual(len(mail.outbox), 1)
-        self.assertEqual(mail.outbox[0].subject, "We've received your Mendoura instructor application")
+        applicant_email = next(m for m in mail.outbox if m.to == ['freshinst@example.com'])
+        self.assertEqual(applicant_email.subject, "We've received your Mendoura instructor application")
 
     def test_admin_can_reject_pending_user_and_it_is_deleted(self):
         self.client.force_login(self.admin)
@@ -2928,6 +2937,22 @@ class AdminTestEmailToolTests(TestCase):
     def test_instructor_application_received_test_requires_target_email(self):
         response = self.client.post(
             reverse('send_test_emails'), {'which': 'instructor_application_received', 'target_email': ''})
+        self.assertRedirects(response, reverse('send_test_emails'))
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_instructor_application_notification_test_send_goes_to_typed_target(self):
+        response = self.client.post(
+            reverse('send_test_emails'),
+            {'which': 'instructor_application_notification', 'target_email': 'wherever5@example.com'})
+        self.assertRedirects(response, reverse('send_test_emails'))
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].to, ['wherever5@example.com'])
+        self.assertIn('email_tool_admin', mail.outbox[0].body)
+        self.assertIn(reverse('admin_users'), mail.outbox[0].body)
+
+    def test_instructor_application_notification_test_requires_target_email(self):
+        response = self.client.post(
+            reverse('send_test_emails'), {'which': 'instructor_application_notification', 'target_email': ''})
         self.assertRedirects(response, reverse('send_test_emails'))
         self.assertEqual(len(mail.outbox), 0)
 
