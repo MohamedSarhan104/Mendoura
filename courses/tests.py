@@ -19,9 +19,10 @@ from django.utils.translation import override as translation_override
 
 from . import ai_coach, auto_translate, paymob
 from .models import (
-    AIConversation, AIMessage, Certificate, Course, Enrollment, InstructorWallet, Lecture,
-    LegalDocument, LegalSection, Module, Payment, Payout, Plan, Resource, RevenueDistribution,
-    Review, Subscription, SubscriptionPeriod, Submission, Track, User, WalletTransaction, WatchEvent,
+    AIConversation, AIMessage, Certificate, Choice, Course, Enrollment, InstructorWallet, Lecture,
+    LegalDocument, LegalSection, Module, Payment, Payout, Plan, Question, Quiz, QuizAttempt,
+    Resource, RevenueDistribution, Review, Subscription, SubscriptionPeriod, Submission, Track,
+    User, WalletTransaction, WatchEvent,
 )
 from .money import calculate_split
 
@@ -2534,3 +2535,377 @@ class LegalDocumentTests(TestCase):
 
         with translation_override('ar'):
             self.assertIn('<table>', section.body_html)
+
+
+@override_settings(STORAGES={
+    'default': {'BACKEND': 'django.core.files.storage.InMemoryStorage'},
+    'staticfiles': {'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage'},
+})
+class QuizModelTests(TestCase):
+    """Model-level behavior: module completion gating, best-score
+    aggregation, attempt numbering, and the attempt-3+ answer reveal."""
+
+    def setUp(self):
+        self.instructor = User.objects.create_user(
+            username='quiz_inst', password='pw', is_instructor=True)
+        self.student = User.objects.create_user(
+            username='quiz_stud', password='pw', is_student=True, email='quiz@example.com')
+        track = Track.objects.create(name='Quiz Track')
+        self.course = Course.objects.create(
+            instructor=self.instructor, track=track, title='Quiz Course', description='...',
+            production_type=Course.ProductionType.SCRIPT_ONLY, price=Decimal('0.00'),
+            is_free=True, status=Course.Status.PUBLISHED,
+        )
+        self.module = Module.objects.create(course=self.course, title='Module 1')
+        self.lecture = Lecture.objects.create(module=self.module, title='Only Lecture')
+        self.quiz = Quiz.objects.create(module=self.module, passing_score_percent=70)
+        self.q1 = Question.objects.create(quiz=self.quiz, text='2+2?', order=1)
+        self.c1_correct = Choice.objects.create(question=self.q1, text='4', is_correct=True)
+        self.c1_wrong = Choice.objects.create(question=self.q1, text='5', is_correct=False)
+        self.enrollment = Enrollment.objects.create(student=self.student, course=self.course)
+
+    def _complete_lecture(self):
+        self.client.force_login(self.student)
+        self.client.post(reverse('mark_lecture_complete', args=[self.course.id, self.lecture.id]))
+
+    def _take_quiz(self, correct):
+        choice = self.c1_correct if correct else self.c1_wrong
+        return self.client.post(reverse('take_quiz', args=[self.course.id, self.module.id]), {
+            f'question_{self.q1.id}': choice.id,
+        })
+
+    def test_module_with_quiz_is_not_complete_until_quiz_passed(self):
+        self._complete_lecture()
+        self.enrollment.refresh_from_db()
+        self.assertFalse(self.enrollment.module_is_complete(self.module))
+        self.assertFalse(self.enrollment.is_complete())
+
+    def test_module_completes_once_quiz_is_passed(self):
+        self._complete_lecture()
+        self.client.force_login(self.student)
+        self._take_quiz(correct=True)
+        self.assertTrue(self.enrollment.module_is_complete(self.module))
+        self.assertTrue(self.enrollment.is_complete())
+
+    def test_failing_quiz_does_not_complete_module_or_issue_certificate(self):
+        self._complete_lecture()
+        self.client.force_login(self.student)
+        self._take_quiz(correct=False)
+        self.assertFalse(self.enrollment.module_is_complete(self.module))
+        self.assertFalse(Certificate.objects.filter(enrollment=self.enrollment).exists())
+
+    def test_passing_quiz_issues_certificate(self):
+        self._complete_lecture()
+        self.client.force_login(self.student)
+        self._take_quiz(correct=True)
+        self.assertTrue(Certificate.objects.filter(enrollment=self.enrollment).exists())
+
+    def test_quiz_with_no_questions_does_not_gate_completion(self):
+        empty_module = Module.objects.create(course=self.course, title='Module 2')
+        empty_lecture = Lecture.objects.create(module=empty_module, title='L2')
+        Quiz.objects.create(module=empty_module, passing_score_percent=70)  # zero questions
+
+        self.client.force_login(self.student)
+        self.client.post(reverse('mark_lecture_complete', args=[self.course.id, self.lecture.id]))
+        self.client.post(reverse('mark_lecture_complete', args=[self.course.id, empty_lecture.id]))
+        self._take_quiz(correct=True)  # pass the one real quiz
+
+        self.enrollment.refresh_from_db()
+        self.assertTrue(self.enrollment.module_is_complete(empty_module))
+        self.assertTrue(self.enrollment.is_complete())
+
+    def test_unlimited_retakes_allowed_and_attempt_number_increments(self):
+        self._complete_lecture()
+        self.client.force_login(self.student)
+        self._take_quiz(correct=False)
+        self._take_quiz(correct=False)
+        self._take_quiz(correct=True)
+
+        attempts = list(QuizAttempt.objects.filter(enrollment=self.enrollment, quiz=self.quiz)
+                         .order_by('submitted_at'))
+        self.assertEqual([a.attempt_number for a in attempts], [1, 2, 3])
+        self.assertFalse(attempts[0].passed)
+        self.assertFalse(attempts[1].passed)
+        self.assertTrue(attempts[2].passed)
+
+    def test_answer_reveal_locked_for_first_two_attempts(self):
+        self._complete_lecture()
+        self.client.force_login(self.student)
+        self._take_quiz(correct=False)
+        self._take_quiz(correct=False)
+        attempts = list(QuizAttempt.objects.filter(enrollment=self.enrollment, quiz=self.quiz)
+                         .order_by('submitted_at'))
+        self.assertFalse(attempts[0].reveal_answers)
+        self.assertFalse(attempts[1].reveal_answers)
+
+    def test_answer_reveal_unlocks_from_third_attempt(self):
+        self._complete_lecture()
+        self.client.force_login(self.student)
+        self._take_quiz(correct=False)
+        self._take_quiz(correct=False)
+        self._take_quiz(correct=False)
+        third = QuizAttempt.objects.filter(enrollment=self.enrollment, quiz=self.quiz).order_by('submitted_at')[2]
+        self.assertTrue(third.reveal_answers)
+
+    def test_best_score_is_the_max_across_attempts_not_the_latest(self):
+        self._complete_lecture()
+        self.client.force_login(self.student)
+        self._take_quiz(correct=True)   # 100%
+        self._take_quiz(correct=False)  # 0% -- a later, worse attempt
+
+        best = self.enrollment.quiz_attempts.filter(quiz=self.quiz).order_by('-score_percent').first()
+        self.assertEqual(best.score_percent, Decimal('100.00'))
+
+    def test_quiz_result_view_scoped_to_own_attempt(self):
+        self._complete_lecture()
+        self.client.force_login(self.student)
+        self._take_quiz(correct=True)
+        attempt = QuizAttempt.objects.get(enrollment=self.enrollment, quiz=self.quiz)
+
+        other_student = User.objects.create_user(username='quiz_stud2', password='pw', is_student=True)
+        self.client.force_login(other_student)
+        response = self.client.get(
+            reverse('quiz_result', args=[self.course.id, self.module.id, attempt.id]))
+        self.assertEqual(response.status_code, 404)
+
+    def test_taking_quiz_requires_enrollment(self):
+        stranger = User.objects.create_user(username='quiz_stranger', password='pw', is_student=True)
+        self.client.force_login(stranger)
+        response = self._take_quiz(correct=True)
+        self.assertEqual(response.status_code, 404)
+
+
+@override_settings(STORAGES={
+    'default': {'BACKEND': 'django.core.files.storage.InMemoryStorage'},
+    'staticfiles': {'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage'},
+})
+class QuizCertificateEmailTests(TestCase):
+    def setUp(self):
+        self.instructor = User.objects.create_user(
+            username='email_inst', password='pw', is_instructor=True)
+        self.student = User.objects.create_user(
+            username='email_stud', password='pw', is_student=True, email='learner@example.com')
+        track = Track.objects.create(name='Email Track')
+        self.course = Course.objects.create(
+            instructor=self.instructor, track=track, title='Email Course', description='...',
+            production_type=Course.ProductionType.SCRIPT_ONLY, price=Decimal('0.00'),
+            is_free=True, status=Course.Status.PUBLISHED,
+        )
+        self.module = Module.objects.create(course=self.course, title='Module 1')
+        self.lecture = Lecture.objects.create(module=self.module, title='Only Lecture')
+        self.enrollment = Enrollment.objects.create(student=self.student, course=self.course)
+
+    def test_completing_course_sends_certificate_email_with_pdf_attached(self):
+        self.client.force_login(self.student)
+        self.client.post(reverse('mark_lecture_complete', args=[self.course.id, self.lecture.id]))
+
+        self.assertEqual(len(mail.outbox), 1)
+        sent = mail.outbox[0]
+        self.assertEqual(sent.to, ['learner@example.com'])
+        self.assertIn('Email Course', sent.subject)
+        attachment_names = [a[0] for a in sent.attachments]
+        self.assertEqual(len(attachment_names), 1)
+        self.assertTrue(attachment_names[0].endswith('.pdf'))
+        self.assertEqual(sent.attachments[0][2], 'application/pdf')
+
+    def test_student_with_no_email_does_not_crash_completion(self):
+        self.student.email = ''
+        self.student.save()
+        self.client.force_login(self.student)
+        response = self.client.post(
+            reverse('mark_lecture_complete', args=[self.course.id, self.lecture.id]))
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(Certificate.objects.filter(enrollment=self.enrollment).exists())
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_email_send_failure_does_not_block_certificate_issuance(self):
+        self.client.force_login(self.student)
+        with patch('courses.emails.EmailMultiAlternatives.send', side_effect=Exception('smtp down')):
+            response = self.client.post(
+                reverse('mark_lecture_complete', args=[self.course.id, self.lecture.id]))
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(Certificate.objects.filter(enrollment=self.enrollment).exists())
+
+
+@override_settings(STORAGES={
+    'default': {'BACKEND': 'django.core.files.storage.InMemoryStorage'},
+    'staticfiles': {'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage'},
+})
+class CertificateLinkedInShareTests(TestCase):
+    def setUp(self):
+        self.instructor = User.objects.create_user(
+            username='li_inst', password='pw', is_instructor=True)
+        self.student = User.objects.create_user(
+            username='li_stud', password='pw', is_student=True)
+        track = Track.objects.create(name='LinkedIn Track')
+        self.course = Course.objects.create(
+            instructor=self.instructor, track=track, title='LinkedIn Course', description='...',
+            production_type=Course.ProductionType.SCRIPT_ONLY, price=Decimal('0.00'),
+            is_free=True, status=Course.Status.PUBLISHED,
+        )
+        module = Module.objects.create(course=self.course, title='Module 1')
+        self.lecture = Lecture.objects.create(module=module, title='Only Lecture')
+        self.enrollment = Enrollment.objects.create(student=self.student, course=self.course)
+
+    def _complete_course(self):
+        self.client.force_login(self.student)
+        self.client.post(reverse('mark_lecture_complete', args=[self.course.id, self.lecture.id]))
+        self.client.logout()
+        return Certificate.objects.get(enrollment=self.enrollment)
+
+    def test_certificate_page_has_linkedin_share_button_and_copy_link(self):
+        certificate = self._complete_course()
+        response = self.client.get(reverse('certificate_verify', args=[certificate.uuid]))
+        self.assertContains(response, 'linkedin.com/profile/add')
+        self.assertContains(response, 'startTask=CERTIFICATION_NAME')
+        self.assertContains(response, 'LinkedIn Course')
+        self.assertContains(response, 'copy-cert-link')
+
+    def test_short_verify_url_alias_works_and_matches_long_form(self):
+        # Both routes render the same view/template with the same context;
+        # compare on content rather than raw bytes since each response embeds
+        # its own freshly-generated CSRF token in the language-switch form.
+        certificate = self._complete_course()
+        short_response = self.client.get(f'/verify/{certificate.uuid}/')
+        long_response = self.client.get(reverse('certificate_verify', args=[certificate.uuid]))
+        self.assertEqual(short_response.status_code, 200)
+        self.assertContains(short_response, 'LinkedIn Course')
+        self.assertContains(long_response, 'LinkedIn Course')
+        self.assertEqual(
+            short_response.context['certificate'], long_response.context['certificate'])
+
+    def test_linkedin_cert_url_points_at_short_verify_link(self):
+        from urllib.parse import unquote
+        from . import certificates
+        certificate = self._complete_course()
+        share_url = certificates.linkedin_share_url(certificate)
+        self.assertIn(f'/verify/{certificate.uuid}/', unquote(share_url))
+
+
+@override_settings(STORAGES={
+    'default': {'BACKEND': 'django.core.files.storage.InMemoryStorage'},
+    'staticfiles': {'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage'},
+})
+class QuizBuilderInstructorTests(TestCase):
+    """Instructor-facing quiz builder: create/edit/delete quiz, questions,
+    choices, and the "exactly one correct choice" enforcement."""
+
+    def setUp(self):
+        self.instructor = User.objects.create_user(
+            username='builder_inst', password='pw', is_instructor=True)
+        self.intruder = User.objects.create_user(
+            username='builder_intruder', password='pw', is_instructor=True)
+        track = Track.objects.create(name='Builder Track')
+        self.course = Course.objects.create(
+            instructor=self.instructor, track=track, title='Builder Course', description='...',
+            production_type=Course.ProductionType.FULL, price=Decimal('0.00'), is_free=True,
+            status=Course.Status.PUBLISHED,
+        )
+        self.module = Module.objects.create(course=self.course, title='M1')
+
+    def test_creating_quiz_settings_creates_quiz(self):
+        self.client.force_login(self.instructor)
+        self.client.post(reverse('manage_quiz', args=[self.course.id, self.module.id]), {
+            'title': '', 'passing_score_percent': 80,
+        })
+        quiz = Quiz.objects.get(module=self.module)
+        self.assertEqual(quiz.passing_score_percent, 80)
+        self.assertEqual(quiz.display_title, 'M1 Quiz')
+
+    def test_editing_published_course_quiz_reenters_review(self):
+        self.client.force_login(self.instructor)
+        self.client.post(reverse('manage_quiz', args=[self.course.id, self.module.id]), {
+            'title': '', 'passing_score_percent': 70,
+        })
+        self.course.refresh_from_db()
+        self.assertEqual(self.course.status, Course.Status.PENDING_REVIEW)
+
+    def test_add_question_and_choices(self):
+        self.client.force_login(self.instructor)
+        quiz = Quiz.objects.create(module=self.module, passing_score_percent=70)
+        self.client.post(reverse('add_question', args=[self.course.id, self.module.id]),
+                          {'text': 'What is 2+2?', 'order': 1})
+        question = Question.objects.get(quiz=quiz)
+
+        self.client.post(reverse('add_choice', args=[question.id]), {'text': '4', 'is_correct': 'on'})
+        self.client.post(reverse('add_choice', args=[question.id]), {'text': '5'})
+        choices = list(question.choices.all())
+        self.assertEqual(len(choices), 2)
+        self.assertEqual(sum(1 for c in choices if c.is_correct), 1)
+
+    def test_marking_a_new_choice_correct_unmarks_the_others(self):
+        self.client.force_login(self.instructor)
+        quiz = Quiz.objects.create(module=self.module, passing_score_percent=70)
+        question = Question.objects.create(quiz=quiz, text='Q', order=1)
+        c1 = Choice.objects.create(question=question, text='A', is_correct=True)
+        c2 = Choice.objects.create(question=question, text='B', is_correct=False)
+
+        self.client.post(reverse('mark_choice_correct', args=[c2.id]))
+
+        c1.refresh_from_db()
+        c2.refresh_from_db()
+        self.assertFalse(c1.is_correct)
+        self.assertTrue(c2.is_correct)
+
+    def test_deleting_question_cascades_choices(self):
+        self.client.force_login(self.instructor)
+        quiz = Quiz.objects.create(module=self.module, passing_score_percent=70)
+        question = Question.objects.create(quiz=quiz, text='Q', order=1)
+        Choice.objects.create(question=question, text='A', is_correct=True)
+
+        self.client.post(reverse('delete_question', args=[question.id]))
+        self.assertFalse(Question.objects.filter(id=question.id).exists())
+        self.assertFalse(Choice.objects.filter(question_id=question.id).exists())
+
+    def test_deleting_quiz_removes_it_entirely(self):
+        self.client.force_login(self.instructor)
+        Quiz.objects.create(module=self.module, passing_score_percent=70)
+        self.client.post(reverse('delete_quiz', args=[self.course.id, self.module.id]))
+        self.assertFalse(Quiz.objects.filter(module=self.module).exists())
+
+    def test_other_instructor_cannot_manage_quiz(self):
+        Quiz.objects.create(module=self.module, passing_score_percent=70)
+        self.client.force_login(self.intruder)
+        response = self.client.get(reverse('manage_quiz', args=[self.course.id, self.module.id]))
+        self.assertEqual(response.status_code, 404)
+
+    def test_other_instructor_cannot_add_question(self):
+        Quiz.objects.create(module=self.module, passing_score_percent=70)
+        self.client.force_login(self.intruder)
+        response = self.client.post(
+            reverse('add_question', args=[self.course.id, self.module.id]), {'text': 'hijack', 'order': 1})
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(Question.objects.count(), 0)
+
+    def test_other_instructor_cannot_add_choice_or_mark_correct(self):
+        quiz = Quiz.objects.create(module=self.module, passing_score_percent=70)
+        question = Question.objects.create(quiz=quiz, text='Q', order=1)
+        choice = Choice.objects.create(question=question, text='A', is_correct=False)
+
+        self.client.force_login(self.intruder)
+        response = self.client.post(reverse('add_choice', args=[question.id]), {'text': 'hijack'})
+        self.assertEqual(response.status_code, 404)
+        response = self.client.post(reverse('mark_choice_correct', args=[choice.id]))
+        self.assertEqual(response.status_code, 404)
+        choice.refresh_from_db()
+        self.assertFalse(choice.is_correct)
+
+    def test_other_instructor_cannot_delete_question_or_choice(self):
+        quiz = Quiz.objects.create(module=self.module, passing_score_percent=70)
+        question = Question.objects.create(quiz=quiz, text='Q', order=1)
+        choice = Choice.objects.create(question=question, text='A', is_correct=False)
+
+        self.client.force_login(self.intruder)
+        self.assertEqual(
+            self.client.post(reverse('delete_question', args=[question.id])).status_code, 404)
+        self.assertEqual(
+            self.client.post(reverse('delete_choice', args=[choice.id])).status_code, 404)
+        self.assertTrue(Question.objects.filter(id=question.id).exists())
+        self.assertTrue(Choice.objects.filter(id=choice.id).exists())
+
+    def test_other_instructor_cannot_delete_quiz(self):
+        Quiz.objects.create(module=self.module, passing_score_percent=70)
+        self.client.force_login(self.intruder)
+        response = self.client.post(reverse('delete_quiz', args=[self.course.id, self.module.id]))
+        self.assertEqual(response.status_code, 404)
+        self.assertTrue(Quiz.objects.filter(module=self.module).exists())

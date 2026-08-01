@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+{% load i18n %}
+{% block title %}Quiz - {{ module.title }} - {{ course.title }}{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-6 py-12">
+
+  <a href="{% url 'manage_modules' course.id %}" class="text-sm text-brand-600 hover:underline">
+    <i class="fa-solid fa-arrow-left"></i> {% blocktrans with title=course.title %}{{ title }} Curriculum{% endblocktrans %}
+  </a>
+
+  <h1 class="text-3xl font-extrabold mt-4 mb-1">{% trans "Quiz" %}: {{ module.title }}</h1>
+  <p class="text-gray-500 dark:text-gray-400 mb-10">
+    {% trans "Students must pass this quiz to mark this module complete. Leave it with zero questions and it won't gate anything yet." %}
+  </p>
+
+  <h2 class="text-xl font-bold mb-4">{% trans "Quiz Settings" %}</h2>
+  <form method="post" class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-8 space-y-5 mb-12">
+    {% csrf_token %}
+    <div>
+      <label class="block text-sm font-semibold mb-2">{% trans "Quiz Title" %} <span class="text-gray-400 font-normal">({% trans "optional" %})</span></label>
+      {{ form.title }}
+    </div>
+    <div>
+      <label class="block text-sm font-semibold mb-2">{% trans "Passing Score (%)" %}</label>
+      {{ form.passing_score_percent }}
+    </div>
+    <button type="submit" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-semibold py-3 rounded-xl transition">
+      {% if quiz %}{% trans "Save Settings" %}{% else %}{% trans "Create Quiz" %}{% endif %}
+    </button>
+  </form>
+
+  {% if quiz %}
+    <h2 class="text-xl font-bold mb-4">{% blocktrans with count=questions|length %}Questions ({{ count }}){% endblocktrans %}</h2>
+    <div class="space-y-3 mb-12">
+      {% for question in questions %}
+        <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5">
+          <div class="flex items-center justify-between flex-wrap gap-2">
+            <div class="flex items-center gap-3">
+              <span class="w-8 h-8 flex items-center justify-center rounded-full bg-brand-50 dark:bg-gray-800 text-brand-600 font-bold text-sm">{{ question.order }}</span>
+              <p class="font-semibold">{{ question.text }}</p>
+            </div>
+            <div class="flex items-center gap-3">
+              <a href="{% url 'edit_question' question.id %}" class="text-sm font-semibold text-brand-600 hover:underline">{% trans "Edit / Choices" %}</a>
+              <form method="post" action="{% url 'delete_question' question.id %}"
+                    onsubmit="return confirm('{% trans "Delete this question?" %}');">
+                {% csrf_token %}
+                <button type="submit" class="text-sm font-semibold text-red-600 hover:underline">{% trans "Delete" %}</button>
+              </form>
+            </div>
+          </div>
+          <div class="flex flex-wrap gap-2 mt-3 text-xs">
+            {% for choice in question.choices.all %}
+              <span class="px-2 py-1 rounded-full {% if choice.is_correct %}bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 font-semibold{% else %}bg-gray-100 dark:bg-gray-800 text-gray-500{% endif %}">
+                {% if choice.is_correct %}<i class="fa-solid fa-check"></i>{% endif %} {{ choice.text }}
+              </span>
+            {% empty %}
+              <span class="text-gray-400">{% trans "No answer choices yet." %}</span>
+            {% endfor %}
+          </div>
+        </div>
+      {% empty %}
+        <div class="bg-white dark:bg-gray-900 border border-dashed border-gray-300 dark:border-gray-700 rounded-xl p-8 text-center text-gray-400">
+          {% trans "No questions yet. Add your first one below." %}
+        </div>
+      {% endfor %}
+    </div>
+
+    <h2 class="text-xl font-bold mb-4">{% trans "Add Question" %}</h2>
+    <form method="post" action="{% url 'add_question' course.id module.id %}" class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-8 space-y-5 mb-12">
+      {% csrf_token %}
+      <div>
+        <label class="block text-sm font-semibold mb-2">{% trans "Question Text" %}</label>
+        {{ question_form.text }}
+      </div>
+      <div>
+        <label class="block text-sm font-semibold mb-2">{% trans "Order" %}</label>
+        {{ question_form.order }}
+      </div>
+      <button type="submit" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-semibold py-3 rounded-xl transition">
+        {% trans "Add Question" %}
+      </button>
+    </form>
+
+    <form method="post" action="{% url 'delete_quiz' course.id module.id %}"
+          onsubmit="return confirm('{% trans "Delete this quiz and all its questions? Students will no longer need to pass anything to complete this module." %}');">
+      {% csrf_token %}
+      <button type="submit" class="text-sm font-semibold text-red-600 hover:underline">
+        <i class="fa-solid fa-trash"></i> {% trans "Delete Quiz" %}
+      </button>
+    </form>
+  {% endif %}
+
+</div>
+{% endblock %}

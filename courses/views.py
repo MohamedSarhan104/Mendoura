@@ -22,18 +22,18 @@ from django.utils.translation import gettext as _
 from django.views.decorators.csrf import csrf_exempt
 
 from . import ai_coach as ai_coach_client
-from . import bunny, paymob
+from . import bunny, certificates, paymob
 from .access import get_or_create_enrollment, student_has_access
 from .forms import (
-    CourseCreationForm, GradeForm, InstructorSignUpForm, LectureForm, ModuleForm,
-    PayoutRequestForm, ProfileForm, ResourceForm, ReviewForm, StudentSignUpForm,
-    SubmissionForm, TrackForm,
+    ChoiceForm, CourseCreationForm, GradeForm, InstructorSignUpForm, LectureForm, ModuleForm,
+    PayoutRequestForm, ProfileForm, QuestionForm, QuizForm, ResourceForm, ReviewForm,
+    StudentSignUpForm, SubmissionForm, TrackForm,
 )
 from .models import (
-    AIConversation, AIMessage, Certificate, Course, Enrollment, InstructorWallet, Lecture,
-    LectureProgress, LegalDocument, Module, Payment, Payout, Plan, Resource, RevenueDistribution,
-    Review, Subscription, SubscriptionPeriod, Submission, Track, TrackRoadmapStep, User,
-    WalletTransaction, WatchEvent,
+    AIConversation, AIMessage, Certificate, Choice, Course, Enrollment, InstructorWallet,
+    Lecture, LectureProgress, LegalDocument, Module, Payment, Payout, Plan, Question, Quiz,
+    QuizAnswer, QuizAttempt, Resource, RevenueDistribution, Review, Subscription,
+    SubscriptionPeriod, Submission, Track, TrackRoadmapStep, User, WalletTransaction, WatchEvent,
 )
 
 
@@ -500,7 +500,7 @@ def course_player(request, course_id, lecture_id):
 
     enrollment = get_or_create_enrollment(request.user, course) if has_access else None
 
-    modules = course.modules.prefetch_related('lectures').order_by('order')
+    modules = course.modules.prefetch_related('lectures', 'quiz__questions').order_by('order')
     all_lectures = list(Lecture.objects.filter(module__course=course).order_by('module__order', 'order'))
     index = next((i for i, l in enumerate(all_lectures) if l.id == lecture.id), 0)
     prev_lecture = all_lectures[index - 1] if index > 0 else None
@@ -508,11 +508,14 @@ def course_player(request, course_id, lecture_id):
 
     progress = None
     completed_lecture_ids = set()
+    passed_quiz_ids = set()
     if enrollment is not None:
         progress = LectureProgress.objects.filter(enrollment=enrollment, lecture=lecture).first()
         completed_lecture_ids = set(
             LectureProgress.objects.filter(enrollment=enrollment, completed=True)
             .values_list('lecture_id', flat=True))
+        passed_quiz_ids = set(
+            enrollment.quiz_attempts.filter(passed=True).values_list('quiz_id', flat=True))
 
     # Signed here (not in the template) because the token is time-limited and
     # uses the secret key -- a fresh, expiring URL is minted on every load.
@@ -528,6 +531,7 @@ def course_player(request, course_id, lecture_id):
         'prev_lecture': prev_lecture,
         'next_lecture': next_lecture,
         'completed_lecture_ids': completed_lecture_ids,
+        'passed_quiz_ids': passed_quiz_ids,
     })
 
 
@@ -546,6 +550,68 @@ def mark_lecture_complete(request, course_id, lecture_id):
         enrollment.issue_certificate_if_complete()
 
     return redirect('course_player', course_id=course.id, lecture_id=lecture.id)
+
+
+# A Module's optional Quiz: GET renders the question form, POST grades it,
+# records the attempt, and (if this was the last gate) issues the
+# certificate. Enrollment existing is the access check, same convention as
+# mark_lecture_complete above.
+@login_required
+def take_quiz(request, course_id, module_id):
+    course = get_object_or_404(Course, id=course_id)
+    module = get_object_or_404(Module, id=module_id, course=course)
+    quiz = get_object_or_404(Quiz, module=module)
+    enrollment = get_object_or_404(Enrollment, student=request.user, course=course)
+
+    questions = list(quiz.questions.prefetch_related('choices'))
+    if not questions:
+        raise Http404('This quiz has no questions yet.')
+
+    if request.method == 'POST':
+        correct_count = 0
+        pending_answers = []
+        for question in questions:
+            submitted_choice_id = request.POST.get(f'question_{question.id}')
+            selected_choice = None
+            is_correct = False
+            if submitted_choice_id:
+                selected_choice = next(
+                    (c for c in question.choices.all() if str(c.id) == submitted_choice_id), None)
+                is_correct = bool(selected_choice and selected_choice.is_correct)
+            if is_correct:
+                correct_count += 1
+            pending_answers.append((question, selected_choice, is_correct))
+
+        score_percent = (Decimal(correct_count * 100) / Decimal(len(questions))).quantize(Decimal('0.01'))
+        attempt = QuizAttempt.objects.create(
+            enrollment=enrollment, quiz=quiz, score_percent=score_percent,
+            passed=score_percent >= quiz.passing_score_percent,
+        )
+        QuizAnswer.objects.bulk_create([
+            QuizAnswer(attempt=attempt, question=q, selected_choice=sc, is_correct=ic)
+            for q, sc, ic in pending_answers
+        ])
+
+        if attempt.passed:
+            enrollment.issue_certificate_if_complete()
+
+        return redirect('quiz_result', course_id=course.id, module_id=module.id, attempt_id=attempt.id)
+
+    best_attempt = enrollment.quiz_attempts.filter(quiz=quiz).order_by('-score_percent').first()
+    return render(request, 'courses/quiz.html', {
+        'course': course, 'module': module, 'quiz': quiz, 'questions': questions,
+        'best_attempt': best_attempt,
+    })
+
+
+@login_required
+def quiz_result(request, course_id, module_id, attempt_id):
+    attempt = get_object_or_404(
+        QuizAttempt, id=attempt_id, enrollment__student=request.user,
+        enrollment__course_id=course_id, quiz__module_id=module_id)
+    return render(request, 'courses/quiz_result.html', {
+        'course': attempt.enrollment.course, 'module': attempt.quiz.module, 'attempt': attempt,
+    })
 
 
 # Records a client-flushed watch-time heartbeat (aggregated client-side,
@@ -598,7 +664,11 @@ def record_watch_event(request, course_id, lecture_id):
 # (e.g. an employer following a LinkedIn link) can confirm authenticity.
 def certificate_view(request, certificate_uuid):
     certificate = get_object_or_404(Certificate, uuid=certificate_uuid)
-    return render(request, 'courses/certificate.html', {'certificate': certificate})
+    return render(request, 'courses/certificate.html', {
+        'certificate': certificate,
+        'verification_url': certificates.verification_url(certificate),
+        'linkedin_share_url': certificates.linkedin_share_url(certificate),
+    })
 
 
 def certificate_download(request, certificate_uuid):
@@ -1009,6 +1079,130 @@ def delete_lecture(request, lecture_id):
             messages.error(
                 request, _('"%(title)s" has watch-time history and cannot be deleted.') % {'title': lecture.title})
     return redirect('manage_lectures', course_id=course_id, module_id=module_id)
+
+
+# Manage a Module's optional Quiz: settings (title/passing score) + its
+# list of Questions. A Module has at most one Quiz (OneToOneField), created
+# lazily here the first time the instructor saves the settings form.
+@login_required
+def manage_quiz(request, course_id, module_id):
+    course = get_object_or_404(Course, id=course_id, instructor=request.user)
+    module = get_object_or_404(Module, id=module_id, course=course)
+    quiz = getattr(module, 'quiz', None)
+
+    if request.method == 'POST':
+        form = QuizForm(request.POST, instance=quiz)
+        if form.is_valid():
+            quiz = form.save(commit=False)
+            quiz.module = module
+            quiz.save()
+            _reenter_review_if_published(request, course)
+            return redirect('manage_quiz', course_id=course.id, module_id=module.id)
+    else:
+        form = QuizForm(instance=quiz)
+
+    questions = quiz.questions.prefetch_related('choices') if quiz else []
+
+    return render(request, 'dashboard/manage_quiz.html', {
+        'course': course, 'module': module, 'quiz': quiz, 'form': form,
+        'question_form': QuestionForm(), 'questions': questions,
+    })
+
+
+@login_required
+def delete_quiz(request, course_id, module_id):
+    course = get_object_or_404(Course, id=course_id, instructor=request.user)
+    module = get_object_or_404(Module, id=module_id, course=course)
+    quiz = get_object_or_404(Quiz, module=module)
+    if request.method == 'POST':
+        quiz.delete()
+        _reenter_review_if_published(request, course)
+    return redirect('manage_modules', course_id=course.id)
+
+
+@login_required
+def add_question(request, course_id, module_id):
+    course = get_object_or_404(Course, id=course_id, instructor=request.user)
+    module = get_object_or_404(Module, id=module_id, course=course)
+    quiz = get_object_or_404(Quiz, module=module)
+    if request.method == 'POST':
+        form = QuestionForm(request.POST)
+        if form.is_valid():
+            question = form.save(commit=False)
+            question.quiz = quiz
+            question.save()
+            _reenter_review_if_published(request, course)
+    return redirect('manage_quiz', course_id=course.id, module_id=module.id)
+
+
+@login_required
+def edit_question(request, question_id):
+    question = get_object_or_404(Question, id=question_id, quiz__module__course__instructor=request.user)
+    course = question.quiz.module.course
+    if request.method == 'POST':
+        form = QuestionForm(request.POST, instance=question)
+        if form.is_valid():
+            form.save()
+            _reenter_review_if_published(request, course)
+            return redirect('edit_question', question_id=question.id)
+    else:
+        form = QuestionForm(instance=question)
+    return render(request, 'dashboard/edit_question.html', {
+        'course': course, 'module': question.quiz.module, 'question': question, 'form': form,
+        'choice_form': ChoiceForm(),
+    })
+
+
+@login_required
+def delete_question(request, question_id):
+    question = get_object_or_404(Question, id=question_id, quiz__module__course__instructor=request.user)
+    course_id, module_id = question.quiz.module.course_id, question.quiz.module_id
+    if request.method == 'POST':
+        course = question.quiz.module.course
+        question.delete()
+        _reenter_review_if_published(request, course)
+    return redirect('manage_quiz', course_id=course_id, module_id=module_id)
+
+
+# Adding a choice that's marked correct un-marks every sibling choice first
+# -- enforces "exactly one correct answer" for a single_choice question the
+# same way a radio-button group would, without needing DB-level validation
+# that would fight the incremental add-one-at-a-time UI.
+@login_required
+def add_choice(request, question_id):
+    question = get_object_or_404(Question, id=question_id, quiz__module__course__instructor=request.user)
+    course = question.quiz.module.course
+    if request.method == 'POST':
+        form = ChoiceForm(request.POST)
+        if form.is_valid():
+            choice = form.save(commit=False)
+            choice.question = question
+            if choice.is_correct:
+                question.choices.update(is_correct=False)
+            choice.save()
+            _reenter_review_if_published(request, course)
+    return redirect('edit_question', question_id=question.id)
+
+
+@login_required
+def mark_choice_correct(request, choice_id):
+    choice = get_object_or_404(Choice, id=choice_id, question__quiz__module__course__instructor=request.user)
+    question = choice.question
+    if request.method == 'POST':
+        question.choices.update(is_correct=False)
+        choice.is_correct = True
+        choice.save(update_fields=['is_correct'])
+        _reenter_review_if_published(request, question.quiz.module.course)
+    return redirect('edit_question', question_id=question.id)
+
+
+@login_required
+def delete_choice(request, choice_id):
+    choice = get_object_or_404(Choice, id=choice_id, question__quiz__module__course__instructor=request.user)
+    question_id = choice.question_id
+    if request.method == 'POST':
+        choice.delete()
+    return redirect('edit_question', question_id=question_id)
 
 
 # Creates the Bunny video record for a lecture and hands the browser a

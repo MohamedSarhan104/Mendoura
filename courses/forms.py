@@ -4,7 +4,7 @@ from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from .models import (
     EGYPT_ALIASES, User, Course, InstructorWallet, Lecture, Module, Resource, Submission,
-    Track, Review, Payout,
+    Track, Review, Payout, Quiz, Question, Choice,
 )
 
 INPUT_CLASSES = 'w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent focus:ring-2 focus:ring-brand-500 outline-none'
@@ -346,6 +346,51 @@ class LectureForm(forms.ModelForm):
             }),
             'order': forms.NumberInput(attrs={
                 'class': 'w-full border border-gray-300 dark:border-gray-700 bg-transparent rounded-lg p-3 focus:ring-2 focus:ring-brand-500 outline-none'
+            }),
+        }
+
+
+CURRICULUM_INPUT_CLASSES = 'w-full border border-gray-300 dark:border-gray-700 bg-transparent rounded-lg p-3 focus:ring-2 focus:ring-brand-500 outline-none'
+
+
+class QuizForm(forms.ModelForm):
+    class Meta:
+        model = Quiz
+        fields = ['title', 'passing_score_percent']
+        widgets = {
+            'title': forms.TextInput(attrs={
+                'placeholder': _('Defaults to "<Module title> Quiz" if left blank'),
+                'class': CURRICULUM_INPUT_CLASSES,
+            }),
+            'passing_score_percent': forms.NumberInput(attrs={
+                'min': 1, 'max': 100, 'class': CURRICULUM_INPUT_CLASSES,
+            }),
+        }
+
+
+class QuestionForm(forms.ModelForm):
+    class Meta:
+        model = Question
+        fields = ['text', 'order']
+        widgets = {
+            'text': forms.Textarea(attrs={
+                'rows': 2, 'placeholder': _('e.g. What does CSS stand for?'),
+                'class': CURRICULUM_INPUT_CLASSES,
+            }),
+            'order': forms.NumberInput(attrs={'class': CURRICULUM_INPUT_CLASSES}),
+        }
+
+
+class ChoiceForm(forms.ModelForm):
+    # No 'order' field -- choices are simple enough to just order by
+    # creation (the model's default Meta ordering), same as how Resource
+    # doesn't expose its own ordering knob either.
+    class Meta:
+        model = Choice
+        fields = ['text', 'is_correct']
+        widgets = {
+            'text': forms.TextInput(attrs={
+                'placeholder': _('Answer choice'), 'class': CURRICULUM_INPUT_CLASSES,
             }),
         }
 

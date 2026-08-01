@@ -5,6 +5,7 @@ from .models import (
     Payment, Enrollment, LectureProgress, InstructorWallet, WalletTransaction,
     Payout, Plan, Subscription, SubscriptionPeriod, RevenueDistribution, WatchEvent,
     Review, Certificate, LegalDocument, LegalSection,
+    Quiz, Question, Choice, QuizAttempt, QuizAnswer,
 )
 
 
@@ -148,6 +149,40 @@ class ReviewAdmin(admin.ModelAdmin):
 @admin.register(Certificate)
 class CertificateAdmin(admin.ModelAdmin):
     list_display = ('enrollment', 'uuid', 'issued_at')
+
+
+class ChoiceInline(admin.TabularInline):
+    model = Choice
+    extra = 0
+    fields = ('order', 'text', 'is_correct')
+
+
+@admin.register(Question)
+class QuestionAdmin(admin.ModelAdmin):
+    list_display = ('text', 'quiz', 'question_type', 'order')
+    list_filter = ('quiz__module__course',)
+    inlines = [ChoiceInline]
+
+
+class QuestionInline(admin.TabularInline):
+    model = Question
+    extra = 0
+    fields = ('order', 'text', 'question_type')
+    show_change_link = True
+
+
+@admin.register(Quiz)
+class QuizAdmin(admin.ModelAdmin):
+    list_display = ('display_title', 'module', 'passing_score_percent')
+    list_filter = ('module__course',)
+    inlines = [QuestionInline]
+
+
+@admin.register(QuizAttempt)
+class QuizAttemptAdmin(admin.ModelAdmin):
+    list_display = ('enrollment', 'quiz', 'attempt_number', 'score_percent', 'passed', 'submitted_at')
+    list_filter = ('passed', 'quiz__module__course')
+    readonly_fields = ('attempt_number',)
 
 
 class LegalSectionInline(admin.TabularInline):

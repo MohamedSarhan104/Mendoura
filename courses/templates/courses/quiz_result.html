@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+{% load i18n %}
+{% block title %}{% trans "Quiz Result" %} - {{ attempt.quiz.display_title }}{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto px-6 py-10 animate-fade-in">
+
+  <a href="{% url 'course_detail' course.id %}" class="text-sm text-brand-600 hover:underline">
+    <i class="fa-solid fa-arrow-left"></i> {{ course.title }}
+  </a>
+
+  <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-8 mt-4 text-center">
+    {% if attempt.passed %}
+      <i class="fa-solid fa-circle-check text-5xl text-green-500 mb-4"></i>
+      <h1 class="text-2xl font-extrabold mb-1">{% trans "You passed!" %}</h1>
+    {% else %}
+      <i class="fa-solid fa-circle-xmark text-5xl text-red-400 mb-4"></i>
+      <h1 class="text-2xl font-extrabold mb-1">{% trans "Not quite yet" %}</h1>
+    {% endif %}
+    <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">{{ attempt.quiz.display_title }}</p>
+
+    <div class="inline-flex items-center gap-2 px-6 py-3 rounded-xl {% if attempt.passed %}bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400{% else %}bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400{% endif %} font-bold text-lg mb-2">
+      {{ attempt.score_percent }}%
+    </div>
+    <p class="text-xs text-gray-400 mb-8">
+      {% blocktrans with score=attempt.quiz.passing_score_percent %}Passing score: {{ score }}%{% endblocktrans %}
+      &middot; {% blocktrans with n=attempt.attempt_number %}Attempt #{{ n }}{% endblocktrans %}
+    </p>
+
+    {% if not attempt.passed %}
+      <a href="{% url 'take_quiz' course.id module.id %}"
+         class="inline-flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white font-semibold px-6 py-3 rounded-lg mb-4">
+        <i class="fa-solid fa-rotate-right"></i> {% trans "Retake Quiz" %}
+      </a>
+    {% else %}
+      <a href="{% url 'course_detail' course.id %}"
+         class="inline-flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white font-semibold px-6 py-3 rounded-lg mb-4">
+        {% trans "Continue Course" %}
+      </a>
+    {% endif %}
+
+    {% if attempt.reveal_answers %}
+      <div class="text-left mt-10 pt-8 border-t border-gray-100 dark:border-gray-800 space-y-6">
+        <h2 class="text-lg font-bold">{% trans "Answer Review" %}</h2>
+        {% for answer in attempt.answers.all %}
+          <div>
+            <p class="font-semibold mb-2">{{ forloop.counter }}. {{ answer.question.text }}</p>
+            <div class="space-y-1.5">
+              {% for choice in answer.question.choices.all %}
+                <div class="flex items-center gap-2 text-sm px-3 py-2 rounded-lg
+                    {% if choice.is_correct %}bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400
+                    {% elif choice == answer.selected_choice %}bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400
+                    {% else %}text-gray-500 dark:text-gray-400{% endif %}">
+                  {% if choice.is_correct %}
+                    <i class="fa-solid fa-check"></i>
+                  {% elif choice == answer.selected_choice %}
+                    <i class="fa-solid fa-xmark"></i>
+                  {% else %}
+                    <i class="fa-regular fa-circle text-xs"></i>
+                  {% endif %}
+                  {{ choice.text }}
+                  {% if choice == answer.selected_choice %}<span class="text-xs opacity-70">({% trans "your answer" %})</span>{% endif %}
+                </div>
+              {% endfor %}
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="text-xs text-gray-400 mt-6">
+        <i class="fa-solid fa-circle-info"></i>
+        {% trans "Detailed answer review unlocks starting from your 3rd attempt." %}
+      </p>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

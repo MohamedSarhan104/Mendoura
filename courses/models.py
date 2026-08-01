@@ -12,7 +12,7 @@ from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import get_language
 
-from . import auto_translate, certificates
+from . import auto_translate, certificates, emails
 from .money import SUBSCRIPTION_INSTRUCTOR_SHARE, calculate_split, get_instructor_share
 
 logger = logging.getLogger(__name__)
@@ -509,15 +509,35 @@ class Enrollment(models.Model):
             return 0
         return round(self.completed_lecture_count() * 100 / total)
 
+    def module_is_complete(self, module) -> bool:
+        """A module is done once every one of its lectures is completed
+        and, if it has a quiz with at least one question, the student has
+        a passing QuizAttempt for it. A quiz with zero questions (still
+        being built by the instructor) never gates completion."""
+        lecture_ids = set(module.lectures.values_list('id', flat=True))
+        if lecture_ids:
+            completed_ids = set(
+                self.lecture_progress.filter(lecture_id__in=lecture_ids, completed=True)
+                .values_list('lecture_id', flat=True))
+            if completed_ids != lecture_ids:
+                return False
+        quiz = getattr(module, 'quiz', None)
+        if quiz is not None and quiz.questions.exists():
+            if not self.quiz_attempts.filter(quiz=quiz, passed=True).exists():
+                return False
+        return True
+
     def is_complete(self):
-        total = self.total_lecture_count()
-        return total > 0 and self.completed_lecture_count() >= total
+        if self.total_lecture_count() == 0:
+            return False
+        return all(self.module_is_complete(m) for m in self.course.modules.all())
 
     def issue_certificate_if_complete(self):
         if self.is_complete():
             certificate, created = Certificate.objects.get_or_create(enrollment=self)
             if created:
                 certificate.generate_pdf()
+                emails.send_certificate_email(certificate)
             return certificate
         return None
 
@@ -534,6 +554,92 @@ class LectureProgress(models.Model):
 
     def __str__(self):
         return f'{self.enrollment.student} - {self.lecture} ({"done" if self.completed else "in progress"})'
+
+
+class Quiz(models.Model):
+    module = models.OneToOneField(Module, on_delete=models.CASCADE, related_name='quiz')
+    title = models.CharField(max_length=255, blank=True, default='')
+    passing_score_percent = models.PositiveSmallIntegerField(
+        default=70, validators=[MinValueValidator(1), MaxValueValidator(100)])
+
+    def __str__(self):
+        return self.title or f'Quiz for {self.module}'
+
+    @property
+    def display_title(self):
+        return self.title or f'{self.module.title} Quiz'
+
+
+class Question(models.Model):
+    class QuestionType(models.TextChoices):
+        # The only type graded today. New types (e.g. multiple-answer,
+        # true/false) are additional choice values here plus a new grading
+        # branch in QuizAttempt.grade() -- no schema change required.
+        SINGLE_CHOICE = 'single_choice', _('Single choice')
+
+    quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE, related_name='questions')
+    text = models.TextField()
+    question_type = models.CharField(
+        max_length=20, choices=QuestionType.choices, default=QuestionType.SINGLE_CHOICE)
+    order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ['order', 'id']
+
+    def __str__(self):
+        return self.text[:60]
+
+
+class Choice(models.Model):
+    question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name='choices')
+    text = models.CharField(max_length=500)
+    is_correct = models.BooleanField(default=False)
+    order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ['order', 'id']
+
+    def __str__(self):
+        return self.text[:60]
+
+
+class QuizAttempt(models.Model):
+    enrollment = models.ForeignKey(Enrollment, on_delete=models.CASCADE, related_name='quiz_attempts')
+    quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE, related_name='attempts')
+    # Set once at creation from the count of this student's prior attempts
+    # at this quiz -- frozen after that, same "compute once, never drift"
+    # pattern as Payment's split fields. Drives the attempt-3+ answer-reveal
+    # rule in the student-facing result view.
+    attempt_number = models.PositiveIntegerField(editable=False)
+    score_percent = models.DecimalField(max_digits=5, decimal_places=2)
+    passed = models.BooleanField(default=False)
+    submitted_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-submitted_at']
+
+    def __str__(self):
+        return f'{self.enrollment.student} - {self.quiz} (attempt {self.attempt_number}, {self.score_percent}%)'
+
+    @property
+    def reveal_answers(self) -> bool:
+        return self.attempt_number >= 3
+
+    def save(self, *args, **kwargs):
+        if self._state.adding and self.attempt_number is None:
+            prior = QuizAttempt.objects.filter(enrollment=self.enrollment, quiz=self.quiz).count()
+            self.attempt_number = prior + 1
+        super().save(*args, **kwargs)
+
+
+class QuizAnswer(models.Model):
+    attempt = models.ForeignKey(QuizAttempt, on_delete=models.CASCADE, related_name='answers')
+    question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name='+')
+    selected_choice = models.ForeignKey(Choice, on_delete=models.CASCADE, null=True, blank=True, related_name='+')
+    is_correct = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f'{self.attempt} - {self.question}'
 
 
 class InstructorWallet(models.Model):

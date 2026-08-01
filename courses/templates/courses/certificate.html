@@ -24,11 +24,67 @@
     <p class="text-sm text-gray-400 mb-8">{% trans "Issued" %} {{ certificate.issued_at|date:"F d, Y" }}</p>
 
     <a href="{% url 'certificate_download' certificate.uuid %}"
-       class="inline-flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white font-semibold px-6 py-3 rounded-lg mb-8">
+       class="inline-flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white font-semibold px-6 py-3 rounded-lg mb-4">
       <i class="fa-solid fa-download"></i> {% trans "Download Certificate" %}
     </a>
+
+    <div class="flex flex-wrap items-center justify-center gap-3 mb-8">
+      <a href="{{ linkedin_share_url }}" target="_blank" rel="noopener noreferrer"
+         class="inline-flex items-center gap-2 bg-[#0A66C2] hover:opacity-90 text-white font-semibold px-5 py-2.5 rounded-lg text-sm transition">
+        <i class="fa-brands fa-linkedin"></i> {% trans "Share on LinkedIn" %}
+      </a>
+      <button type="button" id="copy-cert-link"
+              data-url="{{ verification_url }}"
+              class="inline-flex items-center gap-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 font-semibold px-5 py-2.5 rounded-lg text-sm transition">
+        <i class="fa-solid fa-link"></i> <span id="copy-cert-link-label">{% trans "Copy Link" %}</span>
+      </button>
+      <button type="button" id="share-cert-generic"
+              data-url="{{ verification_url }}"
+              data-title="{% blocktrans with title=certificate.enrollment.course.title %}My Mendoura Certificate: {{ title }}{% endblocktrans %}"
+              class="hidden inline-flex items-center gap-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 font-semibold px-5 py-2.5 rounded-lg text-sm transition">
+        <i class="fa-solid fa-share-nodes"></i> {% trans "Share" %}
+      </button>
+    </div>
 
     <p class="text-xs text-gray-400">{% trans "Verification ID" %}: {{ certificate.uuid }}</p>
   </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  (function () {
+    const copyBtn = document.getElementById('copy-cert-link');
+    const copyLabel = document.getElementById('copy-cert-link-label');
+    if (copyBtn) {
+      copyBtn.addEventListener('click', async () => {
+        const url = copyBtn.dataset.url;
+        try {
+          await navigator.clipboard.writeText(url);
+        } catch (e) {
+          const input = document.createElement('input');
+          input.value = url;
+          document.body.appendChild(input);
+          input.select();
+          document.execCommand('copy');
+          document.body.removeChild(input);
+        }
+        const original = copyLabel.textContent;
+        copyLabel.textContent = '{% trans "Copied!" %}';
+        setTimeout(() => { copyLabel.textContent = original; }, 2000);
+      });
+    }
+
+    // Generic Web Share fallback -- only shown on devices/browsers that
+    // actually support navigator.share (mostly mobile), in case the
+    // LinkedIn deep-link format above ever needs adjustment.
+    const shareBtn = document.getElementById('share-cert-generic');
+    if (shareBtn && navigator.share) {
+      shareBtn.classList.remove('hidden');
+      shareBtn.addEventListener('click', () => {
+        navigator.share({ title: shareBtn.dataset.title, url: shareBtn.dataset.url }).catch(() => {});
+      });
+    }
+  })();
+</script>
 {% endblock %}

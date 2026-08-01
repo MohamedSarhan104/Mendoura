@@ -6,6 +6,7 @@ find and to test in isolation from the view/model layer that calls it.
 """
 import io
 import os
+from urllib.parse import urlencode
 
 from django.conf import settings
 from django.urls import reverse
@@ -22,8 +23,8 @@ LOGO_PATH = os.path.join(settings.BASE_DIR, 'static', 'img', 'logo.png')
 SITE_DOMAIN = 'https://mendoura.com'
 
 
-def _verification_url(certificate) -> str:
-    return f'{SITE_DOMAIN}{reverse("certificate_verify", args=[certificate.uuid])}'
+def verification_url(certificate) -> str:
+    return f'{SITE_DOMAIN}{reverse("certificate_verify_short", args=[certificate.uuid])}'
 
 
 def build_certificate_pdf(certificate) -> bytes:
@@ -110,8 +111,26 @@ def build_certificate_pdf(certificate) -> bytes:
     c.setFillColor(MUTED)
     c.setFont('Helvetica', 8)
     c.drawCentredString(center_x, 65, f'Certificate ID: {certificate.uuid}')
-    c.drawCentredString(center_x, 52, f'Verify this certificate at {_verification_url(certificate)}')
+    c.drawCentredString(center_x, 52, f'Verify this certificate at {verification_url(certificate)}')
 
     c.showPage()
     c.save()
     return buffer.getvalue()
+
+
+def linkedin_share_url(certificate) -> str:
+    """LinkedIn's documented "Add to Profile" deep link for certifications --
+    https://www.linkedin.com/help/linkedin/answer/a566688. Pre-fills the
+    Add Certification form; LinkedIn still requires the user to review and
+    save it themselves, nothing posts automatically."""
+    course = certificate.enrollment.course
+    params = {
+        'startTask': 'CERTIFICATION_NAME',
+        'name': course.title,
+        'organizationName': 'Mendoura',
+        'issueYear': str(certificate.issued_at.year),
+        'issueMonth': str(certificate.issued_at.month),
+        'certUrl': verification_url(certificate),
+        'certId': str(certificate.uuid),
+    }
+    return 'https://www.linkedin.com/profile/add?' + urlencode(params)
