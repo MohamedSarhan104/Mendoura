@@ -4,7 +4,7 @@ from decimal import Decimal
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
-from django.core.validators import MaxValueValidator, MinValueValidator
+from django.core.validators import MaxValueValidator, MinValueValidator, RegexValidator
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.template.defaultfilters import slugify
@@ -23,7 +23,36 @@ logger = logging.getLogger(__name__)
 EGYPT_ALIASES = {'egypt', 'eg', 'arab republic of egypt', 'مصر', 'جمهورية مصر العربية'}
 
 
+class SpacesAllowedUsernameValidator(RegexValidator):
+    """Same as Django's default UnicodeUsernameValidator, minus the ban on
+    spaces -- usernames here are never used in URLs, @mentions, or as any
+    kind of identifier outside the DB, so there's no technical reason to
+    reject them."""
+    regex = r'^[\w.@+ -]+\Z'
+    message = _(
+        'Enter a valid username. This value may contain only letters, '
+        'numbers, spaces, and @/./+/-/_ characters.'
+    )
+    flags = 0
+
+
 class User(AbstractUser):
+    # Overrides AbstractUser's default username field only to swap in a
+    # validator that allows spaces (see SpacesAllowedUsernameValidator) --
+    # everything else (max_length, uniqueness, error message) matches
+    # Django's default exactly.
+    username_validator = SpacesAllowedUsernameValidator()
+    username = models.CharField(
+        _('username'),
+        max_length=150,
+        unique=True,
+        help_text=_('Required. 150 characters or fewer. Letters, digits, spaces and @/./+/-/_ only.'),
+        validators=[username_validator],
+        error_messages={
+            'unique': _('A user with that username already exists.'),
+        },
+    )
+
     is_student = models.BooleanField(default=False)
     is_instructor = models.BooleanField(default=False)
     phone_number = models.CharField(max_length=15, blank=True, null=True)

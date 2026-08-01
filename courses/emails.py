@@ -7,6 +7,7 @@ Uses the EMAIL_BACKEND already configured in settings.py (Zoho SMTP in
 production, falling back to the console backend whenever
 EMAIL_HOST_PASSWORD isn't set) -- no new email provider is introduced here.
 """
+import functools
 import logging
 
 from django.conf import settings
@@ -19,6 +20,23 @@ from . import certificates
 logger = logging.getLogger(__name__)
 
 SITE_DOMAIN = 'https://mendoura.com'
+
+
+def _never_raises(func):
+    """Email delivery is a side effect, not a precondition, for every
+    trigger this module handles -- _send() already guards the final SMTP
+    call, but a bug in template rendering, reverse(), or context building
+    (everything each send_* function does before calling _send()) would
+    otherwise propagate as an unhandled 500 for the caller, who by this
+    point has already committed the real work (signup, password reset,
+    certificate issuance) that the email is just confirming."""
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except Exception:
+            logger.error('Failed to build/send email via %s', func.__name__, exc_info=True)
+    return wrapper
 
 
 def humanize_duration(seconds: int) -> str:
@@ -55,6 +73,7 @@ def _send(*, subject, text_body, html_body, to_email, attachments=None) -> None:
         logger.warning('Failed to send "%s" email to %s', subject, to_email, exc_info=True)
 
 
+@_never_raises
 def send_welcome_email(user, *, to_email=None) -> None:
     """Sent once, right after a new Student or Instructor account is
     created (before admin approval -- this just confirms the signup, it
@@ -88,6 +107,7 @@ def send_welcome_email(user, *, to_email=None) -> None:
     _send(subject='Welcome to Mendoura! 🎉', text_body=text_body, html_body=html_body, to_email=to_email)
 
 
+@_never_raises
 def send_instructor_application_received_email(user, *, to_email=None) -> None:
     """Sent once, right at Instructor registration -- the lighter
     "we got it, hang tight" counterpart to send_instructor_welcome_email,
@@ -118,6 +138,7 @@ def send_instructor_application_received_email(user, *, to_email=None) -> None:
     )
 
 
+@_never_raises
 def send_instructor_application_notification(user, *, to_email=None) -> None:
     """Internal notification, sent alongside
     send_instructor_application_received_email, so a new application
@@ -163,6 +184,7 @@ def send_instructor_application_notification(user, *, to_email=None) -> None:
     )
 
 
+@_never_raises
 def send_instructor_welcome_email(user, *, to_email=None) -> None:
     """Sent once, when an Instructor account is approved -- not at
     registration. The copy promises dashboard access ("You now have
@@ -204,6 +226,7 @@ def send_instructor_welcome_email(user, *, to_email=None) -> None:
     )
 
 
+@_never_raises
 def send_certificate_email(certificate, *, to_email=None) -> None:
     """Emails the student their certificate PDF once it's been generated.
     Silently does nothing if the certificate has no PDF yet -- the caller

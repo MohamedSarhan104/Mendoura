@@ -100,13 +100,24 @@ def student_signup(request):
     if request.method == 'POST':
         form = StudentSignUpForm(request.POST)
         if form.is_valid():
-            user = form.save()
-            emails.send_welcome_email(user)
-            messages.success(
-                request,
-                _("Your account has been created and is pending administrator approval. "
-                  "You'll be able to log in once it's approved."))
-            return redirect('login')
+            try:
+                user = form.save()
+            except IntegrityError:
+                # clean_username()/clean_email() already checked for
+                # duplicates, but that check-then-save isn't atomic -- two
+                # near-simultaneous submits (double-click, a slow request
+                # retried by the browser) can both pass validation and only
+                # collide at the DB's unique constraint. Surface it as a
+                # normal form error instead of a raw 500.
+                form.add_error(
+                    None, _('That username was just taken by someone else. Please try again.'))
+            else:
+                emails.send_welcome_email(user)
+                messages.success(
+                    request,
+                    _("Your account has been created and is pending administrator approval. "
+                      "You'll be able to log in once it's approved."))
+                return redirect('login')
     else:
         form = StudentSignUpForm()
     return render(request, 'registration/signup_student.html', {'form': form})
@@ -116,18 +127,24 @@ def instructor_signup(request):
     if request.method == 'POST':
         form = InstructorSignUpForm(request.POST)
         if form.is_valid():
-            # The full Instructor welcome email promises dashboard access,
-            # which only becomes true once an admin approves the account
-            # (sent from approve_user() instead) -- this lighter
-            # "application received" email is safe to send right away.
-            user = form.save()
-            emails.send_instructor_application_received_email(user)
-            emails.send_instructor_application_notification(user)
-            messages.success(
-                request,
-                _("Your account has been created and is pending administrator approval. "
-                  "You'll be able to log in once it's approved."))
-            return redirect('login')
+            try:
+                user = form.save()
+            except IntegrityError:
+                # Same race as student_signup() above.
+                form.add_error(
+                    None, _('That username was just taken by someone else. Please try again.'))
+            else:
+                # The full Instructor welcome email promises dashboard access,
+                # which only becomes true once an admin approves the account
+                # (sent from approve_user() instead) -- this lighter
+                # "application received" email is safe to send right away.
+                emails.send_instructor_application_received_email(user)
+                emails.send_instructor_application_notification(user)
+                messages.success(
+                    request,
+                    _("Your account has been created and is pending administrator approval. "
+                      "You'll be able to log in once it's approved."))
+                return redirect('login')
     else:
         form = InstructorSignUpForm()
     return render(request, 'registration/signup_instructor.html', {'form': form})
