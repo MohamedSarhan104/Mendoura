@@ -88,6 +88,36 @@ def send_welcome_email(user, *, to_email=None) -> None:
     _send(subject='Welcome to Mendoura! 🎉', text_body=text_body, html_body=html_body, to_email=to_email)
 
 
+def send_instructor_application_received_email(user, *, to_email=None) -> None:
+    """Sent once, right at Instructor registration -- the lighter
+    "we got it, hang tight" counterpart to send_instructor_welcome_email,
+    which fires later at approval. Doesn't promise dashboard access, so
+    it's safe to send before the account is approved.
+
+    to_email overrides the recipient, same escape hatch as
+    send_welcome_email -- used only by the admin test-email tool."""
+    to_email = to_email or user.email
+    if not to_email:
+        return
+
+    name = user.get_full_name() or user.username
+    context = {'instructor_name': name}
+    html_body = render_to_string('emails/instructor_application_received_email.html', context)
+    text_body = (
+        f'Hi {name},\n\n'
+        f'Thanks for applying to become an instructor on Mendoura! We\'ve received your '
+        f'application and our team is reviewing it.\n\n'
+        f'We\'ll be in touch soon — once approved, you\'ll get full access to your instructor '
+        f'dashboard and can start building your first course.\n\n'
+        f'Questions in the meantime? Reach out to support@mendoura.com.\n\n'
+        f'The Mendoura Team'
+    )
+    _send(
+        subject='We\'ve received your Mendoura instructor application',
+        text_body=text_body, html_body=html_body, to_email=to_email,
+    )
+
+
 def send_instructor_welcome_email(user, *, to_email=None) -> None:
     """Sent once, when an Instructor account is approved -- not at
     registration. The copy promises dashboard access ("You now have

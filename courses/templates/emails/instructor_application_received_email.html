@@ -1,0 +1,56 @@
+{% load static %}<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>We've received your Mendoura instructor application</title>
+</head>
+<body style="margin:0; padding:0; background-color:#f3f1fa; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f3f1fa; padding:32px 16px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px; background-color:#ffffff; border-radius:16px; overflow:hidden; border:1px solid #e5e2f0;">
+
+          <!-- header -->
+          <tr>
+            <td style="background:linear-gradient(135deg,#22d3ee,#7c3aed); padding:28px 32px; text-align:center;">
+              <img src="https://mendoura.com{% static 'img/logo.png' %}" alt="Mendoura" width="40" height="40" style="display:inline-block; vertical-align:middle; border:0;">
+              <span style="display:inline-block; vertical-align:middle; margin-left:10px; font-size:19px; font-weight:700; color:#ffffff; letter-spacing:0.02em;">Mendoura</span>
+            </td>
+          </tr>
+
+          <!-- body -->
+          <tr>
+            <td style="padding:36px 32px 8px;">
+              <p style="margin:0 0 4px; font-size:13px; font-weight:600; color:#7c3aed; text-transform:uppercase; letter-spacing:0.04em;">Application Received</p>
+              <h1 style="margin:0 0 12px; font-size:22px; line-height:1.3; color:#1b1a24;">Hi {{ instructor_name }},</h1>
+              <p style="margin:0 0 24px; font-size:15px; line-height:1.6; color:#625f70;">
+                Thanks for applying to become an instructor on Mendoura! We've received your application and our team is reviewing it.
+              </p>
+              <p style="margin:0 0 24px; font-size:15px; line-height:1.6; color:#625f70;">
+                We'll be in touch soon &mdash; once approved, you'll get full access to your instructor dashboard and can start building your first course.
+              </p>
+              <p style="margin:0 0 8px; font-size:14px; line-height:1.6; color:#625f70;">
+                Questions in the meantime? Reach out to <a href="mailto:support@mendoura.com" style="color:#7c3aed;">support@mendoura.com</a>.
+              </p>
+              <p style="margin:16px 0 8px; font-size:15px; line-height:1.6; color:#625f70;">
+                The Mendoura Team
+              </p>
+            </td>
+          </tr>
+
+          <!-- footer -->
+          <tr>
+            <td style="padding:20px 32px; border-top:1px solid #eeecf5; text-align:center;">
+              <p style="margin:0; font-size:12px; color:#a7a3b8;">
+                &copy; 2026 Mendoura &middot; <a href="mailto:support@mendoura.com" style="color:#a7a3b8;">support@mendoura.com</a>
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

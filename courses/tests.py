@@ -757,12 +757,16 @@ class SignupApprovalFlowTests(TestCase):
         self.assertIn('Ready to get started?', sent.body)
         self.assertTrue(any(content_type == 'text/html' for _, content_type in sent.alternatives))
 
-    def test_instructor_signup_does_not_send_welcome_email(self):
-        # Unlike students, Instructors get their welcome email on approval
-        # instead (see AdminUserManagementTests) -- its copy promises
-        # dashboard access, which isn't true until an admin approves them.
+    def test_instructor_signup_sends_application_received_not_welcome_email(self):
+        # The full welcome email fires on approval instead (see
+        # AdminUserManagementTests) -- its copy promises dashboard access,
+        # which isn't true until an admin approves them. Registration gets
+        # the lighter "we got your application" email instead.
         self.client.post(reverse('instructor_signup'), self._instructor_signup_data())
-        self.assertEqual(len(mail.outbox), 0)
+        self.assertEqual(len(mail.outbox), 1)
+        sent = mail.outbox[0]
+        self.assertEqual(sent.subject, "We've received your Mendoura instructor application")
+        self.assertEqual(sent.to, ['newbie@example.com'])
 
     def test_signup_without_email_does_not_crash_or_send(self):
         response = self.client.post(reverse('student_signup'), self._signup_data(email=''))
@@ -860,18 +864,20 @@ class AdminUserManagementTests(TestCase):
         self.assertIn('instructor dashboard', sent.body)
         self.assertIn(reverse('instructor_dashboard'), sent.body)
 
-    def test_instructor_signup_does_not_send_any_welcome_email(self):
-        """The Instructor welcome email fires on approval (see
+    def test_instructor_signup_sends_application_received_not_full_welcome_email(self):
+        """The full Instructor welcome email fires on approval (see
         test_approving_instructor_sends_instructor_welcome_email above),
         not at registration -- its copy promises dashboard access, which
-        isn't true until an admin approves the account."""
+        isn't true until an admin approves the account. Registration gets
+        the lighter application-received email instead."""
         response = self.client.post(reverse('instructor_signup'), {
             'username': 'freshinst', 'email': 'freshinst@example.com', 'phone_number': '+201009998888',
             'country': 'Egypt', 'password1': 'a-strong-password-1', 'password2': 'a-strong-password-1',
             'agree_to_terms': 'on',
         })
         self.assertRedirects(response, reverse('login'))
-        self.assertEqual(len(mail.outbox), 0)
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].subject, "We've received your Mendoura instructor application")
 
     def test_admin_can_reject_pending_user_and_it_is_deleted(self):
         self.client.force_login(self.admin)
@@ -2907,6 +2913,21 @@ class AdminTestEmailToolTests(TestCase):
 
     def test_instructor_welcome_test_requires_target_email(self):
         response = self.client.post(reverse('send_test_emails'), {'which': 'instructor_welcome', 'target_email': ''})
+        self.assertRedirects(response, reverse('send_test_emails'))
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_instructor_application_received_test_send_goes_to_typed_target(self):
+        response = self.client.post(
+            reverse('send_test_emails'),
+            {'which': 'instructor_application_received', 'target_email': 'wherever4@example.com'})
+        self.assertRedirects(response, reverse('send_test_emails'))
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].to, ['wherever4@example.com'])
+        self.assertEqual(mail.outbox[0].subject, "We've received your Mendoura instructor application")
+
+    def test_instructor_application_received_test_requires_target_email(self):
+        response = self.client.post(
+            reverse('send_test_emails'), {'which': 'instructor_application_received', 'target_email': ''})
         self.assertRedirects(response, reverse('send_test_emails'))
         self.assertEqual(len(mail.outbox), 0)
 
