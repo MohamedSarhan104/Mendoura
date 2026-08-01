@@ -222,16 +222,18 @@ BUNNY_TOKEN_KEY = config('BUNNY_TOKEN_KEY', default='')
 # lecture without the token expiring mid-video.
 BUNNY_EMBED_TOKEN_TTL = 60 * 60 * 6  # 6 hours
 
-# Outgoing email (password reset, etc.) via Zoho Mail SMTP. Falls back to the
-# console backend -- prints the email instead of sending it -- whenever
-# EMAIL_HOST_PASSWORD isn't set, so local dev/tests never try (and fail) a
-# real SMTP connection.
+# Outgoing email (password reset, certificates, etc.) via Zoho Mail SMTP,
+# sent from a dedicated no-reply@mendoura.com mailbox -- support@mendoura.com
+# stays the human-monitored contact address linked in email footers, never
+# the sender. Falls back to the console backend -- prints the email instead
+# of sending it -- whenever EMAIL_HOST_PASSWORD isn't set, so local dev/tests
+# never try (and fail) a real SMTP connection.
 EMAIL_HOST = config('EMAIL_HOST', default='smtp.zoho.com')
 EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
 EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
-EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='support@mendoura.com')
+EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='no-reply@mendoura.com')
 EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
-DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='Mendoura <support@mendoura.com>')
+DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='Mendoura <no-reply@mendoura.com>')
 EMAIL_BACKEND = (
     'django.core.mail.backends.smtp.EmailBackend' if EMAIL_HOST_PASSWORD
     else 'django.core.mail.backends.console.EmailBackend'
