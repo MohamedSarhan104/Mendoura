@@ -275,9 +275,15 @@ AUTO_TRANSLATE_ENABLED = config(
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
+    'formatters': {
+        'timestamped': {
+            'format': '%(asctime)s %(levelname)s %(name)s: %(message)s',
+        },
+    },
     'handlers': {
         'console': {
             'class': 'logging.StreamHandler',
+            'formatter': 'timestamped',
         },
     },
     'loggers': {
@@ -289,6 +295,16 @@ LOGGING = {
             'handlers': ['console'],
             'level': 'ERROR',
             'propagate': False,
+        },
+        # Without this, courses.* loggers (auto_translate, emails, ...)
+        # have no configured handler and fall through to Python's silent
+        # "last resort" behavior -- only WARNING+ reaches stderr, with no
+        # formatting, and INFO-level calls (like the [TRANSLATION_DEBUG]
+        # success-path logging) are dropped entirely, never reaching
+        # Render's logs at all.
+        'courses': {
+            'handlers': ['console'],
+            'level': 'INFO',
         },
     },
 }

@@ -18,10 +18,28 @@ cell-by-cell within a table row, so the surrounding Markdown/table syntax
 is never itself sent through translation -- only the human-readable text
 inside it is.
 """
+import logging
 import re
+import time
 
 from deep_translator import GoogleTranslator
 from django.conf import settings
+
+logger = logging.getLogger(__name__)
+
+# TEMPORARY: diagnosing production translations silently falling back to
+# English on Render (suspected IP block/rate-limit/timeout on the real
+# GoogleTranslator network call). Every line tagged [TRANSLATION_DEBUG] so
+# it's easy to grep out of Render's logs. Remove this whole block (and the
+# logging calls in _translate_text below) once the root cause is confirmed
+# and fixed -- it's noisy by design, not something to ship long-term.
+_DEBUG_TAG = '[TRANSLATION_DEBUG]'
+
+
+def _truncate(text: str, limit: int = 200) -> str:
+    text = text or ''
+    return text if len(text) <= limit else f'{text[:limit]}... (truncated, {len(text)} chars total)'
+
 
 # A table's header-separator row, e.g. "|---|---|---|" or "| :-- | --- |".
 # Never translated -- there's no human-readable text in it.
@@ -45,9 +63,20 @@ def _translate_text(text: str, target_language: str) -> str:
         return text
     leading_ws = text[:len(text) - len(text.lstrip())]
     trailing_ws = text[len(text.rstrip()):]
+
+    logger.info(
+        '%s calling GoogleTranslator: source=en target=%s text=%r',
+        _DEBUG_TAG, target_language, _truncate(stripped))
+    started = time.monotonic()
     try:
         translated = GoogleTranslator(source='en', target=target_language).translate(stripped)
     except Exception as exc:
+        elapsed = time.monotonic() - started
+        logger.exception(
+            '%s GoogleTranslator FAILED after %.2fs: source=en target=%s text=%r '
+            'exception_type=%s exception_message=%s',
+            _DEBUG_TAG, elapsed, target_language, _truncate(stripped),
+            type(exc).__name__, str(exc))
         # deep-translator only wraps its *own* known failure modes (rate
         # limiting, bad language code, ...) in deep_translator.exceptions;
         # a raw connection/proxy/timeout error from the underlying HTTP
@@ -55,8 +84,17 @@ def _translate_text(text: str, target_language: str) -> str:
         # AutoTranslatedFieldsMixin catches TranslationError around this
         # call: translation is best-effort and must never crash a save.
         raise TranslationError(str(exc)) from exc
+
+    elapsed = time.monotonic() - started
     if translated is None:
+        logger.warning(
+            '%s GoogleTranslator returned None after %.2fs: source=en target=%s text=%r',
+            _DEBUG_TAG, elapsed, target_language, _truncate(stripped))
         raise TranslationError(f'GoogleTranslator returned nothing for target language {target_language!r}.')
+
+    logger.info(
+        '%s GoogleTranslator SUCCEEDED after %.2fs: source=en target=%s output=%r',
+        _DEBUG_TAG, elapsed, target_language, _truncate(translated))
     return f'{leading_ws}{translated}{trailing_ws}'
 
 
