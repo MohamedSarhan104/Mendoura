@@ -4,7 +4,7 @@ import json
 import random
 from datetime import timedelta
 from decimal import Decimal
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 import requests
 from django.conf import settings
@@ -2349,6 +2349,99 @@ class BunnyWebhookTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.lecture.refresh_from_db()
         self.assertEqual(self.lecture.bunny_status, 0)
+
+
+@override_settings(BUNNY_LIBRARY_ID='705216', BUNNY_API_KEY='test-api-key')
+class BunnyStatusHelperTests(TestCase):
+    """get_video_status is the polling fallback for when Bunny's webhook
+    delivery is missed (e.g. a Render free-tier dyno asleep at delivery
+    time) -- it must surface Bunny's real status or the real failure, the
+    same way create_video already does."""
+
+    @patch('courses.bunny.requests.get')
+    def test_get_video_status_returns_int_status(self, mock_get):
+        from courses import bunny
+        mock_get.return_value = Mock(ok=True, status_code=200, text='{"status": 4}',
+                                      json=lambda: {'status': 4})
+        self.assertEqual(bunny.get_video_status('guid-1'), 4)
+
+    @patch('courses.bunny.requests.get')
+    def test_get_video_status_raises_on_error_response(self, mock_get):
+        from courses import bunny
+        response = Mock(ok=False, status_code=401, text='{"Message": "Invalid AccessKey"}')
+        response.raise_for_status.side_effect = requests.HTTPError('401 Unauthorized')
+        mock_get.return_value = response
+        with self.assertRaises(requests.HTTPError):
+            bunny.get_video_status('guid-1')
+
+    @patch('courses.bunny.requests.get', side_effect=requests.ConnectionError('refused'))
+    def test_get_video_status_logs_request_failure(self, mock_get):
+        from courses import bunny
+        with self.assertLogs('courses.bunny', level='ERROR') as logs:
+            with self.assertRaises(requests.ConnectionError):
+                bunny.get_video_status('guid-1')
+        self.assertTrue(any('[BUNNY_STATUS_DEBUG]' in message for message in logs.output))
+
+
+@override_settings(BUNNY_LIBRARY_ID='705216', BUNNY_API_KEY='test-api-key')
+class BunnyStatusSyncOnPageLoadTests(TestCase):
+    """Regression coverage for lectures stuck showing "still processing"
+    long after Bunny actually finished: bunny_status used to be updated
+    ONLY by Bunny's webhook, with no fallback if delivery was missed. Both
+    the wizard's Content step and the classic edit_lecture page must now
+    poll Bunny's real status on load and update the stale local flag."""
+
+    def setUp(self):
+        self.instructor = User.objects.create_user(
+            username='bss_inst', password='pw', is_instructor=True)
+        parent = Track.objects.create(name='BSS Parent')
+        track = Track.objects.create(name='BSS Track', parent=parent)
+        self.course = Course.objects.create(
+            instructor=self.instructor, track=track, title='BSS Course', description='...',
+            production_type=Course.ProductionType.FULL, price=Decimal('0.00'), is_free=True,
+            status=Course.Status.DRAFT)
+        self.module = Module.objects.create(course=self.course, title='M1')
+        self.lecture = Lecture.objects.create(
+            module=self.module, title='L1', bunny_video_id='guid-stuck', bunny_status=1)
+        self.client.force_login(self.instructor)
+
+    @patch('courses.bunny.get_video_status', return_value=4)
+    def test_wizard_content_step_refreshes_stale_status(self, mock_status):
+        response = self.client.get(
+            reverse('course_wizard_module_content', args=[self.course.id, self.module.id]))
+        self.assertEqual(response.status_code, 200)
+        mock_status.assert_called_once_with('guid-stuck')
+        self.lecture.refresh_from_db()
+        self.assertEqual(self.lecture.bunny_status, 4)
+        self.assertContains(response, 'Video ready')
+        self.assertNotContains(response, 'still processing')
+
+    @patch('courses.bunny.get_video_status', return_value=4)
+    def test_edit_lecture_page_refreshes_stale_status(self, mock_status):
+        response = self.client.get(reverse('edit_lecture', args=[self.lecture.id]))
+        self.assertEqual(response.status_code, 200)
+        mock_status.assert_called_once_with('guid-stuck')
+        self.lecture.refresh_from_db()
+        self.assertEqual(self.lecture.bunny_status, 4)
+
+    @patch('courses.bunny.get_video_status')
+    def test_already_ready_lecture_does_not_call_bunny_again(self, mock_status):
+        self.lecture.bunny_status = 4
+        self.lecture.save(update_fields=['bunny_status'])
+        response = self.client.get(
+            reverse('course_wizard_module_content', args=[self.course.id, self.module.id]))
+        self.assertEqual(response.status_code, 200)
+        mock_status.assert_not_called()
+
+    @patch('courses.bunny.get_video_status', side_effect=requests.ConnectionError('refused'))
+    def test_bunny_failure_during_sync_does_not_break_the_page(self, mock_status):
+        with self.assertLogs('courses.views', level='ERROR') as logs:
+            response = self.client.get(
+                reverse('course_wizard_module_content', args=[self.course.id, self.module.id]))
+        self.assertEqual(response.status_code, 200)
+        self.lecture.refresh_from_db()
+        self.assertEqual(self.lecture.bunny_status, 1)  # unchanged -- still "processing"
+        self.assertTrue(any('[BUNNY_STATUS_DEBUG]' in message for message in logs.output))
 
 
 @override_settings(BUNNY_LIBRARY_ID='705216', BUNNY_API_KEY='k', BUNNY_TOKEN_KEY='tok')

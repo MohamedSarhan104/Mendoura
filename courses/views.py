@@ -249,6 +249,33 @@ def _wizard_module_lecture(module):
     return lecture
 
 
+def _sync_bunny_status(lecture):
+    """Bunny's webhook (bunny_webhook above) is the fast path for updating
+    bunny_status, but webhook delivery isn't guaranteed -- e.g. a Render
+    free-tier dyno asleep when Bunny calls back -- and nothing ever retries
+    it, so a lecture can stay stuck showing "still processing" long after
+    Bunny actually finished. Called whenever we're about to show this status
+    to an instructor, so it reflects Bunny's real current state instead of a
+    possibly-stale local flag. Best-effort: a Bunny hiccup here should never
+    break the page that's just trying to display a status.
+    [BUNNY_STATUS_DEBUG]"""
+    if not lecture.bunny_video_id or lecture.bunny_ready:
+        return
+    try:
+        status = bunny.get_video_status(lecture.bunny_video_id)
+    except (bunny.BunnyError, requests.RequestException):
+        logger.error(
+            '[BUNNY_STATUS_DEBUG] _sync_bunny_status failed to refresh lecture_id=%s guid=%s',
+            lecture.id, lecture.bunny_video_id, exc_info=True)
+        return
+    if status != lecture.bunny_status:
+        logger.info(
+            '[BUNNY_STATUS_DEBUG] _sync_bunny_status updating lecture_id=%s guid=%s: %s -> %s',
+            lecture.id, lecture.bunny_video_id, lecture.bunny_status, status)
+        lecture.bunny_status = status
+        lecture.save(update_fields=['bunny_status'])
+
+
 def _module_content_ready(course, module):
     """Whether this module's required video/script has been provided --
     gates the wizard's Next Module/Finish action. Checked live against the
@@ -335,6 +362,8 @@ def course_wizard_module_content(request, course_id, module_id):
         return bail
     module = get_object_or_404(Module, id=module_id, course=course)
     lecture = _wizard_module_lecture(module)
+    if request.method == 'GET':
+        _sync_bunny_status(lecture)
     quiz = getattr(module, 'quiz', None)
     modules = list(course.modules.order_by('order', 'id'))
     module_index = next((i for i, m in enumerate(modules) if m.id == module.id), 0)
@@ -610,10 +639,19 @@ def bunny_webhook(request):
         guid = payload.get('VideoGuid', '')
         status = int(payload.get('Status', 0))
     except (ValueError, TypeError, json.JSONDecodeError):
+        logger.error('[BUNNY_STATUS_DEBUG] bunny_webhook got an unparseable body: %r', request.body[:500])
         return HttpResponse(status=400)
 
+    # TEMPORARY: [BUNNY_STATUS_DEBUG] -- diagnosing lectures stuck on
+    # "still processing" long after Bunny actually finished. This is the only
+    # thing that updates bunny_status, and Bunny's webhook delivery isn't
+    # guaranteed, so logging every delivery we do get shows whether this view
+    # is even being called.
+    logger.info('[BUNNY_STATUS_DEBUG] bunny_webhook received: guid=%s status=%s', guid, status)
     if guid:
-        Lecture.objects.filter(bunny_video_id=guid).update(bunny_status=status)
+        updated = Lecture.objects.filter(bunny_video_id=guid).update(bunny_status=status)
+        logger.info('[BUNNY_STATUS_DEBUG] bunny_webhook updated %d lecture(s) for guid=%s to status=%s',
+                    updated, guid, status)
     return HttpResponse(status=200)
 
 
@@ -1379,6 +1417,8 @@ def manage_lectures(request, course_id, module_id):
 def edit_lecture(request, lecture_id):
     lecture = get_object_or_404(Lecture, id=lecture_id, module__course__instructor=request.user)
     course = lecture.module.course
+    if request.method == 'GET':
+        _sync_bunny_status(lecture)
     if request.method == 'POST':
         form = LectureForm(request.POST, request.FILES, instance=lecture)
         if form.is_valid():

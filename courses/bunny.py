@@ -32,6 +32,15 @@ TUS_ENDPOINT = 'https://video.bunnycdn.com/tusupload'
 # to ship long-term. Never logs BUNNY_API_KEY itself.
 _DEBUG_TAG = '[BUNNY_UPLOAD_DEBUG]'
 
+# TEMPORARY: diagnosing lectures stuck showing "still processing" long after
+# Bunny actually finished encoding. bunny_status is normally updated by
+# Bunny's webhook (bunny_webhook in views.py), but webhook delivery isn't
+# guaranteed -- a Render free-tier dyno asleep at delivery time, a dropped
+# request, etc. -- and nothing ever retried it, so a lecture could stay
+# stuck forever on whatever status the webhook last (or never) delivered.
+# Tagged [BUNNY_STATUS_DEBUG] so it's easy to grep out of Render's logs.
+_STATUS_DEBUG_TAG = '[BUNNY_STATUS_DEBUG]'
+
 
 class BunnyError(Exception):
     pass
@@ -95,6 +104,53 @@ def create_video(title: str) -> str:
         '%s Bunny create-video SUCCEEDED after %.2fs: library_id=%s guid=%s',
         _DEBUG_TAG, elapsed, settings.BUNNY_LIBRARY_ID, guid)
     return guid
+
+
+def get_video_status(video_id: str) -> int:
+    """Ask Bunny directly for this video's current encoding status (the same
+    integer bunny_webhook receives). Used as a fallback where the webhook
+    delivery might have been missed, so the instructor-facing status can't
+    get permanently stuck."""
+    url = f'{VIDEO_API_BASE}/library/{settings.BUNNY_LIBRARY_ID}/videos/{video_id}'
+    logger.info(
+        '%s calling Bunny get-video-status API: url=%s library_id=%s video_id=%s',
+        _STATUS_DEBUG_TAG, url, settings.BUNNY_LIBRARY_ID, video_id)
+    started = time.monotonic()
+    try:
+        response = requests.get(
+            url,
+            headers={'AccessKey': settings.BUNNY_API_KEY, 'Accept': 'application/json'},
+            timeout=15,
+        )
+    except requests.RequestException as exc:
+        elapsed = time.monotonic() - started
+        logger.exception(
+            '%s Bunny get-video-status request FAILED after %.2fs: url=%s video_id=%s '
+            'exception_type=%s exception_message=%s',
+            _STATUS_DEBUG_TAG, elapsed, url, video_id, type(exc).__name__, str(exc))
+        raise
+
+    elapsed = time.monotonic() - started
+    if not response.ok:
+        logger.error(
+            '%s Bunny get-video-status API returned an error after %.2fs: url=%s video_id=%s '
+            'status=%s body=%s',
+            _STATUS_DEBUG_TAG, elapsed, url, video_id, response.status_code, response.text[:2000])
+        response.raise_for_status()
+
+    body = response.json()
+    status = body.get('status')
+    if status is None:
+        logger.error(
+            '%s Bunny get-video-status API returned 2xx with no status field after %.2fs: '
+            'url=%s video_id=%s body=%s',
+            _STATUS_DEBUG_TAG, elapsed, url, video_id, response.text[:2000])
+        raise BunnyError('Bunny did not return a video status.')
+
+    logger.info(
+        '%s Bunny get-video-status SUCCEEDED after %.2fs: video_id=%s status=%s',
+        _STATUS_DEBUG_TAG, elapsed, video_id, status)
+    return int(status)
 
 
 def _upload_signature(video_id: str, expiration: int) -> str:
