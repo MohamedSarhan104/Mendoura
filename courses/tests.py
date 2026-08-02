@@ -3527,6 +3527,253 @@ class CertificateLinkedInShareTests(TestCase):
     'default': {'BACKEND': 'django.core.files.storage.InMemoryStorage'},
     'staticfiles': {'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage'},
 })
+class CourseCreationWizardTests(TestCase):
+    """The guided 4-step course creation wizard: Details -> Modules ->
+    per-module Video/Script + Quiz -> Review & Submit. Replaces the old
+    "create course, then figure out where to go next" flow."""
+
+    def setUp(self):
+        self.instructor = User.objects.create_user(
+            username='wizard_inst', password='pw', is_instructor=True, email='wizard_inst@example.com')
+        self.other_instructor = User.objects.create_user(
+            username='wizard_intruder', password='pw', is_instructor=True)
+        self.parent_track = Track.objects.create(name='Wizard Parent')
+        self.track = Track.objects.create(name='Wizard Leaf', parent=self.parent_track)
+
+    def _course_details_payload(self, **overrides):
+        data = {
+            'title': 'Wizard Course', 'description': 'desc', 'track': self.track.id,
+            'language': 'English', 'level': 'beginner', 'production_type': 'full',
+            'price': '0', 'is_free': 'on',
+        }
+        data.update(overrides)
+        return data
+
+    def test_step1_creates_draft_course_and_redirects_to_step2(self):
+        self.client.force_login(self.instructor)
+        response = self.client.post(reverse('create_course'), self._course_details_payload())
+        course = Course.objects.get(title='Wizard Course')
+        self.assertEqual(course.status, Course.Status.DRAFT)
+        self.assertEqual(course.instructor, self.instructor)
+        self.assertRedirects(response, reverse('course_wizard_modules', args=[course.id]))
+
+    def test_step2_requires_at_least_one_module_before_next_is_offered(self):
+        self.client.force_login(self.instructor)
+        self.client.post(reverse('create_course'), self._course_details_payload())
+        course = Course.objects.get(title='Wizard Course')
+        response = self.client.get(reverse('course_wizard_modules', args=[course.id]))
+        self.assertContains(response, 'Add a module to continue')
+        self.assertNotContains(response, 'Next: Add Video')
+
+        self.client.post(reverse('course_wizard_modules', args=[course.id]),
+                          {'action': 'add', 'title': 'Module 1', 'order': 1})
+        response = self.client.get(reverse('course_wizard_modules', args=[course.id]))
+        self.assertContains(response, 'Next: Add Video')
+
+    def test_step3_blocks_advance_without_video_for_full_production(self):
+        self.client.force_login(self.instructor)
+        self.client.post(reverse('create_course'), self._course_details_payload(production_type='full'))
+        course = Course.objects.get(title='Wizard Course')
+        self.client.post(reverse('course_wizard_modules', args=[course.id]),
+                          {'action': 'add', 'title': 'Module 1', 'order': 1})
+        module = Module.objects.get(course=course)
+
+        response = self.client.post(
+            reverse('course_wizard_module_content', args=[course.id, module.id]),
+            {'action': 'advance'}, follow=True)
+        self.assertContains(response, 'Upload a video')
+        lecture = Lecture.objects.get(module=module)
+        self.assertFalse(lecture.bunny_video_id)
+        self.assertFalse(lecture.video_url)
+
+    def test_step3_external_video_url_satisfies_full_production_requirement(self):
+        self.client.force_login(self.instructor)
+        self.client.post(reverse('create_course'), self._course_details_payload(production_type='full'))
+        course = Course.objects.get(title='Wizard Course')
+        self.client.post(reverse('course_wizard_modules', args=[course.id]),
+                          {'action': 'add', 'title': 'Module 1', 'order': 1})
+        module = Module.objects.get(course=course)
+
+        self.client.post(reverse('course_wizard_module_content', args=[course.id, module.id]),
+                          {'action': 'save_video_url', 'video_url': 'https://youtube.com/watch?v=abc'})
+        response = self.client.post(
+            reverse('course_wizard_module_content', args=[course.id, module.id]),
+            {'action': 'advance'})
+        self.assertRedirects(response, reverse('course_wizard_review', args=[course.id]))
+
+    def test_step3_script_only_requires_script_not_video(self):
+        self.client.force_login(self.instructor)
+        self.client.post(reverse('create_course'), self._course_details_payload(production_type='script_only'))
+        course = Course.objects.get(title='Wizard Course')
+        self.client.post(reverse('course_wizard_modules', args=[course.id]),
+                          {'action': 'add', 'title': 'Module 1', 'order': 1})
+        module = Module.objects.get(course=course)
+
+        blocked = self.client.post(
+            reverse('course_wizard_module_content', args=[course.id, module.id]),
+            {'action': 'advance'}, follow=True)
+        self.assertContains(blocked, 'Add your script')
+
+        self.client.post(reverse('course_wizard_module_content', args=[course.id, module.id]),
+                          {'action': 'save_script', 'script': 'Once upon a time...'})
+        response = self.client.post(
+            reverse('course_wizard_module_content', args=[course.id, module.id]),
+            {'action': 'advance'})
+        self.assertRedirects(response, reverse('course_wizard_review', args=[course.id]))
+        lecture = Lecture.objects.get(module=module)
+        self.assertEqual(lecture.ai_generated_script, 'Once upon a time...')
+
+    def test_step3_quiz_question_and_choices_end_to_end(self):
+        self.client.force_login(self.instructor)
+        self.client.post(reverse('create_course'), self._course_details_payload())
+        course = Course.objects.get(title='Wizard Course')
+        self.client.post(reverse('course_wizard_modules', args=[course.id]),
+                          {'action': 'add', 'title': 'Module 1', 'order': 1})
+        module = Module.objects.get(course=course)
+        url = reverse('course_wizard_module_content', args=[course.id, module.id])
+
+        self.client.post(url, {'action': 'save_quiz_settings', 'title': '', 'passing_score_percent': 70})
+        quiz = Quiz.objects.get(module=module)
+        self.client.post(url, {'action': 'add_question', 'text': 'What is 2+2?', 'order': 1})
+        question = Question.objects.get(quiz=quiz)
+        self.client.post(url, {'action': 'add_choice', 'question_id': question.id, 'text': '4', 'is_correct': 'on'})
+        self.client.post(url, {'action': 'add_choice', 'question_id': question.id, 'text': '5'})
+
+        choices = list(question.choices.all())
+        self.assertEqual(len(choices), 2)
+        self.assertEqual(sum(1 for c in choices if c.is_correct), 1)
+
+    def test_skip_quiz_link_only_shown_before_a_quiz_exists(self):
+        self.client.force_login(self.instructor)
+        self.client.post(reverse('create_course'), self._course_details_payload())
+        course = Course.objects.get(title='Wizard Course')
+        self.client.post(reverse('course_wizard_modules', args=[course.id]),
+                          {'action': 'add', 'title': 'Module 1', 'order': 1})
+        module = Module.objects.get(course=course)
+        url = reverse('course_wizard_module_content', args=[course.id, module.id])
+
+        response = self.client.get(url)
+        self.assertContains(response, 'Skip Quiz')
+
+        self.client.post(url, {'action': 'save_quiz_settings', 'title': '', 'passing_score_percent': 70})
+        response = self.client.get(url)
+        self.assertNotContains(response, 'Skip Quiz')
+
+    def test_advancing_past_last_module_goes_to_review(self):
+        self.client.force_login(self.instructor)
+        self.client.post(reverse('create_course'), self._course_details_payload())
+        course = Course.objects.get(title='Wizard Course')
+        self.client.post(reverse('course_wizard_modules', args=[course.id]),
+                          {'action': 'add', 'title': 'Only Module', 'order': 1})
+        module = Module.objects.get(course=course)
+        url = reverse('course_wizard_module_content', args=[course.id, module.id])
+        self.client.post(url, {'action': 'save_video_url', 'video_url': 'https://youtube.com/watch?v=abc'})
+
+        response = self.client.post(url, {'action': 'advance'})
+        self.assertRedirects(response, reverse('course_wizard_review', args=[course.id]))
+
+    def test_review_submit_moves_course_to_pending_review(self):
+        self.client.force_login(self.instructor)
+        self.client.post(reverse('create_course'), self._course_details_payload())
+        course = Course.objects.get(title='Wizard Course')
+        self.client.post(reverse('course_wizard_modules', args=[course.id]),
+                          {'action': 'add', 'title': 'Only Module', 'order': 1})
+        module = Module.objects.get(course=course)
+        self.client.post(reverse('course_wizard_module_content', args=[course.id, module.id]),
+                          {'action': 'save_video_url', 'video_url': 'https://youtube.com/watch?v=abc'})
+
+        response = self.client.post(reverse('course_wizard_review', args=[course.id]))
+        self.assertRedirects(response, reverse('instructor_dashboard'))
+        course.refresh_from_db()
+        self.assertEqual(course.status, Course.Status.PENDING_REVIEW)
+
+    def test_review_blocks_submit_when_a_module_is_missing_content(self):
+        self.client.force_login(self.instructor)
+        self.client.post(reverse('create_course'), self._course_details_payload())
+        course = Course.objects.get(title='Wizard Course')
+        self.client.post(reverse('course_wizard_modules', args=[course.id]),
+                          {'action': 'add', 'title': 'Only Module', 'order': 1})
+        response = self.client.get(reverse('course_wizard_review', args=[course.id]))
+        self.assertContains(response, 'Every module needs its video or script')
+        self.assertNotContains(response, 'Submit for Review')
+
+    def test_resume_lands_on_modules_step_when_no_modules_yet(self):
+        self.client.force_login(self.instructor)
+        self.client.post(reverse('create_course'), self._course_details_payload())
+        course = Course.objects.get(title='Wizard Course')
+        response = self.client.get(reverse('course_wizard_resume', args=[course.id]))
+        self.assertRedirects(response, reverse('course_wizard_modules', args=[course.id]))
+
+    def test_resume_lands_on_first_incomplete_module(self):
+        self.client.force_login(self.instructor)
+        self.client.post(reverse('create_course'), self._course_details_payload())
+        course = Course.objects.get(title='Wizard Course')
+        self.client.post(reverse('course_wizard_modules', args=[course.id]),
+                          {'action': 'add', 'title': 'Module 1', 'order': 1})
+        self.client.post(reverse('course_wizard_modules', args=[course.id]),
+                          {'action': 'add', 'title': 'Module 2', 'order': 2})
+        module1 = Module.objects.get(title='Module 1')
+        module2 = Module.objects.get(title='Module 2')
+        self.client.post(reverse('course_wizard_module_content', args=[course.id, module1.id]),
+                          {'action': 'save_video_url', 'video_url': 'https://youtube.com/watch?v=abc'})
+
+        response = self.client.get(reverse('course_wizard_resume', args=[course.id]))
+        self.assertRedirects(response, reverse('course_wizard_module_content', args=[course.id, module2.id]))
+
+    def test_resume_lands_on_review_once_all_modules_ready(self):
+        self.client.force_login(self.instructor)
+        self.client.post(reverse('create_course'), self._course_details_payload())
+        course = Course.objects.get(title='Wizard Course')
+        self.client.post(reverse('course_wizard_modules', args=[course.id]),
+                          {'action': 'add', 'title': 'Module 1', 'order': 1})
+        module = Module.objects.get(course=course)
+        self.client.post(reverse('course_wizard_module_content', args=[course.id, module.id]),
+                          {'action': 'save_video_url', 'video_url': 'https://youtube.com/watch?v=abc'})
+        response = self.client.get(reverse('course_wizard_resume', args=[course.id]))
+        self.assertRedirects(response, reverse('course_wizard_review', args=[course.id]))
+
+    def test_wizard_unreachable_once_course_is_no_longer_draft(self):
+        self.client.force_login(self.instructor)
+        self.client.post(reverse('create_course'), self._course_details_payload())
+        course = Course.objects.get(title='Wizard Course')
+        course.status = Course.Status.PENDING_REVIEW
+        course.save()
+        response = self.client.get(reverse('course_wizard_modules', args=[course.id]))
+        self.assertRedirects(response, reverse('manage_modules', args=[course.id]))
+
+    def test_other_instructor_cannot_access_someone_elses_wizard(self):
+        self.client.force_login(self.instructor)
+        self.client.post(reverse('create_course'), self._course_details_payload())
+        course = Course.objects.get(title='Wizard Course')
+
+        self.client.force_login(self.other_instructor)
+        response = self.client.get(reverse('course_wizard_modules', args=[course.id]))
+        self.assertEqual(response.status_code, 404)
+
+    def test_deleting_a_module_in_step2_removes_it(self):
+        self.client.force_login(self.instructor)
+        self.client.post(reverse('create_course'), self._course_details_payload())
+        course = Course.objects.get(title='Wizard Course')
+        self.client.post(reverse('course_wizard_modules', args=[course.id]),
+                          {'action': 'add', 'title': 'Module 1', 'order': 1})
+        module = Module.objects.get(course=course)
+        self.client.post(reverse('course_wizard_modules', args=[course.id]),
+                          {'action': 'delete', 'module_id': module.id})
+        self.assertFalse(Module.objects.filter(id=module.id).exists())
+
+    def test_instructor_dashboard_shows_continue_setup_for_draft(self):
+        self.client.force_login(self.instructor)
+        self.client.post(reverse('create_course'), self._course_details_payload())
+        course = Course.objects.get(title='Wizard Course')
+        response = self.client.get(reverse('instructor_dashboard'))
+        self.assertContains(response, reverse('course_wizard_resume', args=[course.id]))
+        self.assertContains(response, 'Continue Setup')
+
+
+@override_settings(STORAGES={
+    'default': {'BACKEND': 'django.core.files.storage.InMemoryStorage'},
+    'staticfiles': {'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage'},
+})
 class QuizBuilderInstructorTests(TestCase):
     """Instructor-facing quiz builder: create/edit/delete quiz, questions,
     choices, and the "exactly one correct choice" enforcement."""

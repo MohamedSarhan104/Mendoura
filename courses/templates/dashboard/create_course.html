@@ -9,8 +9,9 @@
     <a href="{% url 'instructor_dashboard' %}" class="text-sm text-brand-600 hover:underline">
       <i class="fa-solid fa-arrow-left"></i> {% trans "Back to Dashboard" %}
     </a>
-    <h1 class="text-3xl font-extrabold mt-4">{% trans "Create a New Course" %}</h1>
-    <p class="text-gray-500 dark:text-gray-400 mt-1">{% trans "After saving, you'll add modules and lectures, then submit for admin review." %}</p>
+    <h1 class="text-3xl font-extrabold mt-4 mb-6">{% trans "Create a New Course" %}</h1>
+    {% include 'partials/_wizard_steps.html' %}
+    <p class="text-gray-500 dark:text-gray-400 mt-1">{% trans "Step 1 of 4 -- start with the basics, then you'll add modules, videos, and quizzes." %}</p>
   </div>
 
   <form method="post" enctype="multipart/form-data" class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-8 space-y-6">

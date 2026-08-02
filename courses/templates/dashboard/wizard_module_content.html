@@ -1,0 +1,328 @@
+{% extends 'base.html' %}
+{% load static i18n %}
+{% block title %}{{ module.title }} - {{ course.title }} - Mendoura{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto px-6 py-12">
+
+  <a href="{% url 'course_wizard_modules' course.id %}" class="text-sm text-brand-600 hover:underline">
+    <i class="fa-solid fa-arrow-left"></i> {% trans "Back to Modules" %}
+  </a>
+
+  <h1 class="text-3xl font-extrabold mt-4 mb-1">{{ course.title }}</h1>
+  <p class="text-brand-600 font-semibold mb-6">
+    {% blocktrans with n=module_index|add:1 total=module_count title=module.title %}Module {{ n }} of {{ total }}: {{ title }}{% endblocktrans %}
+  </p>
+  {% include 'partials/_wizard_steps.html' %}
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="mb-6 p-3 rounded-lg bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 text-sm">{{ message }}</div>
+    {% endfor %}
+  {% endif %}
+
+  <!-- ── Video / Script ── -->
+  <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-8 mb-8">
+    {% if course.production_type == 'script_only' %}
+      <h2 class="text-lg font-bold mb-1"><i class="fa-solid fa-file-lines text-brand-600 mr-1"></i> {% trans "Lecture Script" %}</h2>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mb-5">
+        {% trans "Mendoura will produce the video for this module from your script." %}
+      </p>
+      <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="save_script">
+        <textarea name="script" rows="8" placeholder="{% trans "Write or paste this module's lecture script here…" %}"
+                  class="w-full border border-gray-300 dark:border-gray-700 bg-transparent rounded-lg p-3 focus:ring-2 focus:ring-brand-500 outline-none">{{ lecture.ai_generated_script }}</textarea>
+        <button type="submit" class="mt-4 px-5 py-2.5 rounded-lg bg-brand-600 text-white font-semibold hover:bg-brand-700">
+          {% trans "Save Script" %}
+        </button>
+      </form>
+    {% else %}
+      <h2 class="text-lg font-bold mb-1"><i class="fa-solid fa-video text-brand-600 mr-1"></i> {% trans "Lecture Video" %}</h2>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mb-5">
+        {% trans "Uploads securely to Bunny Stream and streams to students through a protected player." %}
+      </p>
+
+      <div id="bunny-current" class="mb-5 text-sm">
+        {% if lecture.bunny_video_id %}
+          {% if lecture.bunny_ready %}
+            <span class="inline-flex items-center gap-2 text-green-600 font-semibold">
+              <i class="fa-solid fa-circle-check"></i> {% trans "Video ready" %}
+            </span>
+          {% else %}
+            <span class="inline-flex items-center gap-2 text-yellow-600 font-semibold">
+              <i class="fa-solid fa-spinner fa-spin"></i> {% trans "Video is still processing on Bunny — check back shortly." %}
+            </span>
+          {% endif %}
+          <p class="text-xs text-gray-400 mt-1">{% trans "Uploading a new file replaces the current video." %}</p>
+        {% else %}
+          <span class="text-gray-400">{% trans "No video uploaded yet." %}</span>
+        {% endif %}
+      </div>
+
+      <div id="bunny-uploader"
+           data-create-url="{% url 'create_bunny_video' lecture.id %}"
+           data-configured="{% if bunny_configured %}1{% else %}0{% endif %}">
+        {% if bunny_configured %}
+          <input type="file" id="bunny-file" accept="video/*"
+                 class="w-full border border-gray-300 dark:border-gray-700 rounded-lg p-3 text-sm mb-3">
+          <button type="button" id="bunny-upload-btn"
+                  class="px-5 py-2.5 rounded-lg bg-brand-600 text-white font-semibold hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed">
+            <i class="fa-solid fa-cloud-arrow-up mr-1"></i> {% trans "Upload Video" %}
+          </button>
+          <div id="bunny-progress-wrap" class="hidden mt-4">
+            <div class="w-full h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+              <div id="bunny-progress-bar" class="h-full bg-brand-600 transition-all" style="width:0%"></div>
+            </div>
+          </div>
+          <p id="bunny-status" class="text-sm text-gray-500 dark:text-gray-400 mt-3"></p>
+        {% else %}
+          <p class="text-sm text-yellow-600">
+            {% trans "Video hosting isn't configured yet (missing Bunny credentials)." %}
+          </p>
+        {% endif %}
+      </div>
+
+      <form method="post" class="mt-6 pt-6 border-t border-gray-100 dark:border-gray-800">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="save_video_url">
+        <label class="block text-sm font-semibold mb-2">
+          {% trans "…or an external video link" %} <span class="text-gray-400 font-normal">({% trans "only if not uploading to Bunny" %})</span>
+        </label>
+        <div class="flex gap-2">
+          <input type="url" name="video_url" value="{{ lecture.video_url|default:'' }}" placeholder="https://youtube.com/..."
+                 class="flex-1 border border-gray-300 dark:border-gray-700 bg-transparent rounded-lg p-3 focus:ring-2 focus:ring-brand-500 outline-none">
+          <button type="submit" class="px-5 py-2.5 rounded-lg bg-gray-100 dark:bg-gray-800 font-semibold hover:bg-gray-200 dark:hover:bg-gray-700 whitespace-nowrap">
+            {% trans "Save Link" %}
+          </button>
+        </div>
+      </form>
+    {% endif %}
+  </div>
+
+  <!-- ── Quiz ── -->
+  <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-8 mb-8">
+    <div class="flex items-center justify-between mb-1">
+      <h2 class="text-lg font-bold"><i class="fa-solid fa-circle-question text-purple-600 mr-1"></i> {% trans "Quiz" %} <span class="text-gray-400 font-normal text-sm">({% trans "optional" %})</span></h2>
+      {% if not quiz %}
+        <form method="post">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="advance">
+          <button type="submit" class="text-sm font-semibold text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+            {% trans "Skip Quiz" %} <i class="fa-solid fa-forward ml-1"></i>
+          </button>
+        </form>
+      {% endif %}
+    </div>
+    <p class="text-sm text-gray-500 dark:text-gray-400 mb-5">
+      {% trans "Students must pass this quiz to mark the module complete. Leave it out entirely and it won't gate anything." %}
+    </p>
+
+    <form method="post" class="space-y-4 mb-6 {% if quiz %}pb-6 border-b border-gray-100 dark:border-gray-800{% endif %}">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="save_quiz_settings">
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-semibold mb-2">{% trans "Quiz Title" %} <span class="text-gray-400 font-normal">({% trans "optional" %})</span></label>
+          {{ quiz_form.title }}
+        </div>
+        <div>
+          <label class="block text-sm font-semibold mb-2">{% trans "Passing Score (%)" %}</label>
+          {{ quiz_form.passing_score_percent }}
+        </div>
+      </div>
+      <button type="submit" class="px-5 py-2.5 rounded-lg bg-brand-600 text-white font-semibold hover:bg-brand-700">
+        {% if quiz %}{% trans "Save Quiz Settings" %}{% else %}{% trans "Add a Quiz to This Module" %}{% endif %}
+      </button>
+    </form>
+
+    {% if quiz %}
+      <div class="space-y-4 mb-6">
+        {% for question in questions %}
+          <div class="border border-gray-200 dark:border-gray-800 rounded-xl p-5">
+            <div class="flex items-center justify-between gap-2 mb-3">
+              <p class="font-semibold">{{ forloop.counter }}. {{ question.text }}</p>
+              <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="delete_question">
+                <input type="hidden" name="question_id" value="{{ question.id }}">
+                <button type="submit" class="text-xs font-semibold text-red-600 hover:underline">{% trans "Delete" %}</button>
+              </form>
+            </div>
+
+            <div class="space-y-2 mb-3">
+              {% for choice in question.choices.all %}
+                <div class="flex items-center justify-between gap-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg px-3 py-2">
+                  <div class="flex items-center gap-2">
+                    {% if choice.is_correct %}
+                      <span class="w-5 h-5 flex items-center justify-center rounded-full bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400">
+                        <i class="fa-solid fa-check text-[10px]"></i>
+                      </span>
+                    {% else %}
+                      <form method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="mark_choice_correct">
+                        <input type="hidden" name="question_id" value="{{ question.id }}">
+                        <input type="hidden" name="choice_id" value="{{ choice.id }}">
+                        <button type="submit" title="{% trans "Mark as correct answer" %}"
+                                class="w-5 h-5 flex items-center justify-center rounded-full border border-gray-300 dark:border-gray-600 hover:border-green-500 hover:text-green-500 text-transparent">
+                          <i class="fa-solid fa-check text-[10px]"></i>
+                        </button>
+                      </form>
+                    {% endif %}
+                    <span class="text-sm {% if choice.is_correct %}font-semibold text-green-600 dark:text-green-400{% endif %}">{{ choice.text }}</span>
+                  </div>
+                  <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="delete_choice">
+                    <input type="hidden" name="question_id" value="{{ question.id }}">
+                    <input type="hidden" name="choice_id" value="{{ choice.id }}">
+                    <button type="submit" class="text-red-400 hover:text-red-600 text-xs">&times;</button>
+                  </form>
+                </div>
+              {% empty %}
+                <p class="text-xs text-amber-600 dark:text-amber-400">
+                  <i class="fa-solid fa-triangle-exclamation"></i> {% trans "No answer choices yet -- add at least two below." %}
+                </p>
+              {% endfor %}
+            </div>
+
+            <form method="post" class="flex items-center gap-2">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="add_choice">
+              <input type="hidden" name="question_id" value="{{ question.id }}">
+              {{ choice_form.text }}
+              <label class="flex items-center gap-1 text-xs whitespace-nowrap text-gray-500 dark:text-gray-400">
+                {{ choice_form.is_correct }} {% trans "Correct" %}
+              </label>
+              <button type="submit" class="px-3 py-2 rounded-lg bg-gray-100 dark:bg-gray-800 text-xs font-semibold hover:bg-gray-200 dark:hover:bg-gray-700 whitespace-nowrap">
+                {% trans "Add Choice" %}
+              </button>
+            </form>
+          </div>
+        {% empty %}
+          <p class="text-sm text-gray-400">{% trans "No questions yet. Add your first one below." %}</p>
+        {% endfor %}
+      </div>
+
+      <form method="post" class="space-y-3 bg-gray-50 dark:bg-gray-800/40 rounded-xl p-5">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="add_question">
+        <label class="block text-sm font-semibold">{% trans "Add Question" %}</label>
+        {{ question_form.text }}
+        <div class="flex items-center gap-2">
+          <span class="text-xs text-gray-400 whitespace-nowrap">{% trans "Order" %}</span>
+          {{ question_form.order }}
+          <button type="submit" class="px-5 py-2.5 rounded-lg bg-brand-600 text-white font-semibold hover:bg-brand-700 whitespace-nowrap">
+            {% trans "Add Question" %}
+          </button>
+        </div>
+      </form>
+
+      <form method="post" class="mt-4" onsubmit="return confirm('{% trans "Delete this quiz and all its questions?" %}');">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="delete_quiz">
+        <button type="submit" class="text-sm font-semibold text-red-600 hover:underline">
+          <i class="fa-solid fa-trash"></i> {% trans "Delete Quiz" %}
+        </button>
+      </form>
+    {% endif %}
+  </div>
+
+  <!-- ── Advance ── -->
+  <form method="post">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="advance">
+    <button type="submit" class="block w-full text-center bg-brand-600 hover:bg-brand-700 text-white font-semibold py-3 rounded-xl transition">
+      {% if is_last_module %}{% trans "Finish" %}{% else %}{% trans "Next Module" %}{% endif %} <i class="fa-solid fa-arrow-right ml-1"></i>
+    </button>
+    {% if not content_ready %}
+      <p class="text-xs text-center text-gray-400 mt-2">
+        {% if course.production_type == 'script_only' %}
+          {% trans "Add your script above before continuing." %}
+        {% else %}
+          {% trans "Upload a video (or add an external link) above before continuing." %}
+        {% endif %}
+      </p>
+    {% endif %}
+  </form>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% if bunny_configured and course.production_type != 'script_only' %}
+<script src="{% static 'js/tus.min.js' %}"></script>
+{% trans "Choose a video file first." as msg_choose_file %}
+{% trans "Preparing secure upload…" as msg_preparing %}
+{% trans "Could not start the upload. Please try again." as msg_start_failed %}
+{% trans "Upload library failed to load. Please refresh the page and try again." as msg_lib_failed %}
+{% trans "Upload failed. Please try again." as msg_upload_failed %}
+{% trans "Uploading… " as msg_uploading_prefix %}
+{% trans "Uploaded! Bunny is now processing the video — reload this page in a minute to confirm it's ready." as msg_uploaded %}
+<script>
+  (function () {
+    const root = document.getElementById('bunny-uploader');
+    const fileInput = document.getElementById('bunny-file');
+    const uploadBtn = document.getElementById('bunny-upload-btn');
+    const progressWrap = document.getElementById('bunny-progress-wrap');
+    const progressBar = document.getElementById('bunny-progress-bar');
+    const statusEl = document.getElementById('bunny-status');
+    const createUrl = root.dataset.createUrl;
+    const csrftoken = document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '';
+
+    uploadBtn.addEventListener('click', async () => {
+      const file = fileInput.files[0];
+      if (!file) { statusEl.textContent = '{{ msg_choose_file|escapejs }}'; return; }
+
+      uploadBtn.disabled = true;
+      statusEl.textContent = '{{ msg_preparing|escapejs }}';
+
+      let creds;
+      try {
+        const res = await fetch(createUrl, { method: 'POST', headers: { 'X-CSRFToken': csrftoken } });
+        if (!res.ok) throw new Error();
+        creds = await res.json();
+      } catch (e) {
+        statusEl.textContent = '{{ msg_start_failed|escapejs }}';
+        uploadBtn.disabled = false;
+        return;
+      }
+
+      if (typeof tus === 'undefined') {
+        statusEl.textContent = '{{ msg_lib_failed|escapejs }}';
+        uploadBtn.disabled = false;
+        return;
+      }
+
+      progressWrap.classList.remove('hidden');
+      const upload = new tus.Upload(file, {
+        endpoint: creds.endpoint,
+        retryDelays: [0, 3000, 5000, 10000, 20000],
+        headers: {
+          AuthorizationSignature: creds.signature,
+          AuthorizationExpire: creds.expiration,
+          VideoId: creds.video_id,
+          LibraryId: creds.library_id,
+        },
+        metadata: { filetype: file.type, title: file.name },
+        onError: () => {
+          statusEl.textContent = '{{ msg_upload_failed|escapejs }}';
+          uploadBtn.disabled = false;
+        },
+        onProgress: (sent, total) => {
+          const pct = Math.round((sent / total) * 100);
+          progressBar.style.width = pct + '%';
+          statusEl.textContent = '{{ msg_uploading_prefix|escapejs }}' + pct + '%';
+        },
+        onSuccess: () => {
+          progressBar.style.width = '100%';
+          statusEl.textContent = '{{ msg_uploaded|escapejs }}';
+        },
+      });
+      upload.start();
+    });
+  })();
+</script>
+{% endif %}
+{% endblock %}

@@ -21,6 +21,7 @@ from django.http import Http404, HttpResponse, HttpResponseForbidden, JsonRespon
 from django.shortcuts import get_object_or_404, redirect, render, resolve_url
 from django.utils import timezone
 from django.utils.translation import gettext as _
+from django.utils.translation import gettext_lazy as _lazy
 from django.views.decorators.csrf import csrf_exempt
 
 from . import ai_coach as ai_coach_client
@@ -183,8 +184,9 @@ def instructor_dashboard(request):
         'total_students': total_students,
     })
 
-# 5. Create Course View -- production_type is chosen here and is read-only
-# once the course has its first successful sale (enforced in Course.save()).
+# 5. Create Course View -- Step 1 of the guided course-creation wizard.
+# production_type is chosen here and is read-only once the course has its
+# first successful sale (enforced in Course.save()).
 @login_required
 def create_course(request):
     if not request.user.is_instructor:
@@ -196,10 +198,257 @@ def create_course(request):
             course.instructor = request.user
             course.save()
             _generate_poster_safely(course)
-            return redirect('manage_modules', course_id=course.id)
+            return redirect('course_wizard_modules', course_id=course.id)
     else:
         form = CourseCreationForm()
-    return render(request, 'dashboard/create_course.html', {'form': form})
+    return render(request, 'dashboard/create_course.html', {
+        'form': form, 'wizard_step_choices': WIZARD_STEP_CHOICES, 'current_step': 1,
+    })
+
+
+# ---------------------------------------------------------------------------
+# Course creation wizard -- Steps 2-4. Step 1 is create_course() above.
+#
+# No new "current step" field on Course: the step to show/resume is always
+# derived from what's actually in the database (module count, whether each
+# module's lecture has a video/script yet) rather than a separately tracked
+# pointer that could drift out of sync with the real content. Only usable
+# while the course is still a Draft -- once submitted for review the normal
+# Curriculum/Edit pages (manage_modules, edit_course, ...) take over, same
+# as before this wizard existed.
+# ---------------------------------------------------------------------------
+
+WIZARD_STEP_CHOICES = [
+    (1, _lazy('Details')), (2, _lazy('Modules')), (3, _lazy('Content')), (4, _lazy('Review')),
+]
+
+
+def _get_draft_course_or_redirect(request, course_id):
+    """Shared ownership + draft-status guard for every wizard step. Returns
+    (course, None) on success, or (None, redirect_response) if the caller
+    should bail out and return that response instead."""
+    course = get_object_or_404(Course, id=course_id, instructor=request.user)
+    if course.status != Course.Status.DRAFT:
+        # Already submitted/published/rejected -- the wizard is only for
+        # first-time setup. Send them to the normal editing tools instead.
+        return None, redirect('manage_modules', course_id=course.id)
+    return course, None
+
+
+def _wizard_module_lecture(module):
+    """The wizard treats each module as having exactly one primary lecture
+    (its video or script) -- simpler to build/understand step 3 around than
+    the full multi-lecture-per-module editor, which stays available via
+    Curriculum -> Manage Lectures after creation for anyone who wants more
+    than one lecture per module. Auto-created the first time this module's
+    wizard step is opened, titled after the module until the instructor
+    renames it."""
+    lecture = module.lectures.first()
+    if lecture is None:
+        lecture = Lecture.objects.create(module=module, title=module.title)
+    return lecture
+
+
+def _module_content_ready(course, module):
+    """Whether this module's required video/script has been provided --
+    gates the wizard's Next Module/Finish action. Checked live against the
+    actual data instead of a stored flag, so it can never disagree with
+    what's really there."""
+    lecture = module.lectures.first()
+    if lecture is None:
+        return False
+    if course.production_type == Course.ProductionType.SCRIPT_ONLY:
+        return bool(lecture.ai_generated_script and lecture.ai_generated_script.strip())
+    return bool(lecture.bunny_video_id or lecture.video_url)
+
+
+def _first_incomplete_module(course):
+    """First module (in order) still missing its video/script, or None if
+    every module is ready -- this is what "resume where I left off" and the
+    Step 2 -> Step 3 handoff both use to pick which module to land on."""
+    for module in course.modules.order_by('order', 'id'):
+        if not _module_content_ready(course, module):
+            return module
+    return None
+
+
+@login_required
+def course_wizard_resume(request, course_id):
+    """Landing point for "Continue Setup" on the instructor dashboard --
+    figures out where an in-progress draft left off and sends the
+    instructor straight there instead of making them re-discover it."""
+    course, bail = _get_draft_course_or_redirect(request, course_id)
+    if bail:
+        return bail
+    if not course.modules.exists():
+        return redirect('course_wizard_modules', course_id=course.id)
+    next_module = _first_incomplete_module(course)
+    if next_module:
+        return redirect('course_wizard_module_content', course_id=course.id, module_id=next_module.id)
+    return redirect('course_wizard_review', course_id=course.id)
+
+
+# Step 2 -- Modules. Self-contained (not manage_modules reused) so the
+# "Next" hand-off to Step 3 and the wizard's step-progress header can live
+# here without changing the always-available Curriculum page instructors
+# use to manage modules after creation too.
+@login_required
+def course_wizard_modules(request, course_id):
+    course, bail = _get_draft_course_or_redirect(request, course_id)
+    if bail:
+        return bail
+    modules = course.modules.order_by('order', 'id')
+
+    if request.method == 'POST':
+        action = request.POST.get('action', 'add')
+        if action == 'delete':
+            module = get_object_or_404(Module, id=request.POST.get('module_id'), course=course)
+            module.delete()
+        else:
+            form = ModuleForm(request.POST)
+            if form.is_valid():
+                module = form.save(commit=False)
+                module.course = course
+                if not module.order:
+                    module.order = modules.count() + 1
+                module.save()
+        return redirect('course_wizard_modules', course_id=course.id)
+
+    return render(request, 'dashboard/wizard_modules.html', {
+        'course': course, 'modules': modules, 'form': ModuleForm(),
+        'wizard_step_choices': WIZARD_STEP_CHOICES, 'current_step': 2,
+    })
+
+
+# Step 3 -- per module, in sequence: video/script, then an optional quiz
+# (with its questions and each question's answer choices, all on this one
+# page instead of split across manage_quiz.html + edit_question.html), then
+# Skip Quiz / Next Module / Finish. One view handling several POST actions
+# via a hidden `action` field -- every action redirects back to this same
+# step so the instructor is never bounced out of the wizard, the way
+# reusing add_question/add_choice/etc. (which redirect to the classic
+# Curriculum pages) would.
+@login_required
+def course_wizard_module_content(request, course_id, module_id):
+    course, bail = _get_draft_course_or_redirect(request, course_id)
+    if bail:
+        return bail
+    module = get_object_or_404(Module, id=module_id, course=course)
+    lecture = _wizard_module_lecture(module)
+    quiz = getattr(module, 'quiz', None)
+    modules = list(course.modules.order_by('order', 'id'))
+    module_index = next((i for i, m in enumerate(modules) if m.id == module.id), 0)
+    is_last_module = module_index == len(modules) - 1
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+
+        if action == 'save_video_url':
+            lecture.video_url = request.POST.get('video_url', '').strip()
+            lecture.save(update_fields=['video_url'])
+
+        elif action == 'save_script':
+            lecture.ai_generated_script = request.POST.get('script', '').strip()
+            lecture.save(update_fields=['ai_generated_script'])
+
+        elif action == 'save_quiz_settings':
+            form = QuizForm(request.POST, instance=quiz)
+            if form.is_valid():
+                quiz = form.save(commit=False)
+                quiz.module = module
+                quiz.save()
+
+        elif action == 'add_question' and quiz:
+            form = QuestionForm(request.POST)
+            if form.is_valid():
+                question = form.save(commit=False)
+                question.quiz = quiz
+                question.save()
+
+        elif action == 'delete_question':
+            Question.objects.filter(id=request.POST.get('question_id'), quiz=quiz).delete()
+
+        elif action == 'add_choice':
+            question = get_object_or_404(Question, id=request.POST.get('question_id'), quiz=quiz)
+            form = ChoiceForm(request.POST)
+            if form.is_valid():
+                choice = form.save(commit=False)
+                choice.question = question
+                choice.save()
+                if choice.is_correct:
+                    question.choices.exclude(id=choice.id).update(is_correct=False)
+
+        elif action == 'mark_choice_correct':
+            question = get_object_or_404(Question, id=request.POST.get('question_id'), quiz=quiz)
+            choice = get_object_or_404(Choice, id=request.POST.get('choice_id'), question=question)
+            question.choices.update(is_correct=False)
+            choice.is_correct = True
+            choice.save(update_fields=['is_correct'])
+
+        elif action == 'delete_choice':
+            Choice.objects.filter(id=request.POST.get('choice_id'), question__quiz=quiz).delete()
+
+        elif action == 'delete_quiz' and quiz:
+            quiz.delete()
+            quiz = None
+
+        elif action == 'advance':
+            if not _module_content_ready(course, module):
+                error_message = (
+                    _('Add your script for this module before continuing.')
+                    if course.production_type == Course.ProductionType.SCRIPT_ONLY
+                    else _('Upload a video (or add an external video link) for this module before continuing.')
+                )
+                messages.error(request, error_message)
+                return redirect('course_wizard_module_content', course_id=course.id, module_id=module.id)
+            if is_last_module:
+                return redirect('course_wizard_review', course_id=course.id)
+            return redirect('course_wizard_module_content', course_id=course.id, module_id=modules[module_index + 1].id)
+
+        return redirect('course_wizard_module_content', course_id=course.id, module_id=module.id)
+
+    questions = quiz.questions.prefetch_related('choices') if quiz else []
+    return render(request, 'dashboard/wizard_module_content.html', {
+        'course': course, 'module': module, 'lecture': lecture, 'quiz': quiz,
+        'questions': questions, 'quiz_form': QuizForm(instance=quiz),
+        'question_form': QuestionForm(), 'choice_form': ChoiceForm(),
+        'bunny_configured': bunny.is_configured(),
+        'module_index': module_index, 'module_count': len(modules), 'is_last_module': is_last_module,
+        'content_ready': _module_content_ready(course, module),
+        'wizard_step_choices': WIZARD_STEP_CHOICES, 'current_step': 3,
+    })
+
+
+# Step 4 -- summary + the same Draft/Rejected -> Pending Review transition
+# toggle_publish() already does for the classic dashboard button.
+@login_required
+def course_wizard_review(request, course_id):
+    course, bail = _get_draft_course_or_redirect(request, course_id)
+    if bail:
+        return bail
+    modules = course.modules.prefetch_related('lectures', 'quiz__questions').order_by('order', 'id')
+
+    if request.method == 'POST':
+        course.status = Course.Status.PENDING_REVIEW
+        course.save()
+        messages.success(
+            request,
+            _('%(title)s submitted for review. We\'ll email you once it\'s approved.') % {'title': course.title})
+        return redirect('instructor_dashboard')
+
+    modules_summary = [{
+        'module': module,
+        'lecture': module.lectures.first(),
+        'content_ready': _module_content_ready(course, module),
+        'question_count': module.quiz.questions.count() if getattr(module, 'quiz', None) else 0,
+    } for module in modules]
+
+    return render(request, 'dashboard/wizard_review.html', {
+        'course': course, 'modules_summary': modules_summary,
+        'all_ready': all(m['content_ready'] for m in modules_summary) if modules_summary else False,
+        'wizard_step_choices': WIZARD_STEP_CHOICES, 'current_step': 4,
+    })
+
 
 def _with_stats(queryset):
     """Annotate courses with a live average rating and enrolled-student count,

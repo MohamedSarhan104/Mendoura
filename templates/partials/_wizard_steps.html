@@ -1,0 +1,22 @@
+{% load i18n %}
+<div class="flex items-center justify-between mb-10 max-w-2xl">
+  {% for step_num, step_label in wizard_step_choices %}
+    <div class="flex items-center {% if not forloop.last %}flex-1{% endif %}">
+      <div class="flex flex-col items-center">
+        <div class="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold
+          {% if step_num < current_step %}bg-brand-600 text-white
+          {% elif step_num == current_step %}bg-brand-600 text-white ring-4 ring-brand-100 dark:ring-brand-900/40
+          {% else %}bg-gray-100 dark:bg-gray-800 text-gray-400{% endif %}">
+          {% if step_num < current_step %}<i class="fa-solid fa-check"></i>{% else %}{{ step_num }}{% endif %}
+        </div>
+        <span class="text-xs mt-1.5 font-medium whitespace-nowrap
+          {% if step_num <= current_step %}text-gray-700 dark:text-gray-300{% else %}text-gray-400{% endif %}">
+          {{ step_label }}
+        </span>
+      </div>
+      {% if not forloop.last %}
+        <div class="flex-1 h-0.5 mx-2 mb-4 {% if step_num < current_step %}bg-brand-600{% else %}bg-gray-200 dark:bg-gray-800{% endif %}"></div>
+      {% endif %}
+    </div>
+  {% endfor %}
+</div>

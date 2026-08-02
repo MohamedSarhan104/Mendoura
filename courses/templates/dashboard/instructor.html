@@ -56,11 +56,18 @@
           {% else %}
             <span class="bg-gray-100 text-gray-700 px-2 py-1 rounded-full text-xs font-semibold">{% trans "Draft" %}</span>
           {% endif %}
-          <a href="{% url 'manage_modules' course.id %}" class="text-sm font-semibold text-brand-600 hover:underline">{% trans "Curriculum" %}</a>
-          <a href="{% url 'course_students' course.id %}" class="text-sm font-semibold text-brand-600 hover:underline">{% trans "Students" %}</a>
-          <a href="{% url 'course_submissions' course.id %}" class="text-sm font-semibold text-brand-600 hover:underline">{% trans "Submissions" %}</a>
-          <a href="{% url 'edit_course' course.id %}" class="text-sm font-semibold text-brand-600 hover:underline">{% trans "Edit" %}</a>
-          {% if course.status == 'draft' or course.status == 'rejected' %}
+          {% if course.status == 'draft' %}
+            <a href="{% url 'course_wizard_resume' course.id %}" class="text-sm font-semibold text-brand-600 hover:underline">
+              <i class="fa-solid fa-wand-magic-sparkles"></i> {% trans "Continue Setup" %}
+            </a>
+            <a href="{% url 'edit_course' course.id %}" class="text-sm font-semibold text-brand-600 hover:underline">{% trans "Edit Details" %}</a>
+          {% else %}
+            <a href="{% url 'manage_modules' course.id %}" class="text-sm font-semibold text-brand-600 hover:underline">{% trans "Curriculum" %}</a>
+            <a href="{% url 'course_students' course.id %}" class="text-sm font-semibold text-brand-600 hover:underline">{% trans "Students" %}</a>
+            <a href="{% url 'course_submissions' course.id %}" class="text-sm font-semibold text-brand-600 hover:underline">{% trans "Submissions" %}</a>
+            <a href="{% url 'edit_course' course.id %}" class="text-sm font-semibold text-brand-600 hover:underline">{% trans "Edit" %}</a>
+          {% endif %}
+          {% if course.status == 'rejected' %}
             <form method="post" action="{% url 'toggle_publish' course.id %}">
               {% csrf_token %}
               <button type="submit" class="text-sm font-semibold text-brand-600 hover:underline">{% trans "Submit for Review" %}</button>

@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+{% load i18n %}
+{% block title %}Modules - {{ course.title }} - Mendoura{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto px-6 py-12">
+
+  <a href="{% url 'instructor_dashboard' %}" class="text-sm text-brand-600 hover:underline">
+    <i class="fa-solid fa-arrow-left"></i> {% trans "Save & Exit to Dashboard" %}
+  </a>
+
+  <h1 class="text-3xl font-extrabold mt-4 mb-6">{{ course.title }}</h1>
+  {% include 'partials/_wizard_steps.html' %}
+  <p class="text-gray-500 dark:text-gray-400 mb-8">
+    {% trans "Add at least one module. You'll add the video/script and an optional quiz for each one in the next step." %}
+  </p>
+
+  <div class="space-y-3 mb-8">
+    {% for module in modules %}
+      <div class="flex items-center justify-between bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5">
+        <div class="flex items-center gap-3">
+          <span class="w-8 h-8 flex items-center justify-center rounded-full bg-brand-50 dark:bg-gray-800 text-brand-600 font-bold text-sm">{{ forloop.counter }}</span>
+          <p class="font-semibold">{{ module.title }}</p>
+        </div>
+        <form method="post" onsubmit="return confirm('{% blocktrans with title=module.title|escapejs %}Delete {{ title }}?{% endblocktrans %}');">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="delete">
+          <input type="hidden" name="module_id" value="{{ module.id }}">
+          <button type="submit" class="text-sm font-semibold text-red-600 hover:underline">{% trans "Delete" %}</button>
+        </form>
+      </div>
+    {% empty %}
+      <div class="bg-white dark:bg-gray-900 border border-dashed border-gray-300 dark:border-gray-700 rounded-xl p-8 text-center text-gray-400">
+        {% trans "No modules yet. Add your first one below." %}
+      </div>
+    {% endfor %}
+  </div>
+
+  <h2 class="text-lg font-bold mb-4">{% trans "Add Module" %}</h2>
+  <form method="post" class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-8 space-y-5 mb-10">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="add">
+    <div>
+      <label class="block text-sm font-semibold mb-2">{% trans "Module Title" %}</label>
+      {{ form.title }}
+    </div>
+    <div>
+      <label class="block text-sm font-semibold mb-2">{% trans "Order" %}</label>
+      {{ form.order }}
+    </div>
+    <button type="submit" class="w-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 font-semibold py-3 rounded-xl transition">
+      <i class="fa-solid fa-plus mr-1"></i> {% trans "Add Module" %}
+    </button>
+  </form>
+
+  {% if modules %}
+    <a href="{% url 'course_wizard_resume' course.id %}"
+       class="block text-center w-full bg-brand-600 hover:bg-brand-700 text-white font-semibold py-3 rounded-xl transition">
+      {% trans "Next: Add Video & Quiz" %} <i class="fa-solid fa-arrow-right ml-1"></i>
+    </a>
+  {% else %}
+    <button type="button" disabled
+            class="block text-center w-full bg-gray-200 dark:bg-gray-800 text-gray-400 font-semibold py-3 rounded-xl cursor-not-allowed">
+      {% trans "Add a module to continue" %}
+    </button>
+  {% endif %}
+
+</div>
+{% endblock %}
