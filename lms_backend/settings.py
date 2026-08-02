@@ -237,9 +237,20 @@ BUNNY_EMBED_TOKEN_TTL = 60 * 60 * 6  # 6 hours
 # the sender. Falls back to the console backend -- prints the email instead
 # of sending it -- whenever EMAIL_HOST_PASSWORD isn't set, so local dev/tests
 # never try (and fail) a real SMTP connection.
+#
+# Zoho's two valid combinations are port 587 with EMAIL_USE_TLS=True
+# (STARTTLS, the default below) or port 465 with EMAIL_USE_SSL=True --
+# mixing them (e.g. port 465 with only EMAIL_USE_TLS set) fails the
+# connection. EMAIL_USE_SSL is exposed here so switching to port 465 is a
+# pure env-var change if that's ever needed, instead of a code edit.
+# EMAIL_HOST must match the Zoho account's actual data center --
+# smtp.zoho.com for the default/global region, smtp.zoho.eu / smtp.zoho.in
+# / etc. for others; this project's MX records (mx.zoho.com/mx2/mx3) show
+# it's on the default .com region, so the default below matches.
 EMAIL_HOST = config('EMAIL_HOST', default='smtp.zoho.com')
 EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
 EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
+EMAIL_USE_SSL = config('EMAIL_USE_SSL', default=False, cast=bool)
 EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='no-reply@mendoura.com')
 EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
 DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='Mendoura <no-reply@mendoura.com>')

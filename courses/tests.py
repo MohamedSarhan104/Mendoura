@@ -3127,6 +3127,35 @@ class AdminTestEmailToolTests(TestCase):
         self.assertRedirects(response, reverse('send_test_emails'))
         self.assertEqual(len(mail.outbox), 0)
 
+    def test_welcome_test_send_shows_real_error_instead_of_false_success(self):
+        # Regression test for the actual bug reported: "sent successfully"
+        # shown in the UI even though the message never left the server.
+        # send_mail()/EmailMessage.send() raising (auth failure, refused
+        # connection, etc.) must surface as an error message with the real
+        # reason, not a success toast.
+        with patch('django.core.mail.message.EmailMessage.send',
+                   side_effect=Exception('535 Authentication Failed')):
+            response = self.client.post(
+                reverse('send_test_emails'),
+                {'which': 'welcome', 'target_email': 'wherever@example.com'}, follow=True)
+        self.assertEqual(len(mail.outbox), 0)
+        self.assertContains(response, 'Send failed')
+        self.assertContains(response, '535 Authentication Failed')
+        messages_list = list(response.context['messages'])
+        self.assertTrue(all(m.level_tag != 'success' for m in messages_list))
+
+    def test_welcome_test_send_zero_delivered_without_exception_is_not_success(self):
+        # fail_silently=True would swallow a failure into "0 delivered, no
+        # exception" -- guard the other half of that same failure mode:
+        # even without an exception, 0 delivered must not read as success.
+        with patch('django.core.mail.message.EmailMessage.send', return_value=0):
+            response = self.client.post(
+                reverse('send_test_emails'),
+                {'which': 'welcome', 'target_email': 'wherever@example.com'}, follow=True)
+        self.assertContains(response, 'Send failed')
+        messages_list = list(response.context['messages'])
+        self.assertTrue(all(m.level_tag != 'success' for m in messages_list))
+
     def test_instructor_rejection_test_send_goes_to_typed_target(self):
         response = self.client.post(reverse('send_test_emails'),
                                      {'which': 'instructor_rejection', 'target_email': 'wherever3@example.com'})
@@ -3177,6 +3206,20 @@ class AdminTestEmailToolTests(TestCase):
         self.assertEqual(mail.outbox[0].to, ['admin@example.com'])
         self.assertNotIn('someone-else@example.com', mail.outbox[0].to)
         self.assertEqual(mail.outbox[0].subject, 'Reset your Mendoura password')
+
+    def test_password_reset_test_send_shows_real_error_instead_of_false_success(self):
+        # Same regression as the welcome-email case above, for the
+        # specific email type the bug report named (password reset).
+        with patch('django.core.mail.message.EmailMessage.send',
+                   side_effect=Exception('535 Authentication Failed')):
+            response = self.client.post(
+                reverse('send_test_emails'),
+                {'which': 'password_reset_student', 'target_email': 'admin@example.com'}, follow=True)
+        self.assertEqual(len(mail.outbox), 0)
+        self.assertContains(response, 'Send failed')
+        self.assertContains(response, '535 Authentication Failed')
+        messages_list = list(response.context['messages'])
+        self.assertTrue(all(m.level_tag != 'success' for m in messages_list))
 
     def test_password_reset_instructor_test_previews_instructor_copy_regardless_of_admin_role(self):
         # self.admin has is_instructor=False -- the preview override must

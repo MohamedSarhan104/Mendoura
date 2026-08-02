@@ -22,6 +22,17 @@ logger = logging.getLogger(__name__)
 SITE_DOMAIN = 'https://mendoura.com'
 
 
+# Every send_* function (and _send() itself) returns one of these instead
+# of None -- (True, None) only when the message was actually handed off
+# and confirmed delivered by the backend with no exception, (False, reason)
+# for everything else (no recipient, template/build error, or a real send
+# failure). Callers that only care about "did this block me" can ignore
+# the tuple; callers that report success to a human (the admin test-email
+# tool) must check it instead of assuming success just because nothing
+# raised past this module.
+EmailResult = tuple  # (bool, str | None) -- not worth a NamedTuple for two fields
+
+
 def _never_raises(func):
     """Email delivery is a side effect, not a precondition, for every
     trigger this module handles -- _send() already guards the final SMTP
@@ -29,13 +40,16 @@ def _never_raises(func):
     (everything each send_* function does before calling _send()) would
     otherwise propagate as an unhandled 500 for the caller, who by this
     point has already committed the real work (signup, password reset,
-    certificate issuance) that the email is just confirming."""
+    certificate issuance) that the email is just confirming. Turns that
+    into the same (False, reason) result _send() itself returns on
+    failure, instead of a bare None that looks identical to success."""
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
         try:
             return func(*args, **kwargs)
-        except Exception:
+        except Exception as exc:
             logger.error('Failed to build/send email via %s', func.__name__, exc_info=True)
+            return False, str(exc) or type(exc).__name__
     return wrapper
 
 
@@ -54,27 +68,41 @@ def humanize_duration(seconds: int) -> str:
     return f'{minutes} minute{"s" if minutes != 1 else ""}'
 
 
-def _send(*, subject, text_body, html_body, to_email, attachments=None) -> None:
+def _send(*, subject, text_body, html_body, to_email, attachments=None) -> EmailResult:
     if not to_email:
-        return
+        return False, 'No recipient email address.'
     message = EmailMultiAlternatives(
         subject=subject, body=text_body, from_email=settings.DEFAULT_FROM_EMAIL, to=[to_email])
     message.attach_alternative(html_body, 'text/html')
     for filename, content, mimetype in (attachments or []):
         message.attach(filename, content, mimetype)
     try:
-        message.send()
-    except Exception:
-        # Never blocks the caller -- email delivery is a side effect, not a
+        # fail_silently=False is Django's own default, but explicit here:
+        # this is exactly the flag that would silently turn a real SMTP
+        # failure into "0 delivered, no exception, nothing to catch" if it
+        # were ever flipped -- never let that happen quietly again.
+        sent_count = message.send(fail_silently=False)
+    except Exception as exc:
+        # Does not re-raise -- email delivery is a side effect, not a
         # precondition, for every trigger this module handles (signup,
         # password reset, certificate issuance all already succeeded by the
         # time we get here). Logged so a persistently-broken SMTP config
-        # doesn't silently look identical to "nothing triggered it yet".
+        # doesn't silently look identical to "nothing triggered it yet",
+        # and returned so a caller that DOES need to know (the admin
+        # test-email tool) can tell a real send apart from a fake one.
         logger.warning('Failed to send "%s" email to %s', subject, to_email, exc_info=True)
+        return False, str(exc) or type(exc).__name__
+    if not sent_count:
+        # send() didn't raise, but delivered 0 messages -- e.g. a custom
+        # backend that swallows failures internally. Don't call that a
+        # success just because nothing was thrown.
+        logger.warning('Email "%s" to %s: backend reported 0 messages sent.', subject, to_email)
+        return False, 'The email backend reported 0 messages delivered.'
+    return True, None
 
 
 @_never_raises
-def send_welcome_email(user, *, to_email=None) -> None:
+def send_welcome_email(user, *, to_email=None) -> EmailResult:
     """Sent once, right after a new Student or Instructor account is
     created (before admin approval -- this just confirms the signup, it
     doesn't imply the account is already usable).
@@ -84,7 +112,7 @@ def send_welcome_email(user, *, to_email=None) -> None:
     can preview real copy at an arbitrary inbox."""
     to_email = to_email or user.email
     if not to_email:
-        return
+        return False, 'This account has no email address on file.'
 
     name = user.get_full_name() or user.username
     context = {
@@ -104,11 +132,11 @@ def send_welcome_email(user, *, to_email=None) -> None:
         f'Happy learning,\n'
         f'The Mendoura Team'
     )
-    _send(subject='Welcome to Mendoura! 🎉', text_body=text_body, html_body=html_body, to_email=to_email)
+    return _send(subject='Welcome to Mendoura! 🎉', text_body=text_body, html_body=html_body, to_email=to_email)
 
 
 @_never_raises
-def send_instructor_application_received_email(user, *, to_email=None) -> None:
+def send_instructor_application_received_email(user, *, to_email=None) -> EmailResult:
     """Sent once, right at Instructor registration -- the lighter
     "we got it, hang tight" counterpart to send_instructor_welcome_email,
     which fires later at approval. Doesn't promise dashboard access, so
@@ -118,7 +146,7 @@ def send_instructor_application_received_email(user, *, to_email=None) -> None:
     send_welcome_email -- used only by the admin test-email tool."""
     to_email = to_email or user.email
     if not to_email:
-        return
+        return False, 'This account has no email address on file.'
 
     name = user.get_full_name() or user.username
     context = {'instructor_name': name}
@@ -132,14 +160,14 @@ def send_instructor_application_received_email(user, *, to_email=None) -> None:
         f'Questions in the meantime? Reach out to support@mendoura.com.\n\n'
         f'The Mendoura Team'
     )
-    _send(
+    return _send(
         subject='We\'ve received your Mendoura instructor application',
         text_body=text_body, html_body=html_body, to_email=to_email,
     )
 
 
 @_never_raises
-def send_instructor_application_notification(user, *, to_email=None) -> None:
+def send_instructor_application_notification(user, *, to_email=None) -> EmailResult:
     """Internal notification, sent alongside
     send_instructor_application_received_email, so a new application
     doesn't sit unnoticed until someone happens to check the admin
@@ -177,7 +205,7 @@ def send_instructor_application_notification(user, *, to_email=None) -> None:
         f'Review and approve or reject this application:\n'
         f'{context["admin_review_link"]}'
     )
-    _send(
+    return _send(
         subject=f'New Instructor application: {name}',
         text_body=text_body, html_body=html_body,
         to_email=to_email or settings.INSTRUCTOR_APPLICATION_NOTIFICATION_EMAIL,
@@ -185,7 +213,7 @@ def send_instructor_application_notification(user, *, to_email=None) -> None:
 
 
 @_never_raises
-def send_instructor_welcome_email(user, *, to_email=None) -> None:
+def send_instructor_welcome_email(user, *, to_email=None) -> EmailResult:
     """Sent once, when an Instructor account is approved -- not at
     registration. The copy promises dashboard access ("You now have
     access to your instructor dashboard"), which is only true once
@@ -197,7 +225,7 @@ def send_instructor_welcome_email(user, *, to_email=None) -> None:
     send_welcome_email -- used only by the admin test-email tool."""
     to_email = to_email or user.email
     if not to_email:
-        return
+        return False, 'This account has no email address on file.'
 
     name = user.get_full_name() or user.username
     context = {
@@ -220,14 +248,14 @@ def send_instructor_welcome_email(user, *, to_email=None) -> None:
         f'Welcome aboard,\n'
         f'The Mendoura Team'
     )
-    _send(
+    return _send(
         subject='Welcome to Mendoura — Let\'s build your first course 🎓',
         text_body=text_body, html_body=html_body, to_email=to_email,
     )
 
 
 @_never_raises
-def send_instructor_rejection_email(user, *, to_email=None) -> None:
+def send_instructor_rejection_email(user, *, to_email=None) -> EmailResult:
     """Sent once, when an admin rejects a pending Instructor application
     (reject_user in views.py) -- the rejection counterpart to
     send_instructor_welcome_email above. Called before the User row is
@@ -239,7 +267,7 @@ def send_instructor_rejection_email(user, *, to_email=None) -> None:
     send_welcome_email -- used only by the admin test-email tool."""
     to_email = to_email or user.email
     if not to_email:
-        return
+        return False, 'This account has no email address on file.'
 
     name = user.get_full_name() or user.username
     context = {'instructor_name': name}
@@ -258,14 +286,14 @@ def send_instructor_rejection_email(user, *, to_email=None) -> None:
         f'Thank you,\n'
         f'The Mendoura Team'
     )
-    _send(
+    return _send(
         subject='An update on your Mendoura instructor application',
         text_body=text_body, html_body=html_body, to_email=to_email,
     )
 
 
 @_never_raises
-def send_certificate_email(certificate, *, to_email=None) -> None:
+def send_certificate_email(certificate, *, to_email=None) -> EmailResult:
     """Emails the student their certificate PDF once it's been generated.
     Silently does nothing if the certificate has no PDF yet -- the caller
     (Certificate.generate_pdf, via Enrollment.issue_certificate_if_complete)
@@ -276,7 +304,7 @@ def send_certificate_email(certificate, *, to_email=None) -> None:
     to_email overrides the recipient, same escape hatch as
     send_welcome_email -- used only by the admin test-email tool."""
     if not certificate.pdf_file:
-        return
+        return False, 'This certificate has no generated PDF yet.'
 
     enrollment = certificate.enrollment
     student = enrollment.student
@@ -284,7 +312,7 @@ def send_certificate_email(certificate, *, to_email=None) -> None:
 
     to_email = to_email or student.email
     if not to_email:
-        return
+        return False, 'This student has no email address on file.'
 
     student_name = student.get_full_name() or student.username
     if course.track:
@@ -320,7 +348,7 @@ def send_certificate_email(certificate, *, to_email=None) -> None:
     finally:
         certificate.pdf_file.close()
 
-    _send(
+    return _send(
         subject=f'🎓 Congratulations! You\'ve completed {course.title}',
         text_body=text_body, html_body=html_body, to_email=to_email,
         attachments=[(f'certificate-{certificate.uuid}.pdf', pdf_bytes, 'application/pdf')],
@@ -339,7 +367,8 @@ INSTRUCTOR_RESET_TEMPLATES = (
 )
 
 
-def send_password_reset_preview(user, request, *, as_instructor: bool) -> None:
+@_never_raises
+def send_password_reset_preview(user, request, *, as_instructor: bool) -> EmailResult:
     """Admin test-email tool only. Sends a real, working password-reset
     link for `user`'s own account (never redirectable to another address),
     but lets the admin force which template set to preview -- Student or
@@ -355,7 +384,7 @@ def send_password_reset_preview(user, request, *, as_instructor: bool) -> None:
     from django.utils.http import urlsafe_base64_encode
 
     if not user.email:
-        return
+        return False, 'This account has no email address on file.'
 
     UserModel = get_user_model()
     current_site = get_current_site(request)
@@ -373,4 +402,4 @@ def send_password_reset_preview(user, request, *, as_instructor: bool) -> None:
     subject = ''.join(render_to_string(subject_t, context).splitlines())
     text_body = render_to_string(text_t, context)
     html_body = render_to_string(html_t, context)
-    _send(subject=subject, text_body=text_body, html_body=html_body, to_email=user.email)
+    return _send(subject=subject, text_body=text_body, html_body=html_body, to_email=user.email)

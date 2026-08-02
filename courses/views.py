@@ -1476,6 +1476,20 @@ def admin_dashboard(request):
 # in production. Same "no Shell on Render's free tier" workaround as
 # run_subscription_distribution below -- this is the only way to fire one on
 # demand without a shell.
+def _report_test_email(request, sent, error, success_message):
+    """emails.py's send_* functions now return (sent, error) instead of
+    silently swallowing failures -- this is the one place that decides
+    what the admin sees, so "sent successfully" in the UI only ever
+    follows a confirmed, exception-free, backend-acknowledged send. On
+    failure, the real reason (e.g. an SMTP auth error, a timeout, "0
+    delivered") is shown directly -- this page is admin-only, so surfacing
+    the raw error is safe and is the whole point of the tool."""
+    if sent:
+        messages.success(request, success_message)
+    else:
+        messages.error(request, _('Send failed: %(reason)s') % {'reason': error or _('unknown error')})
+
+
 @admin_required
 def send_test_emails(request):
     if request.method == 'POST':
@@ -1488,28 +1502,32 @@ def send_test_emails(request):
             return redirect('send_test_emails')
 
         if which == 'welcome':
-            emails.send_welcome_email(request.user, to_email=target)
-            messages.success(request, _('Student welcome email sent to %(email)s.') % {'email': target})
+            sent, error = emails.send_welcome_email(request.user, to_email=target)
+            _report_test_email(
+                request, sent, error, _('Student welcome email sent to %(email)s.') % {'email': target})
 
         elif which == 'instructor_application_received':
-            emails.send_instructor_application_received_email(request.user, to_email=target)
-            messages.success(
-                request, _('Instructor application-received email sent to %(email)s.') % {'email': target})
+            sent, error = emails.send_instructor_application_received_email(request.user, to_email=target)
+            _report_test_email(
+                request, sent, error,
+                _('Instructor application-received email sent to %(email)s.') % {'email': target})
 
         elif which == 'instructor_application_notification':
-            emails.send_instructor_application_notification(request.user, to_email=target)
-            messages.success(
-                request,
+            sent, error = emails.send_instructor_application_notification(request.user, to_email=target)
+            _report_test_email(
+                request, sent, error,
                 _('Internal application-notification email sent to %(email)s (using your own '
                   'account\'s details as sample applicant data).') % {'email': target})
 
         elif which == 'instructor_welcome':
-            emails.send_instructor_welcome_email(request.user, to_email=target)
-            messages.success(request, _('Instructor welcome email sent to %(email)s.') % {'email': target})
+            sent, error = emails.send_instructor_welcome_email(request.user, to_email=target)
+            _report_test_email(
+                request, sent, error, _('Instructor welcome email sent to %(email)s.') % {'email': target})
 
         elif which == 'instructor_rejection':
-            emails.send_instructor_rejection_email(request.user, to_email=target)
-            messages.success(request, _('Instructor rejection email sent to %(email)s.') % {'email': target})
+            sent, error = emails.send_instructor_rejection_email(request.user, to_email=target)
+            _report_test_email(
+                request, sent, error, _('Instructor rejection email sent to %(email)s.') % {'email': target})
 
         elif which == 'certificate':
             certificate = (
@@ -1523,9 +1541,9 @@ def send_test_emails(request):
                     _('No certificates have been issued yet -- complete a course to generate '
                       'one, then retry this test.'))
             else:
-                emails.send_certificate_email(certificate, to_email=target)
-                messages.success(
-                    request,
+                sent, error = emails.send_certificate_email(certificate, to_email=target)
+                _report_test_email(
+                    request, sent, error,
                     _('Certificate email sent to %(email)s (using real certificate data for '
                       '"%(course)s").') % {'email': target, 'course': certificate.enrollment.course.title})
 
@@ -1540,10 +1558,10 @@ def send_test_emails(request):
             if not request.user.email:
                 messages.error(request, _('Your admin account has no email address on file.'))
             else:
-                emails.send_password_reset_preview(
+                sent, error = emails.send_password_reset_preview(
                     request.user, request, as_instructor=(which == 'password_reset_instructor'))
-                messages.success(
-                    request,
+                _report_test_email(
+                    request, sent, error,
                     _('Password reset email (%(role)s template) sent to your own address '
                       '(%(email)s) -- this is a real, working reset link.') % {
                         'role': _('Instructor') if which == 'password_reset_instructor' else _('Student'),
