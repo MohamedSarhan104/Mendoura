@@ -11,14 +11,26 @@ The one HTTP call (create_video) is isolated so tests can mock it; everything
 else is pure hashing with no network.
 """
 import hashlib
+import logging
 import time
 
 import requests
 from django.conf import settings
 
+logger = logging.getLogger(__name__)
+
 VIDEO_API_BASE = 'https://video.bunnycdn.com'
 EMBED_BASE = 'https://iframe.mediadelivery.net/embed'
 TUS_ENDPOINT = 'https://video.bunnycdn.com/tusupload'
+
+# TEMPORARY: diagnosing "Could not start the upload" in production (the
+# create_bunny_video view's generic error message on any BunnyError/
+# RequestException, previously logged nowhere). Every line tagged
+# [BUNNY_UPLOAD_DEBUG] so it's easy to grep out of Render's logs. Remove
+# this whole block (and the logging calls in create_video below) once the
+# root cause is confirmed and fixed -- it's noisy by design, not something
+# to ship long-term. Never logs BUNNY_API_KEY itself.
+_DEBUG_TAG = '[BUNNY_UPLOAD_DEBUG]'
 
 
 class BunnyError(Exception):
@@ -33,21 +45,55 @@ def create_video(title: str) -> str:
     """Create an empty video in the library and return its GUID. The browser
     then uploads the actual bytes to this GUID with a signed TUS request."""
     if not is_configured():
+        logger.warning(
+            '%s create_video called while not configured -- BUNNY_LIBRARY_ID set=%s BUNNY_API_KEY set=%s',
+            _DEBUG_TAG, bool(settings.BUNNY_LIBRARY_ID), bool(settings.BUNNY_API_KEY))
         raise BunnyError('Bunny Stream is not configured.')
-    response = requests.post(
-        f'{VIDEO_API_BASE}/library/{settings.BUNNY_LIBRARY_ID}/videos',
-        json={'title': title[:255] or 'Untitled'},
-        headers={
-            'AccessKey': settings.BUNNY_API_KEY,
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-        },
-        timeout=15,
-    )
-    response.raise_for_status()
+
+    url = f'{VIDEO_API_BASE}/library/{settings.BUNNY_LIBRARY_ID}/videos'
+    logger.info(
+        '%s calling Bunny create-video API: url=%s library_id=%s title=%r',
+        _DEBUG_TAG, url, settings.BUNNY_LIBRARY_ID, title[:255] or 'Untitled')
+    started = time.monotonic()
+    try:
+        response = requests.post(
+            url,
+            json={'title': title[:255] or 'Untitled'},
+            headers={
+                'AccessKey': settings.BUNNY_API_KEY,
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+            },
+            timeout=15,
+        )
+    except requests.RequestException as exc:
+        elapsed = time.monotonic() - started
+        logger.exception(
+            '%s Bunny create-video request FAILED after %.2fs: url=%s library_id=%s '
+            'exception_type=%s exception_message=%s',
+            _DEBUG_TAG, elapsed, url, settings.BUNNY_LIBRARY_ID, type(exc).__name__, str(exc))
+        raise
+
+    elapsed = time.monotonic() - started
+    if not response.ok:
+        logger.error(
+            '%s Bunny create-video API returned an error after %.2fs: url=%s library_id=%s '
+            'status=%s body=%s',
+            _DEBUG_TAG, elapsed, url, settings.BUNNY_LIBRARY_ID, response.status_code,
+            response.text[:2000])
+        response.raise_for_status()
+
     guid = response.json().get('guid')
     if not guid:
+        logger.error(
+            '%s Bunny create-video API returned 2xx with no guid after %.2fs: url=%s '
+            'status=%s body=%s',
+            _DEBUG_TAG, elapsed, url, response.status_code, response.text[:2000])
         raise BunnyError('Bunny did not return a video GUID.')
+
+    logger.info(
+        '%s Bunny create-video SUCCEEDED after %.2fs: library_id=%s guid=%s',
+        _DEBUG_TAG, elapsed, settings.BUNNY_LIBRARY_ID, guid)
     return guid
 
 

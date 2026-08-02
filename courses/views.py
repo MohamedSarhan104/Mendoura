@@ -1553,6 +1553,13 @@ def create_bunny_video(request, lecture_id):
     try:
         video_id = bunny.create_video(f'{lecture.course.title} - {lecture.title}')
     except (bunny.BunnyError, requests.RequestException):
+        # bunny.create_video() already logs the request/response detail under
+        # [BUNNY_UPLOAD_DEBUG] -- this adds the request-side context (which
+        # lecture/course/instructor hit it) so a failure can be tied back to
+        # a specific "Could not start the upload" report.
+        logger.error(
+            '[BUNNY_UPLOAD_DEBUG] create_bunny_video failed for lecture_id=%s course_id=%s instructor=%s',
+            lecture.id, lecture.module.course_id, request.user.username, exc_info=True)
         return JsonResponse({'error': _('Could not start the upload. Please try again.')}, status=502)
 
     # Replacing an existing video: point the lecture at the new GUID. The old

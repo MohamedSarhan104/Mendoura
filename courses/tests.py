@@ -6,6 +6,7 @@ from datetime import timedelta
 from decimal import Decimal
 from unittest.mock import patch
 
+import requests
 from django.conf import settings
 from django.contrib.auth.tokens import default_token_generator
 from django.core import mail
@@ -2288,6 +2289,22 @@ class BunnyUploadEndpointTests(TestCase):
         self.client.force_login(self.instructor)
         response = self.client.post(reverse('create_bunny_video', args=[self.lecture.id]))
         self.assertEqual(response.status_code, 503)
+
+    @patch('courses.bunny.create_video', side_effect=requests.ConnectionError('connection refused'))
+    def test_upload_start_failure_returns_502_and_logs_real_reason(self, mock_create):
+        # Regression test for the "Could not start the upload" report with
+        # no trace of why anywhere -- create_bunny_video's except block
+        # used to swallow BunnyError/RequestException with no logging at
+        # all. The real exception must now be logged (tagged
+        # [BUNNY_UPLOAD_DEBUG]) even though the frontend still only sees
+        # the generic message.
+        self.client.force_login(self.instructor)
+        with self.assertLogs('courses.views', level='ERROR') as logs:
+            response = self.client.post(reverse('create_bunny_video', args=[self.lecture.id]))
+        self.assertEqual(response.status_code, 502)
+        self.assertEqual(response.json(), {'error': 'Could not start the upload. Please try again.'})
+        self.assertTrue(any('[BUNNY_UPLOAD_DEBUG]' in message for message in logs.output))
+        self.assertTrue(any(str(self.lecture.id) in message for message in logs.output))
 
     @override_settings(BUNNY_LIBRARY_ID='705216', BUNNY_API_KEY='test-api-key')
     def test_edit_lecture_page_loads_upload_library_locally_not_from_a_cdn(self):
