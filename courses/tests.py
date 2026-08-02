@@ -1964,6 +1964,54 @@ class LoginRedirectTests(TestCase):
         self.assertContains(response, 'Login')
 
 
+class RoleAwarePostLoginRedirectTests(TestCase):
+    """After the welcome email promises "you now have access to your
+    instructor dashboard", logging in must actually land an approved
+    Instructor there -- not on the generic marketing homepage aimed at
+    signed-out visitors ("Start Learning" / "Become an Instructor")."""
+
+    def setUp(self):
+        self.instructor = User.objects.create_user(
+            username='login_redirect_inst', password='pw12345678',
+            is_instructor=True, is_approved=True, email='inst@example.com')
+        self.student = User.objects.create_user(
+            username='login_redirect_stud', password='pw12345678',
+            is_student=True, is_approved=True, email='stud@example.com')
+
+    def test_approved_instructor_login_redirects_to_instructor_dashboard(self):
+        response = self.client.post(
+            reverse('login'), {'username': 'login_redirect_inst', 'password': 'pw12345678'})
+        self.assertRedirects(response, reverse('instructor_dashboard'))
+
+    def test_instructor_dashboard_is_reachable_after_login(self):
+        self.client.login(username='login_redirect_inst', password='pw12345678')
+        response = self.client.get(reverse('instructor_dashboard'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'login_redirect_inst')
+
+    def test_explicit_next_still_wins_over_role_redirect(self):
+        response = self.client.post(
+            f"{reverse('login')}?next={reverse('create_course')}",
+            {'username': 'login_redirect_inst', 'password': 'pw12345678'})
+        self.assertRedirects(response, reverse('create_course'))
+
+    def test_student_login_still_goes_to_homepage(self):
+        response = self.client.post(
+            reverse('login'), {'username': 'login_redirect_stud', 'password': 'pw12345678'})
+        self.assertRedirects(response, reverse('platform_home'))
+
+    def test_homepage_shows_dashboard_link_for_logged_in_instructor(self):
+        self.client.login(username='login_redirect_inst', password='pw12345678')
+        response = self.client.get(reverse('platform_home'))
+        self.assertContains(response, 'Go to Your Dashboard')
+        self.assertNotContains(response, 'Become an Instructor')
+
+    def test_homepage_shows_marketing_ctas_for_logged_out_visitor(self):
+        response = self.client.get(reverse('platform_home'))
+        self.assertContains(response, 'Start Learning')
+        self.assertContains(response, 'Become an Instructor')
+
+
 class EmailTimeoutConfigTests(TestCase):
     """Without EMAIL_TIMEOUT, smtplib's socket has no timeout at all -- a
     slow/unreachable SMTP host hangs the request indefinitely, which no

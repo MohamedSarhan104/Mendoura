@@ -10,7 +10,7 @@ urlpatterns = [
     path('privacy/', views.privacy, name='privacy'),
     path('signup/student/', views.student_signup, name='student_signup'),
     path('signup/instructor/', views.instructor_signup, name='instructor_signup'),
-    path('login/', auth_views.LoginView.as_view(
+    path('login/', views.RoleAwareLoginView.as_view(
         template_name='registration/login.html',
         authentication_form=ApprovalAwareAuthenticationForm,
     ), name='login'),

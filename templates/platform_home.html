@@ -11,12 +11,18 @@
     {% trans "Courses built by real, expert instructors. Track your progress, earn certificates, and grow your career." %}
   </p>
   <div class="flex items-center justify-center gap-4">
-    <a href="{% url 'track_list' %}" class="px-8 py-3 rounded-xl bg-brand-600 text-white font-semibold hover:bg-brand-700 transition shadow-lg shadow-brand-600/30">
-      {% trans "Start Learning" %}
-    </a>
-    <a href="{% url 'instructor_signup' %}" class="px-8 py-3 rounded-xl border border-gray-300 dark:border-gray-700 font-semibold hover:bg-gray-100 dark:hover:bg-gray-800 transition">
-      {% trans "Become an Instructor" %}
-    </a>
+    {% if user.is_authenticated and user.is_instructor %}
+      <a href="{% url 'instructor_dashboard' %}" class="px-8 py-3 rounded-xl bg-brand-600 text-white font-semibold hover:bg-brand-700 transition shadow-lg shadow-brand-600/30">
+        {% trans "Go to Your Dashboard" %}
+      </a>
+    {% else %}
+      <a href="{% url 'track_list' %}" class="px-8 py-3 rounded-xl bg-brand-600 text-white font-semibold hover:bg-brand-700 transition shadow-lg shadow-brand-600/30">
+        {% trans "Start Learning" %}
+      </a>
+      <a href="{% url 'instructor_signup' %}" class="px-8 py-3 rounded-xl border border-gray-300 dark:border-gray-700 font-semibold hover:bg-gray-100 dark:hover:bg-gray-800 transition">
+        {% trans "Become an Instructor" %}
+      </a>
+    {% endif %}
   </div>
 </section>
 

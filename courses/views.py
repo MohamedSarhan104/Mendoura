@@ -9,6 +9,7 @@ from functools import wraps
 import markdown
 import requests
 from django.contrib import messages
+from django.contrib.auth import views as auth_views
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import redirect_to_login
 from django.contrib.postgres.search import SearchQuery, SearchRank, SearchVector
@@ -17,7 +18,7 @@ from django.db import IntegrityError, transaction
 from django.db.models import Avg, Count, Prefetch, ProtectedError, Q, Sum
 from django.db.models.functions import TruncMonth
 from django.http import Http404, HttpResponse, HttpResponseForbidden, JsonResponse
-from django.shortcuts import get_object_or_404, redirect, render
+from django.shortcuts import get_object_or_404, redirect, render, resolve_url
 from django.utils import timezone
 from django.utils.translation import gettext as _
 from django.views.decorators.csrf import csrf_exempt
@@ -60,6 +61,20 @@ def _generate_poster_safely(course):
         course.generate_poster()
     except Exception:
         logger.warning('Failed to generate poster for course id=%s', course.id, exc_info=True)
+
+# Only overrides where a plain login (no ?next=, e.g. submitting the form
+# directly from /login/) lands -- an explicit ?next= from being bounced off
+# a protected page always still wins, same as Django's own LoginView.
+# Without this, an approved instructor logging in landed on the generic
+# marketing homepage ("Start Learning" / "Become an Instructor" CTAs aimed
+# at signed-out visitors) instead of the dashboard the approval email
+# itself promises ("You now have access to your instructor dashboard").
+class RoleAwareLoginView(auth_views.LoginView):
+    def get_default_redirect_url(self):
+        if self.request.user.is_authenticated and self.request.user.is_instructor:
+            return resolve_url('instructor_dashboard')
+        return super().get_default_redirect_url()
+
 
 # 1. Platform Homepage
 def platform_home(request):
