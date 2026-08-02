@@ -243,6 +243,15 @@ EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
 EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='no-reply@mendoura.com')
 EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
 DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='Mendoura <no-reply@mendoura.com>')
+# Without this, smtplib's socket has no timeout at all -- if Zoho's SMTP
+# server (or the network path to it) is ever slow or unreachable, the
+# connection attempt blocks *forever*. No amount of try/except in emails.py
+# helps against that: the request just hangs until the WSGI worker's own
+# timeout kills it, which is what a raw, un-graceful 500 (rather than
+# Django's own error handling) looks like from the browser. This turns that
+# indefinite hang into a normal, catchable socket.timeout well before any
+# gunicorn worker timeout would fire.
+EMAIL_TIMEOUT = config('EMAIL_TIMEOUT', default=10, cast=int)
 EMAIL_BACKEND = (
     'django.core.mail.backends.smtp.EmailBackend' if EMAIL_HOST_PASSWORD
     else 'django.core.mail.backends.console.EmailBackend'

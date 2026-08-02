@@ -1964,6 +1964,47 @@ class LoginRedirectTests(TestCase):
         self.assertContains(response, 'Login')
 
 
+class EmailTimeoutConfigTests(TestCase):
+    """Without EMAIL_TIMEOUT, smtplib's socket has no timeout at all -- a
+    slow/unreachable SMTP host hangs the request indefinitely, which no
+    try/except in emails.py can catch (confirmed locally: a real send
+    attempt against an unreachable host blocked for 40+ seconds with
+    EMAIL_TIMEOUT unset, and returned in ~10s once it was set). That's what
+    an un-graceful, non-Django 500 (the WSGI worker's own timeout killing
+    the request) looks like from the browser -- this just asserts the
+    safety net stays configured."""
+
+    def test_email_timeout_is_configured(self):
+        self.assertIsNotNone(settings.EMAIL_TIMEOUT)
+        self.assertGreater(settings.EMAIL_TIMEOUT, 0)
+
+
+class AdminSiteApprovalVisibilityTests(TestCase):
+    """is_approved defaults to True at the model level (intentional, so
+    trusted creation paths like the auto-seeded superuser aren't locked
+    out) -- but Django's stock UserAdmin never exposed the field, so
+    creating/editing an Instructor via /admin/ silently inherited that
+    True default with no visibility into it. That's a real, reproduced
+    path to an "approved" instructor account that never went through
+    approve_user()."""
+
+    def setUp(self):
+        self.admin = User.objects.create_superuser(username='site_admin', password='pw')
+        self.client.force_login(self.admin)
+
+    def test_is_approved_visible_on_user_change_form(self):
+        instructor = User.objects.create_user(
+            username='visibility_inst', password='pw', is_instructor=True, is_approved=True)
+        response = self.client.get(f'/admin/courses/user/{instructor.id}/change/')
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'name="is_approved"')
+
+    def test_is_approved_visible_in_user_list(self):
+        response = self.client.get('/admin/courses/user/')
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'column-is_approved')
+
+
 class PWATests(TestCase):
     def test_manifest_is_valid_json_with_correct_content_type(self):
         response = self.client.get('/manifest.json')

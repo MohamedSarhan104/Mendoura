@@ -11,11 +11,21 @@ from .models import (
 
 @admin.register(User)
 class CustomUserAdmin(UserAdmin):
-    list_display = ('username', 'email', 'is_student', 'is_instructor', 'is_staff', 'country')
-    list_filter = ('is_student', 'is_instructor', 'is_staff')
+    # is_approved defaults to True at the model level (see courses/models.py)
+    # so that trusted creation paths -- the auto-seeded superuser, any user
+    # made outside the public signup forms -- aren't accidentally locked
+    # out. Django's stock UserAdmin never exposed this project-specific
+    # field at all, so creating/editing an Instructor here silently
+    # inherited that True default with no visibility into it, which is how
+    # an account could end up "approved" without anyone ever clicking
+    # Approve on the site's own Users page. Surfacing it here doesn't
+    # change the default -- it just makes it visible and explicitly
+    # editable instead of an invisible side effect.
+    list_display = ('username', 'email', 'is_student', 'is_instructor', 'is_approved', 'is_staff', 'country')
+    list_filter = ('is_student', 'is_instructor', 'is_approved', 'is_staff')
     readonly_fields = UserAdmin.readonly_fields + ('terms_accepted_at',)
     fieldsets = UserAdmin.fieldsets + (
-        ('LMS Info', {'fields': ('is_student', 'is_instructor', 'phone_number')}),
+        ('LMS Info', {'fields': ('is_student', 'is_instructor', 'is_approved', 'phone_number')}),
         ('Legal / Onboarding', {'fields': ('country', 'payoneer_account', 'terms_accepted_at')}),
     )
 
