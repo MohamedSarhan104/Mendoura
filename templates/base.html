@@ -82,8 +82,8 @@
         {% if user.is_superuser %}
           <a href="{% url 'admin_dashboard' %}" class="relative hover:text-brand-600 dark:hover:text-brand-400">
             {% trans "Admin Panel" %}
-            {% if pending_instructor_requests_count %}
-              <span class="absolute -top-2 -right-3 min-w-[1.1rem] h-[1.1rem] px-1 flex items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold leading-none">{{ pending_instructor_requests_count }}</span>
+            {% if pending_instructor_requests_count or pending_course_approvals_count %}
+              <span class="absolute -top-2 -right-3 min-w-[1.1rem] h-[1.1rem] px-1 flex items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold leading-none">{{ pending_instructor_requests_count|add:pending_course_approvals_count }}</span>
             {% endif %}
           </a>
         {% endif %}
@@ -121,8 +121,8 @@
             {% else %}
               {{ user.initials }}
             {% endif %}
-            {% if pending_instructor_requests_count %}
-              <span class="absolute top-0 right-0 w-3 h-3 rounded-full bg-red-500 ring-2 ring-white dark:ring-gray-950" title="{% blocktrans count counter=pending_instructor_requests_count %}{{ counter }} pending instructor request{% plural %}{{ counter }} pending instructor requests{% endblocktrans %}"></span>
+            {% if pending_instructor_requests_count or pending_course_approvals_count %}
+              <span class="absolute top-0 right-0 w-3 h-3 rounded-full bg-red-500 ring-2 ring-white dark:ring-gray-950" title="{% if pending_instructor_requests_count %}{% blocktrans count counter=pending_instructor_requests_count %}{{ counter }} pending instructor request{% plural %}{{ counter }} pending instructor requests{% endblocktrans %}{% endif %}{% if pending_instructor_requests_count and pending_course_approvals_count %}, {% endif %}{% if pending_course_approvals_count %}{% blocktrans count counter=pending_course_approvals_count %}{{ counter }} pending course approval{% plural %}{{ counter }} pending course approvals{% endblocktrans %}{% endif %}"></span>
             {% endif %}
           </button>
           <div id="avatar-panel" role="menu" aria-hidden="true"
@@ -150,9 +150,14 @@
             {% if user.is_superuser %}
               <a href="{% url 'admin_dashboard' %}" role="menuitem" class="flex items-center justify-between px-3 py-2 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-800">
                 <span><i class="fa-solid fa-shield-halved mr-2 text-gray-400"></i>{% trans "Admin Panel" %}</span>
-                {% if pending_instructor_requests_count %}
-                  <span class="min-w-[1.1rem] h-[1.1rem] px-1 flex items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold leading-none">{{ pending_instructor_requests_count }}</span>
-                {% endif %}
+                <span class="flex items-center gap-1">
+                  {% if pending_instructor_requests_count %}
+                    <span class="min-w-[1.1rem] h-[1.1rem] px-1 flex items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold leading-none" title="{% blocktrans count counter=pending_instructor_requests_count %}{{ counter }} pending instructor request{% plural %}{{ counter }} pending instructor requests{% endblocktrans %}">{{ pending_instructor_requests_count }}</span>
+                  {% endif %}
+                  {% if pending_course_approvals_count %}
+                    <span class="min-w-[1.1rem] h-[1.1rem] px-1 flex items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold leading-none" title="{% blocktrans count counter=pending_course_approvals_count %}{{ counter }} pending course approval{% plural %}{{ counter }} pending course approvals{% endblocktrans %}">{{ pending_course_approvals_count }}</span>
+                  {% endif %}
+                </span>
               </a>
             {% endif %}
             <form method="post" action="{% url 'logout' %}" class="border-t border-gray-100 dark:border-gray-800 mt-1 pt-1">
@@ -211,9 +216,14 @@
       {% if user.is_superuser %}
         <a href="{% url 'admin_dashboard' %}" class="flex items-center justify-between py-2 text-sm font-medium">
           <span>{% trans "Admin Panel" %}</span>
-          {% if pending_instructor_requests_count %}
-            <span class="min-w-[1.1rem] h-[1.1rem] px-1 flex items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold leading-none">{{ pending_instructor_requests_count }}</span>
-          {% endif %}
+          <span class="flex items-center gap-1">
+            {% if pending_instructor_requests_count %}
+              <span class="min-w-[1.1rem] h-[1.1rem] px-1 flex items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold leading-none">{{ pending_instructor_requests_count }}</span>
+            {% endif %}
+            {% if pending_course_approvals_count %}
+              <span class="min-w-[1.1rem] h-[1.1rem] px-1 flex items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold leading-none">{{ pending_course_approvals_count }}</span>
+            {% endif %}
+          </span>
         </a>
       {% endif %}
       <form method="post" action="{% url 'logout' %}" class="pt-2">

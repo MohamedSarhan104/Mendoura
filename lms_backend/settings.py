@@ -88,6 +88,7 @@ TEMPLATES = [
                 'django.template.context_processors.i18n',
                 'courses.context_processors.tracks_menu',
                 'courses.context_processors.pending_instructor_requests',
+                'courses.context_processors.pending_course_approvals',
             ],
         },
     },

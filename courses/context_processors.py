@@ -1,6 +1,6 @@
 from django.db.models import Prefetch
 
-from .models import Track, User
+from .models import Course, Track, User
 
 
 def tracks_menu(request):
@@ -25,3 +25,14 @@ def pending_instructor_requests(request):
         return {}
     count = User.objects.filter(is_instructor=True, is_approved=False).count()
     return {'pending_instructor_requests_count': count}
+
+
+def pending_course_approvals(request):
+    """Same pattern as pending_instructor_requests above, for courses an
+    instructor has submitted for review -- feeds the red badge on the same
+    Admin Panel nav locations, decreasing as each is approved/rejected out
+    of PENDING_REVIEW."""
+    if not (request.user.is_authenticated and request.user.is_superuser):
+        return {}
+    count = Course.objects.filter(status=Course.Status.PENDING_REVIEW).count()
+    return {'pending_course_approvals_count': count}

@@ -915,12 +915,22 @@ class SignupApprovalFlowTests(TestCase):
 
     def test_student_signup_sends_welcome_email(self):
         self.client.post(reverse('student_signup'), self._signup_data())
-        self.assertEqual(len(mail.outbox), 1)
-        sent = mail.outbox[0]
+        sent = next(m for m in mail.outbox if m.to == ['newbie@example.com'])
         self.assertEqual(sent.subject, 'Welcome to Mendoura! 🎉')
-        self.assertEqual(sent.to, ['newbie@example.com'])
         self.assertIn('Ready to get started?', sent.body)
         self.assertTrue(any(content_type == 'text/html' for _, content_type in sent.alternatives))
+
+    def test_student_signup_sends_internal_notification_with_signup_details(self):
+        # Same pattern as the instructor-application notification: a new
+        # student signup shouldn't sit unnoticed until someone happens to
+        # check the admin dashboard.
+        self.client.post(reverse('student_signup'), self._signup_data())
+        notification = next(
+            m for m in mail.outbox
+            if m.to == [settings.INSTRUCTOR_APPLICATION_NOTIFICATION_EMAIL])
+        self.assertIn('newbie', notification.subject)
+        self.assertIn('newbie', notification.body)
+        self.assertIn('newbie@example.com', notification.body)
 
     def test_instructor_signup_sends_application_received_not_welcome_email(self):
         # The full welcome email fires on approval instead (see
@@ -942,10 +952,16 @@ class SignupApprovalFlowTests(TestCase):
         self.assertIn('newbie@example.com', notification.body)
         self.assertIn(reverse('admin_users'), notification.body)
 
-    def test_signup_without_email_does_not_crash_or_send(self):
+    def test_signup_without_email_does_not_crash_and_still_notifies_admins(self):
+        # The student-facing welcome email has nowhere to go without an
+        # email on file, but the internal admin notification (sent to a
+        # fixed admin address, not the student's) still fires -- a missing
+        # student email must never crash the signup or silently drop the
+        # internal notification.
         response = self.client.post(reverse('student_signup'), self._signup_data(email=''))
         self.assertRedirects(response, reverse('login'))
-        self.assertEqual(len(mail.outbox), 0)
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].to, [settings.INSTRUCTOR_APPLICATION_NOTIFICATION_EMAIL])
 
     def test_student_signup_records_terms_accepted_timestamp(self):
         self.client.post(reverse('student_signup'), self._signup_data())
@@ -1255,6 +1271,44 @@ class CourseApprovalTests(TestCase):
         self.assertEqual(course_b.status, Course.Status.PENDING_REVIEW)
         self.assertEqual(course_c.status, Course.Status.PENDING_REVIEW)
         self.assertEqual(Course.objects.count(), 3)  # nothing deleted
+
+    def test_toggle_publish_sends_course_submission_notification(self):
+        # Same pattern as the instructor-application notification: the
+        # classic dashboard's "Submit for Review" button (not just the
+        # wizard's) must notify admins too.
+        track = Track.objects.create(name='Toggle Publish Track')
+        draft_course = Course.objects.create(
+            instructor=self.instructor, track=track, title='Draft Course', description='...',
+            production_type=Course.ProductionType.FULL, price=Decimal('0.00'), is_free=True,
+            status=Course.Status.DRAFT,
+        )
+        self.client.force_login(self.instructor)
+        self.client.post(reverse('toggle_publish', args=[draft_course.id]))
+        notification = next(
+            m for m in mail.outbox
+            if m.to == [settings.INSTRUCTOR_APPLICATION_NOTIFICATION_EMAIL])
+        self.assertIn('Draft Course', notification.subject)
+        self.assertIn('Draft Course', notification.body)
+        self.assertIn('pending_inst', notification.body)
+        self.assertIn(reverse('course_approval_queue'), notification.body)
+
+    def test_pending_course_approvals_count_badge_shown_to_admin(self):
+        self.client.force_login(self.admin)
+        response = self.client.get(reverse('platform_home'))
+        self.assertContains(response, 'pending course approval')
+
+    def test_pending_course_approvals_count_badge_hidden_for_non_admin(self):
+        self.client.force_login(self.instructor)
+        response = self.client.get(reverse('platform_home'))
+        self.assertNotContains(response, 'pending course approval')
+
+    def test_pending_course_approvals_count_clears_after_approval(self):
+        self.client.force_login(self.admin)
+        response = self.client.get(reverse('admin_dashboard'))
+        self.assertEqual(response.context['pending_course_approvals_count'], 1)
+        self.client.post(reverse('approve_course', args=[self.course.id]))
+        response = self.client.get(reverse('admin_dashboard'))
+        self.assertEqual(response.context['pending_course_approvals_count'], 0)
 
 
 class AdminCoursePreviewTests(TestCase):
@@ -1596,6 +1650,30 @@ class PaymobWebhookTests(TestCase):
         self.assertTrue(WalletTransaction.objects.filter(
             wallet=wallet, type=WalletTransaction.Type.SALE_CREDIT, amount=Decimal('35.00')).exists())
 
+    def test_successful_purchase_sends_admin_notification(self):
+        # Same pattern as the instructor-application notification: sent
+        # from inside the same `if created:` guard the wallet credit
+        # happens in, so a retried webhook delivery can't double-send it.
+        merchant_order_id = f'course{self.course.id}-student{self.student.id}-abc123'
+        nested, signature = _signed_transaction(merchant_order_id)
+        self._post_webhook(nested, signature)
+        notification = next(
+            m for m in mail.outbox
+            if m.to == [settings.INSTRUCTOR_APPLICATION_NOTIFICATION_EMAIL])
+        self.assertIn('Paid Course', notification.subject)
+        self.assertIn('Paid Course', notification.body)
+        self.assertIn('paymob_stud', notification.body)
+        self.assertIn('50 USD', notification.body)
+
+    def test_duplicate_purchase_webhook_does_not_double_notify(self):
+        merchant_order_id = f'course{self.course.id}-student{self.student.id}-abc123'
+        nested, signature = _signed_transaction(merchant_order_id)
+        self._post_webhook(nested, signature)
+        self._post_webhook(nested, signature)  # Paymob retries the same delivery
+        notifications = [
+            m for m in mail.outbox if m.to == [settings.INSTRUCTOR_APPLICATION_NOTIFICATION_EMAIL]]
+        self.assertEqual(len(notifications), 1)
+
     def test_duplicate_webhook_delivery_does_not_double_credit(self):
         merchant_order_id = f'course{self.course.id}-student{self.student.id}-abc123'
         nested, signature = _signed_transaction(merchant_order_id)
@@ -1677,6 +1755,31 @@ class SubscriptionWebhookTests(TestCase):
         self._post_webhook(nested, signature)
 
         self.assertEqual(Subscription.objects.filter(provider_transaction_id='123456').count(), 1)
+
+    def test_successful_subscription_sends_admin_notification(self):
+        # Same pattern as the instructor-application notification: sent
+        # from inside the same `if created:` guard the SubscriptionPeriod
+        # row is created in, so a retried webhook delivery can't double-
+        # send it.
+        merchant_order_id = f'sub{self.plan.id}-student{self.student.id}-abc123'
+        nested, signature = _signed_transaction(merchant_order_id, amount_cents=149900)
+        self._post_webhook(nested, signature)
+        notification = next(
+            m for m in mail.outbox
+            if m.to == [settings.INSTRUCTOR_APPLICATION_NOTIFICATION_EMAIL])
+        self.assertIn('sub_stud', notification.body)
+        self.assertIn('Mendoura Annual Pass', notification.body)
+        self.assertIn('Annual', notification.body)
+        self.assertIn('1499 EGP', notification.body)
+
+    def test_duplicate_subscription_webhook_does_not_double_notify(self):
+        merchant_order_id = f'sub{self.plan.id}-student{self.student.id}-abc123'
+        nested, signature = _signed_transaction(merchant_order_id, amount_cents=149900)
+        self._post_webhook(nested, signature)
+        self._post_webhook(nested, signature)
+        notifications = [
+            m for m in mail.outbox if m.to == [settings.INSTRUCTOR_APPLICATION_NOTIFICATION_EMAIL]]
+        self.assertEqual(len(notifications), 1)
 
 
 class SubscriptionAccessControlTests(TestCase):
@@ -3796,6 +3899,28 @@ class CourseCreationWizardTests(TestCase):
         self.assertRedirects(response, reverse('instructor_dashboard'))
         course.refresh_from_db()
         self.assertEqual(course.status, Course.Status.PENDING_REVIEW)
+
+    def test_review_submit_sends_admin_notification(self):
+        # Same pattern as the instructor-application notification: a
+        # submitted course shouldn't sit unnoticed in the queue until an
+        # admin happens to check.
+        self.client.force_login(self.instructor)
+        self.client.post(reverse('create_course'), self._course_details_payload())
+        course = Course.objects.get(title='Wizard Course')
+        self.client.post(reverse('course_wizard_modules', args=[course.id]),
+                          {'action': 'add', 'title': 'Only Module', 'order': 1})
+        module = Module.objects.get(course=course)
+        self.client.post(reverse('course_wizard_module_content', args=[course.id, module.id]),
+                          {'action': 'save_video_url', 'video_url': 'https://youtube.com/watch?v=abc'})
+
+        self.client.post(reverse('course_wizard_review', args=[course.id]))
+        notification = next(
+            m for m in mail.outbox
+            if m.to == [settings.INSTRUCTOR_APPLICATION_NOTIFICATION_EMAIL])
+        self.assertIn('Wizard Course', notification.subject)
+        self.assertIn('Wizard Course', notification.body)
+        self.assertIn('wizard_inst', notification.body)
+        self.assertIn(reverse('course_approval_queue'), notification.body)
 
     def test_review_blocks_submit_when_a_module_is_missing_content(self):
         self.client.force_login(self.instructor)

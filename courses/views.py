@@ -129,6 +129,7 @@ def student_signup(request):
                     None, _('That username was just taken by someone else. Please try again.'))
             else:
                 emails.send_welcome_email(user)
+                emails.send_student_signup_notification(user)
                 messages.success(
                     request,
                     _("Your account has been created and is pending administrator approval. "
@@ -460,6 +461,7 @@ def course_wizard_review(request, course_id):
     if request.method == 'POST':
         course.status = Course.Status.PENDING_REVIEW
         course.save()
+        emails.send_course_submission_notification(course)
         messages.success(
             request,
             _('%(title)s submitted for review. We\'ll email you once it\'s approved.') % {'title': course.title})
@@ -728,6 +730,7 @@ def _handle_course_payment(transaction_id, obj, course_id, student_id):
                 payment=payment)
             Enrollment.objects.get_or_create(
                 student=student, course=course, defaults={'payment': payment})
+            emails.send_course_purchase_notification(payment)
 
 
 def _handle_subscription_payment(transaction_id, obj, plan_id, student_id):
@@ -754,6 +757,7 @@ def _handle_subscription_payment(transaction_id, obj, plan_id, student_id):
                 period_end=subscription.expires_at, amount_paid=subscription.amount_paid,
                 currency=subscription.currency,
             )
+            emails.send_subscription_notification(subscription)
 
 
 def _process_refund(transaction_id):
@@ -1263,6 +1267,7 @@ def toggle_publish(request, course_id):
     if course.status in (Course.Status.DRAFT, Course.Status.REJECTED):
         course.status = Course.Status.PENDING_REVIEW
         course.save()
+        emails.send_course_submission_notification(course)
     return redirect('instructor_dashboard')
 
 

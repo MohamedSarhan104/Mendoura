@@ -213,6 +213,151 @@ def send_instructor_application_notification(user, *, to_email=None) -> EmailRes
 
 
 @_never_raises
+def send_course_submission_notification(course, *, to_email=None) -> EmailResult:
+    """Internal notification, same pattern as
+    send_instructor_application_notification -- sent when an instructor
+    submits a course for review (course_wizard_review / toggle_publish in
+    views.py) so a new approval-queue item doesn't sit unnoticed. Links to
+    the Course Approval Queue rather than a one-click approve/reject
+    action, for the same reason: those are POST-only, CSRF-protected,
+    login-required forms a plain email link can't submit.
+
+    to_email overrides the recipient (default:
+    settings.INSTRUCTOR_APPLICATION_NOTIFICATION_EMAIL, reused here as the
+    general admin-notification address rather than a course-specific
+    setting) -- used only by the admin test-email tool."""
+    instructor = course.instructor
+    instructor_name = instructor.get_full_name() or instructor.username
+    context = {
+        'course_title': course.title,
+        'instructor_name': instructor_name,
+        'admin_review_link': f'{SITE_DOMAIN}{reverse("course_approval_queue")}',
+    }
+    html_body = render_to_string('emails/course_submission_notification.html', context)
+    text_body = (
+        f'New course submitted for review on Mendoura\n\n'
+        f'Course: {course.title}\n'
+        f'Instructor: {instructor_name}\n\n'
+        f'Review and approve or reject this course:\n'
+        f'{context["admin_review_link"]}'
+    )
+    return _send(
+        subject=f'New course submitted for review: {course.title}',
+        text_body=text_body, html_body=html_body,
+        to_email=to_email or settings.INSTRUCTOR_APPLICATION_NOTIFICATION_EMAIL,
+    )
+
+
+@_never_raises
+def send_student_signup_notification(user, *, to_email=None) -> EmailResult:
+    """Internal notification, same pattern as
+    send_instructor_application_notification -- sent alongside
+    send_welcome_email whenever a new student account is created, so
+    signups don't go unnoticed the way applications didn't before that
+    email existed.
+
+    to_email overrides the recipient (default:
+    settings.INSTRUCTOR_APPLICATION_NOTIFICATION_EMAIL, reused here as the
+    general admin-notification address) -- used only by the admin
+    test-email tool."""
+    name = user.get_full_name() or user.username
+    context = {
+        'student_name': name,
+        'username': user.username,
+        'email': user.email or '—',
+        'signup_date': user.date_joined,
+    }
+    html_body = render_to_string('emails/student_signup_notification.html', context)
+    text_body = (
+        f'New student signup on Mendoura\n\n'
+        f'Name: {name}\n'
+        f'Username: {context["username"]}\n'
+        f'Email: {context["email"]}\n'
+        f'Signed up: {user.date_joined.strftime("%B %d, %Y %H:%M UTC")}\n'
+    )
+    return _send(
+        subject=f'New student signup: {name}',
+        text_body=text_body, html_body=html_body,
+        to_email=to_email or settings.INSTRUCTOR_APPLICATION_NOTIFICATION_EMAIL,
+    )
+
+
+@_never_raises
+def send_course_purchase_notification(payment, *, to_email=None) -> EmailResult:
+    """Internal notification, same pattern as
+    send_instructor_application_notification -- sent once a student's
+    individual-course purchase succeeds (_handle_course_payment in
+    views.py, inside the same `if created:` guard that credits the
+    instructor's wallet, so a retried webhook delivery can't double-send
+    this either).
+
+    to_email overrides the recipient (default:
+    settings.INSTRUCTOR_APPLICATION_NOTIFICATION_EMAIL, reused here as the
+    general admin-notification address) -- used only by the admin
+    test-email tool."""
+    student = payment.student
+    student_name = student.get_full_name() or student.username
+    context = {
+        'student_name': student_name,
+        'course_title': payment.course.title,
+        'amount': payment.total_amount,
+        'currency': payment.currency,
+        'purchased_at': payment.created_at,
+    }
+    html_body = render_to_string('emails/course_purchase_notification.html', context)
+    text_body = (
+        f'New course purchase on Mendoura\n\n'
+        f'Student: {student_name}\n'
+        f'Course: {payment.course.title}\n'
+        f'Amount paid: {payment.total_amount} {payment.currency}\n'
+        f'Purchased: {payment.created_at.strftime("%B %d, %Y %H:%M UTC")}\n'
+    )
+    return _send(
+        subject=f'New course purchase: {payment.course.title}',
+        text_body=text_body, html_body=html_body,
+        to_email=to_email or settings.INSTRUCTOR_APPLICATION_NOTIFICATION_EMAIL,
+    )
+
+
+@_never_raises
+def send_subscription_notification(subscription, *, to_email=None) -> EmailResult:
+    """Internal notification, same pattern as
+    send_instructor_application_notification -- sent once a student
+    starts a new subscription (_handle_subscription_payment in
+    views.py, inside the same `if created:` guard the SubscriptionPeriod
+    row is created in, so a retried webhook delivery can't double-send
+    this either).
+
+    to_email overrides the recipient (default:
+    settings.INSTRUCTOR_APPLICATION_NOTIFICATION_EMAIL, reused here as the
+    general admin-notification address) -- used only by the admin
+    test-email tool."""
+    student = subscription.student
+    student_name = student.get_full_name() or student.username
+    context = {
+        'student_name': student_name,
+        'plan_name': subscription.plan.name,
+        'plan_interval': subscription.plan.get_interval_display(),
+        'amount': subscription.amount_paid,
+        'currency': subscription.currency,
+        'started_at': subscription.started_at,
+    }
+    html_body = render_to_string('emails/subscription_notification.html', context)
+    text_body = (
+        f'New subscription on Mendoura\n\n'
+        f'Student: {student_name}\n'
+        f'Plan: {subscription.plan.name} ({context["plan_interval"]})\n'
+        f'Amount paid: {subscription.amount_paid} {subscription.currency}\n'
+        f'Started: {subscription.started_at.strftime("%B %d, %Y %H:%M UTC")}\n'
+    )
+    return _send(
+        subject=f'New subscription: {student_name} ({context["plan_interval"]})',
+        text_body=text_body, html_body=html_body,
+        to_email=to_email or settings.INSTRUCTOR_APPLICATION_NOTIFICATION_EMAIL,
+    )
+
+
+@_never_raises
 def send_instructor_welcome_email(user, *, to_email=None) -> EmailResult:
     """Sent once, when an Instructor account is approved -- not at
     registration. The copy promises dashboard access ("You now have
