@@ -87,6 +87,7 @@ TEMPLATES = [
                 'django.contrib.messages.context_processors.messages',
                 'django.template.context_processors.i18n',
                 'courses.context_processors.tracks_menu',
+                'courses.context_processors.pending_instructor_requests',
             ],
         },
     },
@@ -161,6 +162,14 @@ STATICFILES_DIRS = [BASE_DIR / 'static']
 
 AUTH_USER_MODEL = 'courses.User'
 
+
+# Django's own default (/accounts/login/) has no URL route in this project
+# (the real login page is /login/, see courses/urls.py) -- without this,
+# every @login_required view (including @admin_required, e.g. the Admin
+# Panel, Send Test Email, and Accept/Reject links) redirects a signed-out
+# or session-expired visitor to a URL that 404s instead of to the login
+# form.
+LOGIN_URL = 'login'
 
 # Where to redirect users after a successful login
 LOGIN_REDIRECT_URL = 'platform_home'

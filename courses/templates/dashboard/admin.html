@@ -11,7 +11,9 @@
       <a href="{% url 'course_approval_queue' %}" class="text-brand-600 hover:underline">
         {% trans "Approval Queue" %} {% if pending_courses_count %}<span class="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">{{ pending_courses_count }}</span>{% endif %}
       </a>
-      <a href="{% url 'admin_users' %}" class="text-brand-600 hover:underline">{% trans "Users" %}</a>
+      <a href="{% url 'admin_users' %}" class="text-brand-600 hover:underline">
+        {% trans "Users" %} {% if pending_instructor_requests_count %}<span class="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">{{ pending_instructor_requests_count }}</span>{% endif %}
+      </a>
       <a href="{% url 'admin_payments' %}" class="text-brand-600 hover:underline">{% trans "Payments" %}</a>
       <a href="{% url 'admin_payouts' %}" class="text-brand-600 hover:underline">{% trans "Payouts" %}</a>
       <a href="{% url 'admin_tracks' %}" class="text-brand-600 hover:underline">{% trans "Tracks" %}</a>

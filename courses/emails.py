@@ -227,6 +227,44 @@ def send_instructor_welcome_email(user, *, to_email=None) -> None:
 
 
 @_never_raises
+def send_instructor_rejection_email(user, *, to_email=None) -> None:
+    """Sent once, when an admin rejects a pending Instructor application
+    (reject_user in views.py) -- the rejection counterpart to
+    send_instructor_welcome_email above. Called before the User row is
+    deleted, so the caller must pass whatever it still needs (this reads
+    user.get_full_name()/username/email, all still populated in memory on
+    an instance that's about to be deleted but hasn't been yet).
+
+    to_email overrides the recipient, same escape hatch as
+    send_welcome_email -- used only by the admin test-email tool."""
+    to_email = to_email or user.email
+    if not to_email:
+        return
+
+    name = user.get_full_name() or user.username
+    context = {'instructor_name': name}
+    html_body = render_to_string('emails/instructor_rejection_email.html', context)
+    text_body = (
+        f'Hi {name},\n\n'
+        f'Thank you for your interest in becoming an instructor on Mendoura and for taking '
+        f'the time to apply.\n\n'
+        f'After reviewing your application, we\'re not able to move forward with it at this '
+        f'time. This isn\'t necessarily a reflection of your expertise — we evaluate every '
+        f'application against our current catalog needs and platform guidelines.\n\n'
+        f'If you\'d like to apply again in the future, you\'re welcome to submit a new '
+        f'application at any time.\n\n'
+        f'Questions about this decision? Reach out to us at support@mendoura.com — we\'re '
+        f'happy to talk it through.\n\n'
+        f'Thank you,\n'
+        f'The Mendoura Team'
+    )
+    _send(
+        subject='An update on your Mendoura instructor application',
+        text_body=text_body, html_body=html_body, to_email=to_email,
+    )
+
+
+@_never_raises
 def send_certificate_email(certificate, *, to_email=None) -> None:
     """Emails the student their certificate PDF once it's been generated.
     Silently does nothing if the certificate has no PDF yet -- the caller

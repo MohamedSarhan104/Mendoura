@@ -1064,6 +1064,51 @@ class AdminUserManagementTests(TestCase):
         self.assertEqual(response.status_code, 404)
         self.assertTrue(User.objects.filter(id=self.student.id).exists())
 
+    def test_rejecting_pending_student_does_not_send_an_email(self):
+        self.client.force_login(self.admin)
+        self.client.post(reverse('reject_user', args=[self.pending.id]))
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_rejecting_pending_instructor_sends_rejection_email(self):
+        pending_instructor = User.objects.create_user(
+            username='rejected_inst', password='pw', is_instructor=True, is_approved=False,
+            email='rejected_inst@example.com', country='Egypt', first_name='Rex', last_name='Rejected')
+        self.client.force_login(self.admin)
+        response = self.client.post(reverse('reject_user', args=[pending_instructor.id]))
+        self.assertRedirects(response, reverse('admin_users'))
+        self.assertFalse(User.objects.filter(id=pending_instructor.id).exists())
+        self.assertEqual(len(mail.outbox), 1)
+        sent = mail.outbox[0]
+        self.assertEqual(sent.subject, 'An update on your Mendoura instructor application')
+        self.assertEqual(sent.to, ['rejected_inst@example.com'])
+
+    def test_pending_instructor_count_badge_shown_to_admin(self):
+        User.objects.create_user(
+            username='badge_inst', password='pw', is_instructor=True, is_approved=False,
+            email='badge_inst@example.com')
+        self.client.force_login(self.admin)
+        response = self.client.get(reverse('platform_home'))
+        self.assertContains(response, 'pending instructor request')
+
+    def test_pending_instructor_count_badge_hidden_for_non_admin(self):
+        User.objects.create_user(
+            username='badge_inst2', password='pw', is_instructor=True, is_approved=False,
+            email='badge_inst2@example.com')
+        self.client.force_login(self.student)
+        response = self.client.get(reverse('platform_home'))
+        self.assertNotContains(response, 'pending instructor request')
+
+    def test_pending_instructor_count_clears_after_approval(self):
+        pending_instructor = User.objects.create_user(
+            username='badge_inst3', password='pw', is_instructor=True, is_approved=False,
+            email='badge_inst3@example.com', country='Egypt')
+        self.client.force_login(self.admin)
+        response = self.client.get(reverse('admin_dashboard'))
+        self.assertEqual(response.context['pending_instructor_requests_count'], 1)
+        self.client.post(reverse('approve_user', args=[pending_instructor.id]))
+        response = self.client.get(reverse('admin_dashboard'))
+        self.assertEqual(response.context['pending_instructor_requests_count'], 0)
+
     def test_admin_can_delete_active_student(self):
         self.client.force_login(self.admin)
         response = self.client.post(reverse('delete_user', args=[self.student.id]))
@@ -1898,6 +1943,25 @@ class HealthCheckTests(TestCase):
     def test_healthz_returns_200_without_authentication(self):
         response = self.client.get('/healthz/')
         self.assertEqual(response.status_code, 200)
+
+
+class LoginRedirectTests(TestCase):
+    """LOGIN_URL must point at this project's actual /login/ route --
+    Django's unconfigured default (/accounts/login/) has no URL pattern
+    here, so every @login_required view (including the whole Admin Panel)
+    would 404 instead of prompting a signed-out visitor to log in."""
+
+    def test_login_required_view_redirects_to_real_login_page_not_404(self):
+        response = self.client.get(reverse('admin_dashboard'))
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(response.url.startswith(reverse('login')))
+        follow = self.client.get(response.url)
+        self.assertEqual(follow.status_code, 200)
+
+    def test_send_test_emails_redirects_to_login_not_404(self):
+        response = self.client.get(reverse('send_test_emails'), follow=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Login')
 
 
 class PWATests(TestCase):
@@ -3021,6 +3085,14 @@ class AdminTestEmailToolTests(TestCase):
         response = self.client.post(reverse('send_test_emails'), {'which': 'welcome', 'target_email': ''})
         self.assertRedirects(response, reverse('send_test_emails'))
         self.assertEqual(len(mail.outbox), 0)
+
+    def test_instructor_rejection_test_send_goes_to_typed_target(self):
+        response = self.client.post(reverse('send_test_emails'),
+                                     {'which': 'instructor_rejection', 'target_email': 'wherever3@example.com'})
+        self.assertRedirects(response, reverse('send_test_emails'))
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].to, ['wherever3@example.com'])
+        self.assertEqual(mail.outbox[0].subject, 'An update on your Mendoura instructor application')
 
     def test_certificate_test_send_uses_real_certificate_and_typed_target(self):
         instructor = User.objects.create_user(username='tool_inst', password='pw', is_instructor=True)

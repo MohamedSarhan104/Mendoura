@@ -1483,7 +1483,7 @@ def send_test_emails(request):
         which = request.POST.get('which')
 
         if which in ('welcome', 'instructor_application_received', 'instructor_application_notification',
-                     'instructor_welcome', 'certificate') and not target:
+                     'instructor_welcome', 'instructor_rejection', 'certificate') and not target:
             messages.error(request, _('Enter a target email address first.'))
             return redirect('send_test_emails')
 
@@ -1506,6 +1506,10 @@ def send_test_emails(request):
         elif which == 'instructor_welcome':
             emails.send_instructor_welcome_email(request.user, to_email=target)
             messages.success(request, _('Instructor welcome email sent to %(email)s.') % {'email': target})
+
+        elif which == 'instructor_rejection':
+            emails.send_instructor_rejection_email(request.user, to_email=target)
+            messages.success(request, _('Instructor rejection email sent to %(email)s.') % {'email': target})
 
         elif which == 'certificate':
             certificate = (
@@ -1648,8 +1652,22 @@ def reject_user(request, user_id):
     user = get_object_or_404(User, id=user_id, is_approved=False)
     if request.method == 'POST':
         username = user.username
-        user.delete()
-        messages.success(request, _('%(username)s\'s registration was rejected and removed.') % {'username': username})
+        is_instructor = user.is_instructor
+        try:
+            user.delete()
+        except ProtectedError:
+            messages.error(
+                request,
+                _('%(username)s has existing activity on the platform and can\'t be rejected.')
+                % {'username': username})
+        else:
+            # .delete() clears the in-memory instance's pk but leaves every
+            # other field (email, username, name) intact -- still safe to
+            # read for the notification below.
+            if is_instructor:
+                emails.send_instructor_rejection_email(user)
+            messages.success(
+                request, _('%(username)s\'s registration was rejected and removed.') % {'username': username})
     return redirect('admin_users')
 
 

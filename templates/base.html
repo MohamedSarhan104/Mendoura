@@ -80,7 +80,12 @@
           <a href="{% url 'instructor_dashboard' %}" class="hover:text-brand-600 dark:hover:text-brand-400">{% trans "Dashboard" %}</a>
         {% endif %}
         {% if user.is_superuser %}
-          <a href="{% url 'admin_dashboard' %}" class="hover:text-brand-600 dark:hover:text-brand-400">{% trans "Admin Panel" %}</a>
+          <a href="{% url 'admin_dashboard' %}" class="relative hover:text-brand-600 dark:hover:text-brand-400">
+            {% trans "Admin Panel" %}
+            {% if pending_instructor_requests_count %}
+              <span class="absolute -top-2 -right-3 min-w-[1.1rem] h-[1.1rem] px-1 flex items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold leading-none">{{ pending_instructor_requests_count }}</span>
+            {% endif %}
+          </a>
         {% endif %}
       {% endif %}
     </div>
@@ -110,11 +115,14 @@
       {% if user.is_authenticated %}
         <div class="relative hidden md:block">
           <button type="button" id="avatar-btn" aria-haspopup="true" aria-expanded="false" aria-controls="avatar-panel"
-                  class="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center bg-brand-600 text-white font-bold text-sm hover:ring-2 hover:ring-brand-300 dark:hover:ring-brand-700 transition">
+                  class="relative w-10 h-10 rounded-full overflow-hidden flex items-center justify-center bg-brand-600 text-white font-bold text-sm hover:ring-2 hover:ring-brand-300 dark:hover:ring-brand-700 transition">
             {% if user.avatar %}
               <img src="{{ user.avatar.url }}" class="w-full h-full object-cover" alt="{{ user.username }}">
             {% else %}
               {{ user.initials }}
+            {% endif %}
+            {% if pending_instructor_requests_count %}
+              <span class="absolute top-0 right-0 w-3 h-3 rounded-full bg-red-500 ring-2 ring-white dark:ring-gray-950" title="{% blocktrans count counter=pending_instructor_requests_count %}{{ counter }} pending instructor request{% plural %}{{ counter }} pending instructor requests{% endblocktrans %}"></span>
             {% endif %}
           </button>
           <div id="avatar-panel" role="menu" aria-hidden="true"
@@ -140,8 +148,11 @@
               </a>
             {% endif %}
             {% if user.is_superuser %}
-              <a href="{% url 'admin_dashboard' %}" role="menuitem" class="block px-3 py-2 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-800">
-                <i class="fa-solid fa-shield-halved mr-2 text-gray-400"></i>{% trans "Admin Panel" %}
+              <a href="{% url 'admin_dashboard' %}" role="menuitem" class="flex items-center justify-between px-3 py-2 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-800">
+                <span><i class="fa-solid fa-shield-halved mr-2 text-gray-400"></i>{% trans "Admin Panel" %}</span>
+                {% if pending_instructor_requests_count %}
+                  <span class="min-w-[1.1rem] h-[1.1rem] px-1 flex items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold leading-none">{{ pending_instructor_requests_count }}</span>
+                {% endif %}
               </a>
             {% endif %}
             <form method="post" action="{% url 'logout' %}" class="border-t border-gray-100 dark:border-gray-800 mt-1 pt-1">
@@ -197,7 +208,14 @@
       {% if user.is_student %}<a href="{% url 'my_learning' %}" class="block py-2 text-sm font-medium">{% trans "My Learning" %}</a>
       <a href="{% url 'ai_coach' %}" class="block py-2 text-sm font-medium">{% trans "AI Coach" %} 🤖</a>{% endif %}
       {% if user.is_instructor %}<a href="{% url 'instructor_dashboard' %}" class="block py-2 text-sm font-medium">{% trans "Dashboard" %}</a>{% endif %}
-      {% if user.is_superuser %}<a href="{% url 'admin_dashboard' %}" class="block py-2 text-sm font-medium">{% trans "Admin Panel" %}</a>{% endif %}
+      {% if user.is_superuser %}
+        <a href="{% url 'admin_dashboard' %}" class="flex items-center justify-between py-2 text-sm font-medium">
+          <span>{% trans "Admin Panel" %}</span>
+          {% if pending_instructor_requests_count %}
+            <span class="min-w-[1.1rem] h-[1.1rem] px-1 flex items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold leading-none">{{ pending_instructor_requests_count }}</span>
+          {% endif %}
+        </a>
+      {% endif %}
       <form method="post" action="{% url 'logout' %}" class="pt-2">
         {% csrf_token %}
         <button type="submit" class="w-full text-left py-2 text-sm font-medium">{% trans "Logout" %}</button>
