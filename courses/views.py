@@ -236,7 +236,7 @@ def course_catalog(request):
 # 7. Course Detail - View a single course + its curriculum
 def course_detail(request, course_id):
     course = get_object_or_404(_with_stats(Course.objects.all()), id=course_id)
-    modules = course.modules.prefetch_related('lectures').order_by('order')
+    modules = course.modules.prefetch_related('lectures', 'quiz__questions__choices').order_by('order')
     reviews = course.reviews.select_related('student').order_by('-created_at')
 
     enrollment = None
@@ -245,10 +245,18 @@ def course_detail(request, course_id):
         enrollment = get_or_create_enrollment(request.user, course)
         user_review = reviews.filter(student=request.user).first()
 
+    # The owning instructor and admins can always see every lecture/quiz in
+    # full, regardless of the is_preview flag or enrollment -- same rule
+    # course_player() already enforces server-side for actually watching a
+    # video. Without this, an admin reviewing a course in the Course
+    # Approval Queue could see titles but not open most of the actual
+    # video/quiz content, since instructors mark only a couple of sample
+    # lectures as "free preview".
+    can_preview_all = _can_preview_unpublished(request.user, course)
+
     # Not published: only visible to someone who already has a reason to see
     # it (enrolled, the owning instructor, or an admin) -- not the public.
-    if course.status != Course.Status.PUBLISHED and enrollment is None \
-            and not _can_preview_unpublished(request.user, course):
+    if course.status != Course.Status.PUBLISHED and enrollment is None and not can_preview_all:
         raise Http404
 
     can_review = bool(
@@ -261,6 +269,7 @@ def course_detail(request, course_id):
         'modules': modules,
         'reviews': reviews,
         'enrollment': enrollment,
+        'can_preview_all': can_preview_all,
         'can_review': can_review,
         'review_form': ReviewForm() if can_review else None,
     })
@@ -1201,6 +1210,11 @@ def add_question(request, course_id, module_id):
             question.quiz = quiz
             question.save()
             _reenter_review_if_published(request, course)
+            # Straight to the choices editor -- a question with no answer
+            # choices can't be answered by a student, so that's always the
+            # very next thing to do, not an optional extra step reached by
+            # noticing the "Edit / Choices" link back on the quiz overview.
+            return redirect('edit_question', question_id=question.id)
     return redirect('manage_quiz', course_id=course.id, module_id=module.id)
 
 
@@ -1512,7 +1526,8 @@ def send_test_emails(request):
         which = request.POST.get('which')
 
         if which in ('welcome', 'instructor_application_received', 'instructor_application_notification',
-                     'instructor_welcome', 'instructor_rejection', 'certificate') and not target:
+                     'instructor_welcome', 'instructor_rejection', 'course_approved', 'course_rejected',
+                     'certificate') and not target:
             messages.error(request, _('Enter a target email address first.'))
             return redirect('send_test_emails')
 
@@ -1543,6 +1558,25 @@ def send_test_emails(request):
             sent, error = emails.send_instructor_rejection_email(request.user, to_email=target)
             _report_test_email(
                 request, sent, error, _('Instructor rejection email sent to %(email)s.') % {'email': target})
+
+        elif which in ('course_approved', 'course_rejected'):
+            course = Course.objects.select_related('instructor').order_by('-created_at').first()
+            if not course:
+                messages.error(
+                    request,
+                    _('No courses exist yet -- create one, then retry this test.'))
+            elif which == 'course_approved':
+                sent, error = emails.send_course_approved_email(course, to_email=target)
+                _report_test_email(
+                    request, sent, error,
+                    _('Course-approved email sent to %(email)s (using real course '
+                      '"%(course)s" as sample data).') % {'email': target, 'course': course.title})
+            else:
+                sent, error = emails.send_course_rejected_email(course, to_email=target)
+                _report_test_email(
+                    request, sent, error,
+                    _('Course-rejected email sent to %(email)s (using real course '
+                      '"%(course)s" as sample data).') % {'email': target, 'course': course.title})
 
         elif which == 'certificate':
             certificate = (
@@ -1633,6 +1667,7 @@ def approve_course(request, course_id):
         course.status = Course.Status.PUBLISHED
         course.rejection_reason = ''
         course.save()
+        emails.send_course_approved_email(course)
         messages.success(request, _('%(title)s approved and published.') % {'title': course.title})
     return redirect('course_approval_queue')
 
@@ -1641,9 +1676,19 @@ def approve_course(request, course_id):
 def reject_course(request, course_id):
     course = get_object_or_404(Course, id=course_id, status=Course.Status.PENDING_REVIEW)
     if request.method == 'POST':
+        reason = request.POST.get('reason', '').strip()
+        if not reason:
+            # A rejection with no explanation isn't actionable for the
+            # instructor -- require one instead of silently sending a
+            # generic "no reason given" email every time someone forgets
+            # to fill in the field.
+            messages.error(request, _('Please enter a rejection reason before rejecting %(title)s.')
+                            % {'title': course.title})
+            return redirect('course_approval_queue')
         course.status = Course.Status.REJECTED
-        course.rejection_reason = request.POST.get('reason', '')
+        course.rejection_reason = reason
         course.save()
+        emails.send_course_rejected_email(course)
         messages.success(request, _('%(title)s rejected.') % {'title': course.title})
     return redirect('course_approval_queue')
 

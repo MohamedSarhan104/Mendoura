@@ -55,14 +55,40 @@
                       <i class="fa-solid fa-circle-play text-brand-600"></i>
                       <span class="text-sm">{{ lecture.title }}</span>
                     </div>
-                    {% if lecture.is_preview %}
-                      <a href="{% url 'course_player' course.id lecture.id %}" class="text-xs font-semibold text-brand-600 hover:underline">{% trans "Preview" %}</a>
+                    {% if lecture.is_preview or can_preview_all %}
+                      <a href="{% url 'course_player' course.id lecture.id %}" class="text-xs font-semibold text-brand-600 hover:underline">
+                        {% if lecture.is_preview %}{% trans "Preview" %}{% else %}{% trans "Watch" %}{% endif %}
+                      </a>
                     {% elif not enrollment %}
                       <i class="fa-solid fa-lock text-gray-300 dark:text-gray-600 text-xs"></i>
                     {% endif %}
                   </div>
                 {% endfor %}
               </div>
+              {% if can_preview_all and module.quiz %}
+                <div class="px-4 py-3 border-t border-gray-100 dark:border-gray-800 bg-gray-50/60 dark:bg-gray-800/30">
+                  <p class="text-xs font-semibold text-purple-600 mb-2">
+                    <i class="fa-solid fa-circle-question mr-1"></i>
+                    {% blocktrans with count=module.quiz.questions.all|length passing=module.quiz.passing_score_percent %}Quiz -- {{ count }} question(s), pass at {{ passing }}%{% endblocktrans %}
+                  </p>
+                  {% for question in module.quiz.questions.all %}
+                    <div class="text-xs mb-2 last:mb-0">
+                      <p class="font-medium text-gray-700 dark:text-gray-300">{{ forloop.counter }}. {{ question.text }}</p>
+                      <ul class="ml-4 mt-1 space-y-0.5">
+                        {% for choice in question.choices.all %}
+                          <li class="{% if choice.is_correct %}text-green-600 dark:text-green-400 font-semibold{% else %}text-gray-400{% endif %}">
+                            {% if choice.is_correct %}<i class="fa-solid fa-check text-[10px] mr-1"></i>{% endif %}{{ choice.text }}
+                          </li>
+                        {% empty %}
+                          <li class="text-gray-400 italic">{% trans "No answer choices added yet." %}</li>
+                        {% endfor %}
+                      </ul>
+                    </div>
+                  {% empty %}
+                    <p class="text-xs text-gray-400">{% trans "No questions added yet." %}</p>
+                  {% endfor %}
+                </div>
+              {% endif %}
             </div>
           </div>
         {% empty %}

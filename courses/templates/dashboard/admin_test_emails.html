@@ -147,6 +147,39 @@
     </div>
   </div>
 
+  <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3 mt-8">{% trans "Course Review" %}</p>
+  <div class="space-y-4">
+    <div class="flex items-center justify-between bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5 gap-4 flex-wrap">
+      <div>
+        <p class="font-semibold">{% trans "Course Approved Email" %}</p>
+        <p class="text-xs text-gray-400 mt-1">{% trans "Sent when an admin approves a submitted course -- reuses the most recently created real course as sample data." %}</p>
+      </div>
+      <form method="post" class="target-email-form">
+        {% csrf_token %}
+        <input type="hidden" name="which" value="course_approved">
+        <input type="hidden" name="target_email" class="target-email-field">
+        <button type="submit" class="px-5 py-2 rounded-lg bg-brand-600 text-white font-semibold hover:bg-brand-700 transition text-sm">
+          {% trans "Send Test" %}
+        </button>
+      </form>
+    </div>
+
+    <div class="flex items-center justify-between bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5 gap-4 flex-wrap">
+      <div>
+        <p class="font-semibold">{% trans "Course Rejected Email" %}</p>
+        <p class="text-xs text-gray-400 mt-1">{% trans "Sent when an admin rejects a submitted course -- reuses the most recently created real course's rejection_reason (or a generic fallback if it's blank)." %}</p>
+      </div>
+      <form method="post" class="target-email-form">
+        {% csrf_token %}
+        <input type="hidden" name="which" value="course_rejected">
+        <input type="hidden" name="target_email" class="target-email-field">
+        <button type="submit" class="px-5 py-2 rounded-lg bg-brand-600 text-white font-semibold hover:bg-brand-700 transition text-sm">
+          {% trans "Send Test" %}
+        </button>
+      </form>
+    </div>
+  </div>
+
 </div>
 {% endblock %}
 

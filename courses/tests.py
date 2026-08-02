@@ -1164,7 +1164,7 @@ class CourseApprovalTests(TestCase):
     def setUp(self):
         self.admin = User.objects.create_superuser(username='approver', password='pw')
         self.instructor = User.objects.create_user(
-            username='pending_inst', password='pw', is_instructor=True)
+            username='pending_inst', password='pw', is_instructor=True, email='pending_inst@example.com')
         track = Track.objects.create(name='UI/UX Design')
         self.course = Course.objects.create(
             instructor=self.instructor, track=track, title='Pending Course', description='...',
@@ -1178,12 +1178,46 @@ class CourseApprovalTests(TestCase):
         self.course.refresh_from_db()
         self.assertEqual(self.course.status, Course.Status.PUBLISHED)
 
+    def test_approve_sends_course_approved_email(self):
+        self.client.force_login(self.admin)
+        self.client.post(reverse('approve_course', args=[self.course.id]))
+        self.assertEqual(len(mail.outbox), 1)
+        sent = mail.outbox[0]
+        self.assertEqual(sent.to, ['pending_inst@example.com'])
+        self.assertIn('Pending Course', sent.subject)
+        self.assertIn('Pending Course', sent.body)
+
     def test_reject_stores_reason(self):
         self.client.force_login(self.admin)
         self.client.post(reverse('reject_course', args=[self.course.id]), {'reason': 'Low quality audio'})
         self.course.refresh_from_db()
         self.assertEqual(self.course.status, Course.Status.REJECTED)
         self.assertEqual(self.course.rejection_reason, 'Low quality audio')
+
+    def test_reject_with_reason_sends_email_containing_reason(self):
+        self.client.force_login(self.admin)
+        self.client.post(reverse('reject_course', args=[self.course.id]), {'reason': 'Low quality audio'})
+        self.assertEqual(len(mail.outbox), 1)
+        sent = mail.outbox[0]
+        self.assertEqual(sent.to, ['pending_inst@example.com'])
+        self.assertIn('Pending Course', sent.subject)
+        self.assertIn('Low quality audio', sent.body)
+
+    def test_reject_without_reason_is_rejected_and_sends_nothing(self):
+        self.client.force_login(self.admin)
+        response = self.client.post(reverse('reject_course', args=[self.course.id]), {'reason': ''}, follow=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Please enter a rejection reason')
+        self.course.refresh_from_db()
+        self.assertEqual(self.course.status, Course.Status.PENDING_REVIEW)
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_reject_with_whitespace_only_reason_is_rejected(self):
+        self.client.force_login(self.admin)
+        response = self.client.post(reverse('reject_course', args=[self.course.id]), {'reason': '   '}, follow=True)
+        self.assertContains(response, 'Please enter a rejection reason')
+        self.course.refresh_from_db()
+        self.assertEqual(self.course.status, Course.Status.PENDING_REVIEW)
 
     def test_instructor_cannot_approve_own_course(self):
         self.client.force_login(self.instructor)
@@ -1220,6 +1254,80 @@ class CourseApprovalTests(TestCase):
         self.assertEqual(course_b.status, Course.Status.PENDING_REVIEW)
         self.assertEqual(course_c.status, Course.Status.PENDING_REVIEW)
         self.assertEqual(Course.objects.count(), 3)  # nothing deleted
+
+
+class AdminCoursePreviewTests(TestCase):
+    """The Course Approval Queue only ever showed metadata (title, price,
+    category) -- no way to actually review the video/quiz content before
+    approving or rejecting. course_detail() already had an admin/owner
+    bypass for the not-yet-published 404 gate; this extends it so an admin
+    can also open every lecture (not just ones marked "free preview") and
+    see quiz questions/answers directly on the page."""
+
+    def setUp(self):
+        self.admin = User.objects.create_superuser(username='preview_admin', password='pw')
+        self.instructor = User.objects.create_user(
+            username='preview_inst', password='pw', is_instructor=True)
+        self.other_student = User.objects.create_user(
+            username='preview_outsider', password='pw', is_student=True)
+        track = Track.objects.create(name='Preview Track')
+        self.course = Course.objects.create(
+            instructor=self.instructor, track=track, title='Preview Course', description='...',
+            production_type=Course.ProductionType.FULL, price=Decimal('0.00'), is_free=True,
+            status=Course.Status.PENDING_REVIEW,
+        )
+        self.module = Module.objects.create(course=self.course, title='M1')
+        self.non_preview_lecture = Lecture.objects.create(
+            module=self.module, title='Non-preview lecture', is_preview=False)
+        self.quiz = Quiz.objects.create(module=self.module, passing_score_percent=70)
+        self.question = Question.objects.create(quiz=self.quiz, text='2+2=?', order=1)
+        Choice.objects.create(question=self.question, text='4', is_correct=True)
+        Choice.objects.create(question=self.question, text='5', is_correct=False)
+
+    def test_approval_queue_links_to_course_detail_preview(self):
+        self.client.force_login(self.admin)
+        response = self.client.get(reverse('course_approval_queue'))
+        self.assertContains(response, reverse('course_detail', args=[self.course.id]))
+
+    def test_admin_can_open_course_detail_for_pending_course(self):
+        self.client.force_login(self.admin)
+        response = self.client.get(reverse('course_detail', args=[self.course.id]))
+        self.assertEqual(response.status_code, 200)
+
+    def test_admin_sees_watch_link_for_non_preview_lecture(self):
+        self.client.force_login(self.admin)
+        response = self.client.get(reverse('course_detail', args=[self.course.id]))
+        self.assertContains(response, reverse('course_player', args=[self.course.id, self.non_preview_lecture.id]))
+
+    def test_admin_sees_quiz_questions_and_correct_answer(self):
+        self.client.force_login(self.admin)
+        response = self.client.get(reverse('course_detail', args=[self.course.id]))
+        self.assertContains(response, '2+2=?')
+        self.assertContains(response, '4')
+        self.assertContains(response, '5')
+
+    def test_outsider_student_cannot_open_pending_course_detail(self):
+        self.client.force_login(self.other_student)
+        response = self.client.get(reverse('course_detail', args=[self.course.id]))
+        self.assertEqual(response.status_code, 404)
+
+    def test_outsider_student_does_not_see_watch_link_for_non_preview_lecture(self):
+        # Sanity check for a published course: a random student (no
+        # enrollment) still only gets a Watch/Preview link for lectures
+        # actually marked is_preview -- the admin bypass must not leak to
+        # everyone.
+        self.course.status = Course.Status.PUBLISHED
+        self.course.save()
+        self.client.force_login(self.other_student)
+        response = self.client.get(reverse('course_detail', args=[self.course.id]))
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(
+            response, reverse('course_player', args=[self.course.id, self.non_preview_lecture.id]))
+
+    def test_admin_can_watch_non_preview_lecture_video(self):
+        self.client.force_login(self.admin)
+        response = self.client.get(reverse('course_player', args=[self.course.id, self.non_preview_lecture.id]))
+        self.assertEqual(response.status_code, 200)
 
 
 class AdminPayoutLifecycleTests(TestCase):
@@ -3212,6 +3320,41 @@ class AdminTestEmailToolTests(TestCase):
         self.assertEqual(mail.outbox[0].to, ['wherever3@example.com'])
         self.assertEqual(mail.outbox[0].subject, 'An update on your Mendoura instructor application')
 
+    def test_course_approved_test_send_uses_real_course_and_typed_target(self):
+        instructor = User.objects.create_user(username='tool_course_inst', password='pw', is_instructor=True)
+        track = Track.objects.create(name='Tool Course Track')
+        course = Course.objects.create(
+            instructor=instructor, track=track, title='Tool Test Course', description='...',
+            production_type=Course.ProductionType.FULL, price=Decimal('0.00'), is_free=True)
+        response = self.client.post(reverse('send_test_emails'),
+                                     {'which': 'course_approved', 'target_email': 'wherever4@example.com'})
+        self.assertRedirects(response, reverse('send_test_emails'))
+        self.assertEqual(len(mail.outbox), 1)
+        sent = mail.outbox[0]
+        self.assertEqual(sent.to, ['wherever4@example.com'])
+        self.assertIn(course.title, sent.subject)
+
+    def test_course_rejected_test_send_uses_real_course_and_typed_target(self):
+        instructor = User.objects.create_user(username='tool_course_inst2', password='pw', is_instructor=True)
+        track = Track.objects.create(name='Tool Course Track 2')
+        Course.objects.create(
+            instructor=instructor, track=track, title='Tool Test Course 2', description='...',
+            production_type=Course.ProductionType.FULL, price=Decimal('0.00'), is_free=True,
+            rejection_reason='Needs better audio quality')
+        response = self.client.post(reverse('send_test_emails'),
+                                     {'which': 'course_rejected', 'target_email': 'wherever5@example.com'})
+        self.assertRedirects(response, reverse('send_test_emails'))
+        self.assertEqual(len(mail.outbox), 1)
+        sent = mail.outbox[0]
+        self.assertEqual(sent.to, ['wherever5@example.com'])
+        self.assertIn('Needs better audio quality', sent.body)
+
+    def test_course_approved_test_send_without_any_course_shows_error_not_crash(self):
+        response = self.client.post(reverse('send_test_emails'),
+                                     {'which': 'course_approved', 'target_email': 'wherever@example.com'})
+        self.assertRedirects(response, reverse('send_test_emails'))
+        self.assertEqual(len(mail.outbox), 0)
+
     def test_certificate_test_send_uses_real_certificate_and_typed_target(self):
         instructor = User.objects.create_user(username='tool_inst', password='pw', is_instructor=True)
         student = User.objects.create_user(
@@ -3430,6 +3573,19 @@ class QuizBuilderInstructorTests(TestCase):
         choices = list(question.choices.all())
         self.assertEqual(len(choices), 2)
         self.assertEqual(sum(1 for c in choices if c.is_correct), 1)
+
+    def test_add_question_redirects_straight_to_choices_editor(self):
+        # Regression test: a freshly added question has no answer choices
+        # yet, so the next step is never optional -- land the instructor
+        # directly on the page where they add them, instead of back on the
+        # quiz overview where the only way to discover that step exists is
+        # an easy-to-miss "Edit / Choices" link.
+        self.client.force_login(self.instructor)
+        Quiz.objects.create(module=self.module, passing_score_percent=70)
+        response = self.client.post(reverse('add_question', args=[self.course.id, self.module.id]),
+                                     {'text': 'What is 2+2?', 'order': 1})
+        question = Question.objects.get(text='What is 2+2?')
+        self.assertRedirects(response, reverse('edit_question', args=[question.id]))
 
     def test_marking_a_new_choice_correct_unmarks_the_others(self):
         self.client.force_login(self.instructor)

@@ -293,6 +293,94 @@ def send_instructor_rejection_email(user, *, to_email=None) -> EmailResult:
 
 
 @_never_raises
+def send_course_approved_email(course, *, to_email=None) -> EmailResult:
+    """Sent once, when an admin approves a course from the Course Approval
+    Queue (approve_course in views.py) -- approval publishes the course
+    immediately (Course.status -> PUBLISHED, visible to students right
+    away), so this confirms that rather than promising a further step.
+
+    to_email overrides the recipient, same escape hatch as
+    send_welcome_email -- used only by the admin test-email tool."""
+    instructor = course.instructor
+    to_email = to_email or instructor.email
+    if not to_email:
+        return False, 'This instructor has no email address on file.'
+
+    name = instructor.get_full_name() or instructor.username
+    context = {
+        'instructor_name': name,
+        'course_title': course.title,
+        'course_link': f'{SITE_DOMAIN}{reverse("course_detail", args=[course.id])}',
+    }
+    html_body = render_to_string('emails/course_approved_email.html', context)
+    text_body = (
+        f'Hi {name},\n\n'
+        f'Good news -- your course "{course.title}" has been approved and is now live on '
+        f'Mendoura. Students can find and enroll in it right away.\n\n'
+        f'View your course: {context["course_link"]}\n\n'
+        f'Questions about what happens next? Reach out to us at support@mendoura.com.\n\n'
+        f'Congratulations,\n'
+        f'The Mendoura Team'
+    )
+    return _send(
+        subject=f'"{course.title}" has been approved and is now live',
+        text_body=text_body, html_body=html_body, to_email=to_email,
+    )
+
+
+# Shown in the rejection email whenever an admin somehow submits reject_course()
+# with a blank reason (the form requires one, but this stays as a defensive
+# fallback rather than ever sending a rejection email with an empty reason
+# section).
+DEFAULT_COURSE_REJECTION_REASON = (
+    'No specific reason was provided. Please reach out to support@mendoura.com for details.'
+)
+
+
+@_never_raises
+def send_course_rejected_email(course, *, to_email=None) -> EmailResult:
+    """Sent once, when an admin rejects a course from the Course Approval
+    Queue (reject_course in views.py) -- the rejection counterpart to
+    send_course_approved_email above. Reads course.rejection_reason, which
+    reject_course() already saves onto the course itself before calling
+    this, so the instructor's own course record and this email never
+    disagree about why it was rejected.
+
+    to_email overrides the recipient, same escape hatch as
+    send_welcome_email -- used only by the admin test-email tool."""
+    instructor = course.instructor
+    to_email = to_email or instructor.email
+    if not to_email:
+        return False, 'This instructor has no email address on file.'
+
+    name = instructor.get_full_name() or instructor.username
+    reason = course.rejection_reason.strip() or DEFAULT_COURSE_REJECTION_REASON
+    context = {
+        'instructor_name': name,
+        'course_title': course.title,
+        'rejection_reason': reason,
+        'edit_course_link': f'{SITE_DOMAIN}{reverse("edit_course", args=[course.id])}',
+    }
+    html_body = render_to_string('emails/course_rejected_email.html', context)
+    text_body = (
+        f'Hi {name},\n\n'
+        f'Your course "{course.title}" was not approved in its current form.\n\n'
+        f'Reason given by our review team:\n'
+        f'{reason}\n\n'
+        f'You can update the course and resubmit it for review at any time:\n'
+        f'{context["edit_course_link"]}\n\n'
+        f'Questions about this decision? Reach out to us at support@mendoura.com -- we\'re '
+        f'happy to talk it through.\n\n'
+        f'Thank you,\n'
+        f'The Mendoura Team'
+    )
+    return _send(
+        subject=f'"{course.title}" needs changes before it can go live',
+        text_body=text_body, html_body=html_body, to_email=to_email,
+    )
+
+
+@_never_raises
 def send_certificate_email(certificate, *, to_email=None) -> EmailResult:
     """Emails the student their certificate PDF once it's been generated.
     Silently does nothing if the certificate has no PDF yet -- the caller
