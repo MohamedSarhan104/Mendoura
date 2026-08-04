@@ -180,6 +180,54 @@
     </div>
   </div>
 
+  <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3 mt-8">{% trans "Track Requests" %}</p>
+  <div class="space-y-4">
+    <div class="flex items-center justify-between bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5 gap-4 flex-wrap">
+      <div>
+        <p class="font-semibold">{% trans "Internal Track-Request Notification" %}</p>
+        <p class="text-xs text-gray-400 mt-1">{% trans "Sent to the team when an instructor requests a new track -- reuses the most recently submitted real request as sample data." %}</p>
+      </div>
+      <form method="post" class="target-email-form">
+        {% csrf_token %}
+        <input type="hidden" name="which" value="track_request_notification">
+        <input type="hidden" name="target_email" class="target-email-field">
+        <button type="submit" class="px-5 py-2 rounded-lg bg-brand-600 text-white font-semibold hover:bg-brand-700 transition text-sm">
+          {% trans "Send Test" %}
+        </button>
+      </form>
+    </div>
+
+    <div class="flex items-center justify-between bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5 gap-4 flex-wrap">
+      <div>
+        <p class="font-semibold">{% trans "Track-Request Approved Email" %}</p>
+        <p class="text-xs text-gray-400 mt-1">{% trans "Sent when an admin approves a track request -- reuses the most recently approved real request as sample data." %}</p>
+      </div>
+      <form method="post" class="target-email-form">
+        {% csrf_token %}
+        <input type="hidden" name="which" value="track_request_approved">
+        <input type="hidden" name="target_email" class="target-email-field">
+        <button type="submit" class="px-5 py-2 rounded-lg bg-brand-600 text-white font-semibold hover:bg-brand-700 transition text-sm">
+          {% trans "Send Test" %}
+        </button>
+      </form>
+    </div>
+
+    <div class="flex items-center justify-between bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5 gap-4 flex-wrap">
+      <div>
+        <p class="font-semibold">{% trans "Track-Request Rejected Email" %}</p>
+        <p class="text-xs text-gray-400 mt-1">{% trans "Sent when an admin rejects a track request -- reuses the most recently rejected real request's rejection_reason as sample data." %}</p>
+      </div>
+      <form method="post" class="target-email-form">
+        {% csrf_token %}
+        <input type="hidden" name="which" value="track_request_rejected">
+        <input type="hidden" name="target_email" class="target-email-field">
+        <button type="submit" class="px-5 py-2 rounded-lg bg-brand-600 text-white font-semibold hover:bg-brand-700 transition text-sm">
+          {% trans "Send Test" %}
+        </button>
+      </form>
+    </div>
+  </div>
+
 </div>
 {% endblock %}
 

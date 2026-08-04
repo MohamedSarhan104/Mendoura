@@ -261,6 +261,52 @@ class TrackRoadmapStep(models.Model):
     def __str__(self):
         return f'{self.track.name} #{self.order}: {self.display_title}'
 
+
+class TrackRequest(models.Model):
+    """An instructor's request for a new (child) track, gated behind admin
+    review -- the same Draft-review-decision shape as Course, but kept as
+    its own model rather than a status on Track itself. Track is read by a
+    lot of code that has no reason to think about approval state (the nav's
+    tracks_menu, the public catalog, CourseCreationForm's track dropdown,
+    seed_tracks, sitemaps, ...); folding "pending"/"rejected" into Track
+    would mean auditing every one of those to keep an unapproved entry from
+    leaking through. A separate table sidesteps that entirely: a request
+    that hasn't been approved is not a Track row at all, so it structurally
+    cannot appear anywhere a Track normally would. Approving one simply
+    creates the real Track (see approve_track_request in views.py) --
+    that's the same moment it becomes selectable in course creation.
+    """
+    class Status(models.TextChoices):
+        PENDING = 'pending', _('Pending Review')
+        APPROVED = 'approved', _('Approved')
+        REJECTED = 'rejected', _('Rejected')
+
+    instructor = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='track_requests',
+        limit_choices_to={'is_instructor': True})
+    # The top-level category this new track would nest under -- required,
+    # since only a child track (parent__isnull=False) is ever selectable in
+    # CourseCreationForm; a request can't become one without a parent.
+    parent = models.ForeignKey(
+        Track, on_delete=models.CASCADE, related_name='track_requests',
+        limit_choices_to={'parent__isnull': True})
+    name = models.CharField(max_length=100)
+    reason = models.TextField(blank=True, default='', help_text=_('Why this track should exist.'))
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
+    rejection_reason = models.TextField(blank=True, default='')
+    # Set once approved -- the real Track this request became. SET_NULL (not
+    # PROTECT/CASCADE) so deleting that Track later doesn't take the request
+    # record's own history down with it.
+    track = models.ForeignKey(
+        Track, on_delete=models.SET_NULL, null=True, blank=True, editable=False, related_name='+')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'{self.name} ({self.get_status_display()})'
+
     @property
     def display_title(self):
         return self.course.title if self.course else self.title

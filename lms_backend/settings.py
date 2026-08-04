@@ -89,6 +89,7 @@ TEMPLATES = [
                 'courses.context_processors.tracks_menu',
                 'courses.context_processors.pending_instructor_requests',
                 'courses.context_processors.pending_course_approvals',
+                'courses.context_processors.pending_track_requests',
             ],
         },
     },

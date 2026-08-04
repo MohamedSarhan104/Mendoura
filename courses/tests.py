@@ -24,7 +24,7 @@ from .models import (
     AIConversation, AIMessage, Certificate, Choice, Course, Enrollment, InstructorWallet, Lecture,
     LegalDocument, LegalSection, Module, Payment, Payout, Plan, Question, Quiz, QuizAttempt,
     Resource, RevenueDistribution, Review, Subscription, SubscriptionPeriod, Submission, Track,
-    User, WalletTransaction, WatchEvent,
+    TrackRequest, User, WalletTransaction, WatchEvent,
 )
 from .money import calculate_split
 
@@ -1328,6 +1328,163 @@ class CourseApprovalTests(TestCase):
         self.client.post(reverse('approve_course', args=[self.course.id]))
         response = self.client.get(reverse('admin_dashboard'))
         self.assertEqual(response.context['pending_course_approvals_count'], 0)
+
+
+class TrackRequestTests(TestCase):
+    """New-track requests: an instructor-facing counterpart to Course's
+    submit-for-review flow, approved/rejected the same way (see
+    TrackRequest's docstring in models.py for why it's a separate model
+    rather than a status on Track itself)."""
+
+    def setUp(self):
+        self.admin = User.objects.create_superuser(username='track_approver', password='pw')
+        self.instructor = User.objects.create_user(
+            username='track_req_inst', password='pw', is_instructor=True,
+            email='track_req_inst@example.com')
+        self.other_instructor = User.objects.create_user(
+            username='track_req_other', password='pw', is_instructor=True)
+        self.category = Track.objects.create(name='Tech')
+
+    def test_instructor_can_submit_a_track_request(self):
+        self.client.force_login(self.instructor)
+        response = self.client.post(reverse('request_track'), {
+            'parent': self.category.id, 'name': 'Robotics', 'reason': 'Growing demand.',
+        })
+        self.assertRedirects(response, reverse('request_track'))
+        track_request = TrackRequest.objects.get(name='Robotics')
+        self.assertEqual(track_request.instructor, self.instructor)
+        self.assertEqual(track_request.parent, self.category)
+        self.assertEqual(track_request.status, TrackRequest.Status.PENDING)
+        self.assertIsNone(track_request.track)
+        # Not yet a real Track -- the whole point of the separate model.
+        self.assertFalse(Track.objects.filter(name='Robotics').exists())
+
+    def test_submission_sends_admin_notification(self):
+        self.client.force_login(self.instructor)
+        self.client.post(reverse('request_track'), {
+            'parent': self.category.id, 'name': 'Robotics', 'reason': 'Growing demand.',
+        })
+        notification = next(
+            m for m in mail.outbox
+            if m.to == [settings.INSTRUCTOR_APPLICATION_NOTIFICATION_EMAIL])
+        self.assertIn('Robotics', notification.subject)
+        self.assertIn('Robotics', notification.body)
+        self.assertIn('Tech', notification.body)
+        self.assertIn('track_req_inst', notification.body)
+        self.assertIn(reverse('track_approval_queue'), notification.body)
+
+    def test_instructor_sees_own_requests_with_status(self):
+        TrackRequest.objects.create(
+            instructor=self.instructor, parent=self.category, name='Robotics')
+        self.client.force_login(self.instructor)
+        response = self.client.get(reverse('request_track'))
+        self.assertContains(response, 'Robotics')
+        self.assertContains(response, 'Pending Review')
+
+    def test_non_instructor_cannot_submit_a_track_request(self):
+        student = User.objects.create_user(username='track_req_stud', password='pw', is_student=True)
+        self.client.force_login(student)
+        response = self.client.post(reverse('request_track'), {
+            'parent': self.category.id, 'name': 'Robotics',
+        })
+        self.assertRedirects(response, reverse('platform_home'))
+        self.assertFalse(TrackRequest.objects.filter(name='Robotics').exists())
+
+    def test_admin_approve_creates_real_track_and_sends_email(self):
+        track_request = TrackRequest.objects.create(
+            instructor=self.instructor, parent=self.category, name='Robotics')
+        self.client.force_login(self.admin)
+        response = self.client.post(reverse('approve_track_request', args=[track_request.id]))
+        self.assertRedirects(response, reverse('track_approval_queue'))
+
+        track_request.refresh_from_db()
+        self.assertEqual(track_request.status, TrackRequest.Status.APPROVED)
+        self.assertIsNotNone(track_request.track)
+        self.assertEqual(track_request.track.name, 'Robotics')
+        self.assertEqual(track_request.track.parent, self.category)
+        self.assertTrue(track_request.track.is_active)
+
+        sent = next(m for m in mail.outbox if m.to == ['track_req_inst@example.com'])
+        self.assertIn('Robotics', sent.subject)
+        self.assertIn('Robotics', sent.body)
+
+    def test_approved_track_is_selectable_in_course_creation(self):
+        from .forms import CourseCreationForm
+        track_request = TrackRequest.objects.create(
+            instructor=self.instructor, parent=self.category, name='Robotics')
+        self.client.force_login(self.admin)
+        self.client.post(reverse('approve_track_request', args=[track_request.id]))
+
+        form = CourseCreationForm()
+        self.assertIn(Track.objects.get(name='Robotics'), form.fields['track'].queryset)
+
+    def test_admin_reject_requires_reason_and_sends_no_track(self):
+        track_request = TrackRequest.objects.create(
+            instructor=self.instructor, parent=self.category, name='Robotics')
+        self.client.force_login(self.admin)
+        response = self.client.post(
+            reverse('reject_track_request', args=[track_request.id]), {'reason': ''}, follow=True)
+        self.assertContains(response, 'Please enter a rejection reason')
+        track_request.refresh_from_db()
+        self.assertEqual(track_request.status, TrackRequest.Status.PENDING)
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_admin_reject_with_reason_sends_email_containing_reason_and_creates_no_track(self):
+        track_request = TrackRequest.objects.create(
+            instructor=self.instructor, parent=self.category, name='Robotics')
+        self.client.force_login(self.admin)
+        response = self.client.post(
+            reverse('reject_track_request', args=[track_request.id]),
+            {'reason': 'Too narrow, fold into AI & Machine Learning instead.'})
+        self.assertRedirects(response, reverse('track_approval_queue'))
+
+        track_request.refresh_from_db()
+        self.assertEqual(track_request.status, TrackRequest.Status.REJECTED)
+        self.assertEqual(track_request.rejection_reason, 'Too narrow, fold into AI & Machine Learning instead.')
+        self.assertIsNone(track_request.track)
+        self.assertFalse(Track.objects.filter(name='Robotics').exists())
+
+        sent = next(m for m in mail.outbox if m.to == ['track_req_inst@example.com'])
+        self.assertIn('Robotics', sent.subject)
+        self.assertIn('Too narrow, fold into AI & Machine Learning instead.', sent.body)
+
+    def test_approving_name_collision_shows_error_instead_of_crashing(self):
+        Track.objects.create(parent=self.category, name='Robotics')
+        track_request = TrackRequest.objects.create(
+            instructor=self.instructor, parent=self.category, name='Robotics')
+        self.client.force_login(self.admin)
+        response = self.client.post(
+            reverse('approve_track_request', args=[track_request.id]), follow=True)
+        self.assertContains(response, 'already exists')
+        track_request.refresh_from_db()
+        self.assertEqual(track_request.status, TrackRequest.Status.PENDING)
+
+    def test_instructor_cannot_access_track_approval_queue(self):
+        self.client.force_login(self.instructor)
+        response = self.client.get(reverse('track_approval_queue'))
+        self.assertNotEqual(response.status_code, 200)
+
+    def test_pending_track_requests_count_badge_shown_to_admin(self):
+        TrackRequest.objects.create(instructor=self.instructor, parent=self.category, name='Robotics')
+        self.client.force_login(self.admin)
+        response = self.client.get(reverse('platform_home'))
+        self.assertContains(response, 'pending track request')
+
+    def test_pending_track_requests_count_badge_hidden_for_non_admin(self):
+        TrackRequest.objects.create(instructor=self.instructor, parent=self.category, name='Robotics')
+        self.client.force_login(self.instructor)
+        response = self.client.get(reverse('platform_home'))
+        self.assertNotContains(response, 'pending track request')
+
+    def test_pending_track_requests_count_clears_after_approval(self):
+        track_request = TrackRequest.objects.create(
+            instructor=self.instructor, parent=self.category, name='Robotics')
+        self.client.force_login(self.admin)
+        response = self.client.get(reverse('admin_dashboard'))
+        self.assertEqual(response.context['pending_track_requests_count'], 1)
+        self.client.post(reverse('approve_track_request', args=[track_request.id]))
+        response = self.client.get(reverse('admin_dashboard'))
+        self.assertEqual(response.context['pending_track_requests_count'], 0)
 
 
 class AdminCoursePreviewTests(TestCase):
@@ -3595,6 +3752,73 @@ class AdminTestEmailToolTests(TestCase):
     def test_course_approved_test_send_without_any_course_shows_error_not_crash(self):
         response = self.client.post(reverse('send_test_emails'),
                                      {'which': 'course_approved', 'target_email': 'wherever@example.com'})
+        self.assertRedirects(response, reverse('send_test_emails'))
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_track_request_notification_test_send_uses_real_request_and_typed_target(self):
+        instructor = User.objects.create_user(username='tool_track_inst', password='pw', is_instructor=True)
+        category = Track.objects.create(name='Tool Track Category')
+        TrackRequest.objects.create(instructor=instructor, parent=category, name='Tool Test Track')
+        response = self.client.post(
+            reverse('send_test_emails'),
+            {'which': 'track_request_notification', 'target_email': 'wherever6@example.com'})
+        self.assertRedirects(response, reverse('send_test_emails'))
+        self.assertEqual(len(mail.outbox), 1)
+        sent = mail.outbox[0]
+        self.assertEqual(sent.to, ['wherever6@example.com'])
+        self.assertIn('Tool Test Track', sent.subject)
+
+    def test_track_request_notification_test_send_without_any_request_shows_error_not_crash(self):
+        response = self.client.post(
+            reverse('send_test_emails'),
+            {'which': 'track_request_notification', 'target_email': 'wherever@example.com'})
+        self.assertRedirects(response, reverse('send_test_emails'))
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_track_request_approved_test_send_uses_real_request_and_typed_target(self):
+        instructor = User.objects.create_user(
+            username='tool_track_inst2', password='pw', is_instructor=True, email='ignored@example.com')
+        category = Track.objects.create(name='Tool Track Category 2')
+        track = Track.objects.create(parent=category, name='Tool Approved Track')
+        TrackRequest.objects.create(
+            instructor=instructor, parent=category, name='Tool Approved Track',
+            status=TrackRequest.Status.APPROVED, track=track)
+        response = self.client.post(
+            reverse('send_test_emails'),
+            {'which': 'track_request_approved', 'target_email': 'wherever7@example.com'})
+        self.assertRedirects(response, reverse('send_test_emails'))
+        self.assertEqual(len(mail.outbox), 1)
+        sent = mail.outbox[0]
+        self.assertEqual(sent.to, ['wherever7@example.com'])
+        self.assertIn('Tool Approved Track', sent.subject)
+
+    def test_track_request_approved_test_send_without_any_approved_request_shows_error_not_crash(self):
+        response = self.client.post(
+            reverse('send_test_emails'),
+            {'which': 'track_request_approved', 'target_email': 'wherever@example.com'})
+        self.assertRedirects(response, reverse('send_test_emails'))
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_track_request_rejected_test_send_uses_real_request_and_typed_target(self):
+        instructor = User.objects.create_user(
+            username='tool_track_inst3', password='pw', is_instructor=True, email='ignored2@example.com')
+        category = Track.objects.create(name='Tool Track Category 3')
+        TrackRequest.objects.create(
+            instructor=instructor, parent=category, name='Tool Rejected Track',
+            status=TrackRequest.Status.REJECTED, rejection_reason='Overlaps an existing track')
+        response = self.client.post(
+            reverse('send_test_emails'),
+            {'which': 'track_request_rejected', 'target_email': 'wherever8@example.com'})
+        self.assertRedirects(response, reverse('send_test_emails'))
+        self.assertEqual(len(mail.outbox), 1)
+        sent = mail.outbox[0]
+        self.assertEqual(sent.to, ['wherever8@example.com'])
+        self.assertIn('Overlaps an existing track', sent.body)
+
+    def test_track_request_rejected_test_send_without_any_rejected_request_shows_error_not_crash(self):
+        response = self.client.post(
+            reverse('send_test_emails'),
+            {'which': 'track_request_rejected', 'target_email': 'wherever@example.com'})
         self.assertRedirects(response, reverse('send_test_emails'))
         self.assertEqual(len(mail.outbox), 0)
 

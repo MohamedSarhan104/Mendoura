@@ -78,6 +78,11 @@ urlpatterns = [
     path('dashboard/admin/payouts/<int:payout_id>/paid/', views.mark_payout_paid, name='mark_payout_paid'),
     path('dashboard/admin/tracks/', views.admin_tracks, name='admin_tracks'),
     path('dashboard/admin/tracks/<int:track_id>/toggle/', views.toggle_track_active, name='toggle_track_active'),
+    path('dashboard/admin/track-requests/', views.track_approval_queue, name='track_approval_queue'),
+    path('dashboard/admin/track-requests/<int:request_id>/approve/', views.approve_track_request,
+         name='approve_track_request'),
+    path('dashboard/admin/track-requests/<int:request_id>/reject/', views.reject_track_request,
+         name='reject_track_request'),
 
     # Instructor interface
     path('course/<int:course_id>/modules/', views.manage_modules, name='manage_modules'),
@@ -104,6 +109,7 @@ urlpatterns = [
     path('submissions/<int:submission_id>/grade/', views.grade_submission, name='grade_submission'),
     path('dashboard/wallet/', views.instructor_wallet, name='instructor_wallet'),
     path('dashboard/wallet/payout/', views.request_payout, name='request_payout'),
+    path('dashboard/tracks/request/', views.request_track, name='request_track'),
 
     # Student interface
     path('tracks/', views.track_list, name='track_list'),

@@ -251,6 +251,45 @@ def send_course_submission_notification(course, *, to_email=None) -> EmailResult
 
 
 @_never_raises
+def send_track_request_notification(track_request, *, to_email=None) -> EmailResult:
+    """Internal notification, same pattern as
+    send_course_submission_notification -- sent when an instructor
+    requests a new track (request_track in views.py) so a new
+    approval-queue item doesn't sit unnoticed. Links to the Track Approval
+    Queue rather than a one-click approve/reject action, for the same
+    reason those views require: POST-only, CSRF-protected, login-required
+    forms a plain email link can't submit.
+
+    to_email overrides the recipient (default:
+    settings.INSTRUCTOR_APPLICATION_NOTIFICATION_EMAIL, reused here as the
+    general admin-notification address) -- used only by the admin
+    test-email tool."""
+    instructor = track_request.instructor
+    instructor_name = instructor.get_full_name() or instructor.username
+    context = {
+        'track_name': track_request.name,
+        'parent_name': track_request.parent.name,
+        'instructor_name': instructor_name,
+        'reason': track_request.reason or '—',
+        'admin_review_link': f'{SITE_DOMAIN}{reverse("track_approval_queue")}',
+    }
+    html_body = render_to_string('emails/track_request_notification.html', context)
+    text_body = (
+        f'New track requested on Mendoura\n\n'
+        f'Track: {track_request.name} (under {context["parent_name"]})\n'
+        f'Instructor: {instructor_name}\n'
+        f'Reason: {context["reason"]}\n\n'
+        f'Review and approve or reject this request:\n'
+        f'{context["admin_review_link"]}'
+    )
+    return _send(
+        subject=f'New track requested: {track_request.name}',
+        text_body=text_body, html_body=html_body,
+        to_email=to_email or settings.INSTRUCTOR_APPLICATION_NOTIFICATION_EMAIL,
+    )
+
+
+@_never_raises
 def send_student_signup_notification(user, *, to_email=None) -> EmailResult:
     """Internal notification, same pattern as
     send_instructor_application_notification -- sent alongside
@@ -523,6 +562,96 @@ def send_course_rejected_email(course, *, to_email=None) -> EmailResult:
     )
     return _send(
         subject=f'"{course.title}" needs changes before it can go live',
+        text_body=text_body, html_body=html_body, to_email=to_email,
+    )
+
+
+@_never_raises
+def send_track_request_approved_email(track_request, *, to_email=None) -> EmailResult:
+    """Sent once, when an admin approves a track request from the Track
+    Approval Queue (approve_track_request in views.py) -- approval creates
+    the real Track immediately (visible in the nav and selectable in course
+    creation right away), so this confirms that rather than promising a
+    further step. The course-approval-email counterpart to this is
+    send_course_approved_email above.
+
+    to_email overrides the recipient, same escape hatch as
+    send_welcome_email -- used only by the admin test-email tool."""
+    instructor = track_request.instructor
+    to_email = to_email or instructor.email
+    if not to_email:
+        return False, 'This instructor has no email address on file.'
+
+    name = instructor.get_full_name() or instructor.username
+    context = {
+        'instructor_name': name,
+        'track_name': track_request.name,
+        'track_link': f'{SITE_DOMAIN}{reverse("track_detail", args=[track_request.track.slug])}',
+    }
+    html_body = render_to_string('emails/track_request_approved_email.html', context)
+    text_body = (
+        f'Hi {name},\n\n'
+        f'Good news -- the "{track_request.name}" track you requested has been approved and is '
+        f'now live on Mendoura. You can select it when creating a course right away.\n\n'
+        f'View the track: {context["track_link"]}\n\n'
+        f'Questions about what happens next? Reach out to us at support@mendoura.com.\n\n'
+        f'Congratulations,\n'
+        f'The Mendoura Team'
+    )
+    return _send(
+        subject=f'"{track_request.name}" has been approved and is now live',
+        text_body=text_body, html_body=html_body, to_email=to_email,
+    )
+
+
+# Shown in the rejection email whenever an admin somehow submits
+# reject_track_request() with a blank reason (the form requires one, same
+# defensive fallback as DEFAULT_COURSE_REJECTION_REASON above).
+DEFAULT_TRACK_REJECTION_REASON = (
+    'No specific reason was provided. Please reach out to support@mendoura.com for details.'
+)
+
+
+@_never_raises
+def send_track_request_rejected_email(track_request, *, to_email=None) -> EmailResult:
+    """Sent once, when an admin rejects a track request from the Track
+    Approval Queue (reject_track_request in views.py) -- the rejection
+    counterpart to send_track_request_approved_email above. Reads
+    track_request.rejection_reason, which reject_track_request() already
+    saves onto the request itself before calling this, so the instructor's
+    own request record and this email never disagree about why it was
+    rejected. Same shape as send_course_rejected_email.
+
+    to_email overrides the recipient, same escape hatch as
+    send_welcome_email -- used only by the admin test-email tool."""
+    instructor = track_request.instructor
+    to_email = to_email or instructor.email
+    if not to_email:
+        return False, 'This instructor has no email address on file.'
+
+    name = instructor.get_full_name() or instructor.username
+    reason = track_request.rejection_reason.strip() or DEFAULT_TRACK_REJECTION_REASON
+    context = {
+        'instructor_name': name,
+        'track_name': track_request.name,
+        'rejection_reason': reason,
+        'request_track_link': f'{SITE_DOMAIN}{reverse("request_track")}',
+    }
+    html_body = render_to_string('emails/track_request_rejected_email.html', context)
+    text_body = (
+        f'Hi {name},\n\n'
+        f'Your request for a "{track_request.name}" track was not approved.\n\n'
+        f'Reason given by our review team:\n'
+        f'{reason}\n\n'
+        f'You can submit a new track request at any time:\n'
+        f'{context["request_track_link"]}\n\n'
+        f'Questions about this decision? Reach out to us at support@mendoura.com -- we\'re '
+        f'happy to talk it through.\n\n'
+        f'Thank you,\n'
+        f'The Mendoura Team'
+    )
+    return _send(
+        subject=f'Your "{track_request.name}" track request was not approved',
         text_body=text_body, html_body=html_body, to_email=to_email,
     )
 

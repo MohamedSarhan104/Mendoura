@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+{% load i18n %}
+{% block title %}Request a Track - Mendoura{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto px-6 py-12">
+
+  <a href="{% url 'instructor_dashboard' %}" class="text-sm text-brand-600 hover:underline">
+    <i class="fa-solid fa-arrow-left"></i> {% trans "Back to Dashboard" %}
+  </a>
+
+  <h1 class="text-3xl font-extrabold mt-4 mb-1">{% trans "Request a Track" %}</h1>
+  <p class="text-gray-500 dark:text-gray-400 mb-8">
+    {% trans "Don't see a track that fits your course? Request a new one -- an admin will review it before it's available to select." %}
+  </p>
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="mb-6 p-3 rounded-lg {% if message.tags == 'success' %}bg-green-50 dark:bg-green-500/10 text-green-600 dark:text-green-400{% else %}bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400{% endif %} text-sm">{{ message }}</div>
+    {% endfor %}
+  {% endif %}
+
+  <div class="space-y-3 mb-10">
+    {% for track_request in track_requests %}
+      <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5">
+        <div class="flex items-center justify-between flex-wrap gap-3">
+          <div>
+            <p class="font-semibold">{{ track_request.name }}</p>
+            <p class="text-xs text-gray-400 mt-1">
+              {% blocktrans with parent=track_request.parent.name date=track_request.created_at|date:"M d, Y" %}Under {{ parent }} &middot; Requested {{ date }}{% endblocktrans %}
+            </p>
+          </div>
+          {% if track_request.status == 'approved' %}
+            <span class="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs font-semibold">{% trans "Approved" %}</span>
+          {% elif track_request.status == 'rejected' %}
+            <span class="bg-red-100 text-red-700 px-2 py-1 rounded-full text-xs font-semibold">{% trans "Rejected" %}</span>
+          {% else %}
+            <span class="bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full text-xs font-semibold">{% trans "Pending Review" %}</span>
+          {% endif %}
+        </div>
+        {% if track_request.status == 'rejected' and track_request.rejection_reason %}
+          <p class="text-sm text-red-600 dark:text-red-400 mt-3">
+            <span class="font-semibold">{% trans "Reason:" %}</span> {{ track_request.rejection_reason }}
+          </p>
+        {% endif %}
+      </div>
+    {% empty %}
+      <div class="bg-white dark:bg-gray-900 border border-dashed border-gray-300 dark:border-gray-700 rounded-xl p-8 text-center text-gray-400">
+        {% trans "You haven't requested any tracks yet." %}
+      </div>
+    {% endfor %}
+  </div>
+
+  <h2 class="text-lg font-bold mb-4">{% trans "New Track Request" %}</h2>
+  <form method="post" class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-8 space-y-5">
+    {% csrf_token %}
+    <div>
+      <label class="block text-sm font-semibold mb-2">{% trans "Category" %}</label>
+      {{ form.parent }}
+    </div>
+    <div>
+      <label class="block text-sm font-semibold mb-2">{% trans "Track Name" %}</label>
+      {{ form.name }}
+    </div>
+    <div>
+      <label class="block text-sm font-semibold mb-2">{% trans "Reason" %} <span class="text-gray-400 font-normal">({% trans "optional" %})</span></label>
+      {{ form.reason }}
+    </div>
+    <button type="submit" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-semibold py-3 rounded-xl transition">
+      <i class="fa-solid fa-plus mr-1"></i> {% trans "Submit Request" %}
+    </button>
+  </form>
+
+</div>
+{% endblock %}

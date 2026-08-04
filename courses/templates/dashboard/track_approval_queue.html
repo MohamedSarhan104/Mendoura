@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+{% load i18n %}
+{% block title %}Track Approval Queue - Mendoura{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto px-6 py-12">
+
+  <a href="{% url 'admin_dashboard' %}" class="text-sm text-brand-600 hover:underline">
+    <i class="fa-solid fa-arrow-left"></i> {% trans "Back to Admin Overview" %}
+  </a>
+
+  <h1 class="text-3xl font-extrabold mt-4 mb-8">{% trans "Track Approval Queue" %}</h1>
+
+  <div class="space-y-4">
+    {% for track_request in track_requests %}
+      <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-6">
+        <div class="flex items-center justify-between flex-wrap gap-2">
+          <div>
+            <h3 class="font-bold text-lg">{{ track_request.name }}</h3>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+              {% blocktrans with instructor=track_request.instructor.username parent=track_request.parent.name %}by {{ instructor }} &middot; under {{ parent }}{% endblocktrans %}
+            </p>
+          </div>
+          <span class="text-xs text-gray-400">{% blocktrans with date=track_request.created_at|date:"M d, Y" %}Submitted {{ date }}{% endblocktrans %}</span>
+        </div>
+        {% if track_request.reason %}
+          <p class="text-sm text-gray-600 dark:text-gray-300 mt-3">{{ track_request.reason }}</p>
+        {% endif %}
+        <div class="flex items-center gap-3 mt-5">
+          <form method="post" action="{% url 'approve_track_request' track_request.id %}">
+            {% csrf_token %}
+            <button type="submit" class="px-5 py-2 rounded-lg bg-green-600 text-white font-semibold hover:bg-green-700 text-sm">
+              {% trans "Approve" %}
+            </button>
+          </form>
+          <form method="post" action="{% url 'reject_track_request' track_request.id %}" class="flex items-center gap-2">
+            {% csrf_token %}
+            <input type="text" name="reason" required placeholder="{% trans "Rejection reason (required, sent to the instructor)" %}" class="border border-gray-300 dark:border-gray-700 bg-transparent rounded-lg px-3 py-2 text-sm w-72">
+            <button type="submit" class="px-5 py-2 rounded-lg bg-red-600 text-white font-semibold hover:bg-red-700 text-sm">
+              {% trans "Reject" %}
+            </button>
+          </form>
+        </div>
+      </div>
+    {% empty %}
+      <div class="bg-white dark:bg-gray-900 border border-dashed border-gray-300 dark:border-gray-700 rounded-2xl p-12 text-center text-gray-400">
+        {% trans "No track requests pending review." %}
+      </div>
+    {% endfor %}
+  </div>
+
+</div>
+{% endblock %}

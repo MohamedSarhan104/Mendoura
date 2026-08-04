@@ -17,6 +17,9 @@
       <a href="{% url 'admin_payments' %}" class="text-brand-600 hover:underline">{% trans "Payments" %}</a>
       <a href="{% url 'admin_payouts' %}" class="text-brand-600 hover:underline">{% trans "Payouts" %}</a>
       <a href="{% url 'admin_tracks' %}" class="text-brand-600 hover:underline">{% trans "Tracks" %}</a>
+      <a href="{% url 'track_approval_queue' %}" class="text-brand-600 hover:underline">
+        {% trans "Track Requests" %} {% if pending_track_requests_count %}<span class="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">{{ pending_track_requests_count }}</span>{% endif %}
+      </a>
       <a href="{% url 'send_test_emails' %}" class="text-brand-600 hover:underline">{% trans "Test Emails" %}</a>
     </div>
   </div>

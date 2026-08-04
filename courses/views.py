@@ -31,13 +31,14 @@ from .access import get_or_create_enrollment, student_has_access
 from .forms import (
     ChoiceForm, CourseCreationForm, GradeForm, InstructorSignUpForm, LectureForm, ModuleForm,
     PayoutRequestForm, ProfileForm, QuestionForm, QuizForm, ResourceForm, ReviewForm,
-    StudentSignUpForm, SubmissionForm, TrackForm,
+    StudentSignUpForm, SubmissionForm, TrackForm, TrackRequestForm,
 )
 from .models import (
     AIConversation, AIMessage, Certificate, Choice, Course, Enrollment, InstructorWallet,
     Lecture, LectureProgress, LegalDocument, Module, Payment, Payout, Plan, Question, Quiz,
     QuizAnswer, QuizAttempt, Resource, RevenueDistribution, Review, Subscription,
-    SubscriptionPeriod, Submission, Track, TrackRoadmapStep, User, WalletTransaction, WatchEvent,
+    SubscriptionPeriod, Submission, Track, TrackRequest, TrackRoadmapStep, User, WalletTransaction,
+    WatchEvent,
 )
 
 logger = logging.getLogger(__name__)
@@ -1757,6 +1758,39 @@ def request_payout(request):
 
     return redirect('instructor_wallet')
 
+
+# Instructor-facing: request a new (child) track. Mirrors the wizard's
+# "Add Module" list+form page -- an instructor's own past requests (with
+# their current status) above a form to submit a new one. Approval/rejection
+# is admin-only (see track_approval_queue/approve_track_request/
+# reject_track_request below); this view never creates a real Track itself.
+@login_required
+def request_track(request):
+    if not request.user.is_instructor:
+        return redirect('platform_home')
+
+    if request.method == 'POST':
+        form = TrackRequestForm(request.POST)
+        if form.is_valid():
+            track_request = form.save(commit=False)
+            track_request.instructor = request.user
+            track_request.save()
+            emails.send_track_request_notification(track_request)
+            messages.success(
+                request,
+                _('Your request for "%(name)s" has been submitted for review.')
+                % {'name': track_request.name})
+            return redirect('request_track')
+    else:
+        form = TrackRequestForm()
+
+    track_requests = TrackRequest.objects.filter(instructor=request.user).select_related('parent')
+    return render(request, 'dashboard/request_track.html', {
+        'form': form,
+        'track_requests': track_requests,
+    })
+
+
 # 9. Admin Dashboard - KPIs and revenue over time
 @admin_required
 def admin_dashboard(request):
@@ -1787,6 +1821,8 @@ def admin_dashboard(request):
         'total_instructors': User.objects.filter(is_instructor=True).count(),
         'total_courses': Course.objects.count(),
         'pending_courses_count': Course.objects.filter(status=Course.Status.PENDING_REVIEW).count(),
+        'pending_track_requests_count': TrackRequest.objects.filter(
+            status=TrackRequest.Status.PENDING).count(),
         'total_enrollments': Enrollment.objects.count(),
         'total_revenue': totals['total_revenue'] or 0,
         'platform_revenue': totals['platform_revenue'] or 0,
@@ -1831,6 +1867,7 @@ def send_test_emails(request):
 
         if which in ('welcome', 'instructor_application_received', 'instructor_application_notification',
                      'instructor_welcome', 'instructor_rejection', 'course_approved', 'course_rejected',
+                     'track_request_notification', 'track_request_approved', 'track_request_rejected',
                      'certificate') and not target:
             messages.error(request, _('Enter a target email address first.'))
             return redirect('send_test_emails')
@@ -1881,6 +1918,52 @@ def send_test_emails(request):
                     request, sent, error,
                     _('Course-rejected email sent to %(email)s (using real course '
                       '"%(course)s" as sample data).') % {'email': target, 'course': course.title})
+
+        elif which == 'track_request_notification':
+            track_request = TrackRequest.objects.select_related('instructor', 'parent').order_by(
+                '-created_at').first()
+            if not track_request:
+                messages.error(
+                    request,
+                    _('No track requests exist yet -- submit one, then retry this test.'))
+            else:
+                sent, error = emails.send_track_request_notification(track_request, to_email=target)
+                _report_test_email(
+                    request, sent, error,
+                    _('Internal track-request notification sent to %(email)s (using real request '
+                      '"%(track)s" as sample data).') % {'email': target, 'track': track_request.name})
+
+        elif which == 'track_request_approved':
+            track_request = (
+                TrackRequest.objects.filter(status=TrackRequest.Status.APPROVED)
+                .select_related('instructor', 'track').order_by('-created_at').first()
+            )
+            if not track_request:
+                messages.error(
+                    request,
+                    _('No track requests have been approved yet -- approve one, then retry this test.'))
+            else:
+                sent, error = emails.send_track_request_approved_email(track_request, to_email=target)
+                _report_test_email(
+                    request, sent, error,
+                    _('Track-approved email sent to %(email)s (using real request '
+                      '"%(track)s" as sample data).') % {'email': target, 'track': track_request.name})
+
+        elif which == 'track_request_rejected':
+            track_request = (
+                TrackRequest.objects.filter(status=TrackRequest.Status.REJECTED)
+                .select_related('instructor').order_by('-created_at').first()
+            )
+            if not track_request:
+                messages.error(
+                    request,
+                    _('No track requests have been rejected yet -- reject one, then retry this test.'))
+            else:
+                sent, error = emails.send_track_request_rejected_email(track_request, to_email=target)
+                _report_test_email(
+                    request, sent, error,
+                    _('Track-rejected email sent to %(email)s (using real request '
+                      '"%(track)s" as sample data).') % {'email': target, 'track': track_request.name})
 
         elif which == 'certificate':
             certificate = (
@@ -2162,5 +2245,66 @@ def toggle_track_active(request, track_id):
         track.is_active = not track.is_active
         track.save()
     return redirect('admin_tracks')
+
+
+# Track approval queue -- admin approves or rejects, instructors cannot
+# create a Track directly. Same shape as course_approval_queue above.
+@admin_required
+def track_approval_queue(request):
+    track_requests = (
+        TrackRequest.objects.filter(status=TrackRequest.Status.PENDING)
+        .select_related('instructor', 'parent').order_by('created_at'))
+    return render(request, 'dashboard/track_approval_queue.html', {'track_requests': track_requests})
+
+
+@admin_required
+def approve_track_request(request, request_id):
+    track_request = get_object_or_404(
+        TrackRequest, id=request_id, status=TrackRequest.Status.PENDING)
+    if request.method == 'POST':
+        try:
+            # Wrapped in its own atomic block so the IntegrityError below
+            # only rolls back this one INSERT (via a savepoint) instead of
+            # poisoning any transaction the caller is already inside.
+            with transaction.atomic():
+                track = Track.objects.create(
+                    parent=track_request.parent, name=track_request.name)
+        except IntegrityError:
+            # Track.name is globally unique -- someone else (another
+            # approved request, or a manual admin_tracks entry) already
+            # claimed this exact name since the request was submitted.
+            messages.error(
+                request,
+                _('A track named "%(name)s" already exists. Reject this request or rename it first.')
+                % {'name': track_request.name})
+            return redirect('track_approval_queue')
+        track_request.status = TrackRequest.Status.APPROVED
+        track_request.track = track
+        track_request.rejection_reason = ''
+        track_request.save()
+        emails.send_track_request_approved_email(track_request)
+        messages.success(request, _('"%(name)s" approved and is now live.') % {'name': track_request.name})
+    return redirect('track_approval_queue')
+
+
+@admin_required
+def reject_track_request(request, request_id):
+    track_request = get_object_or_404(
+        TrackRequest, id=request_id, status=TrackRequest.Status.PENDING)
+    if request.method == 'POST':
+        reason = request.POST.get('reason', '').strip()
+        if not reason:
+            # Same requirement as reject_course -- a rejection with no
+            # explanation isn't actionable for the instructor.
+            messages.error(
+                request, _('Please enter a rejection reason before rejecting "%(name)s".')
+                % {'name': track_request.name})
+            return redirect('track_approval_queue')
+        track_request.status = TrackRequest.Status.REJECTED
+        track_request.rejection_reason = reason
+        track_request.save()
+        emails.send_track_request_rejected_email(track_request)
+        messages.success(request, _('"%(name)s" rejected.') % {'name': track_request.name})
+    return redirect('track_approval_queue')
 
 

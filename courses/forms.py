@@ -9,7 +9,7 @@ from django.utils.http import urlsafe_base64_encode
 from django.utils.translation import gettext_lazy as _
 from .models import (
     EGYPT_ALIASES, User, Course, InstructorWallet, Lecture, Module, Resource, Submission,
-    Track, Review, Payout, Quiz, Question, Choice,
+    Track, TrackRequest, Review, Payout, Quiz, Question, Choice,
 )
 
 INPUT_CLASSES = 'w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent focus:ring-2 focus:ring-brand-500 outline-none'
@@ -333,6 +333,28 @@ class TrackForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields['parent'].queryset = Track.objects.filter(parent__isnull=True)
         self.fields['parent'].required = False
+
+
+# Track Request Form (instructor-facing -- see TrackRequest for why this is
+# a separate model/form from Track's own admin-only TrackForm above)
+class TrackRequestForm(forms.ModelForm):
+    class Meta:
+        model = TrackRequest
+        fields = ['parent', 'name', 'reason']
+        widgets = {
+            'parent': forms.Select(attrs={'class': INPUT_CLASSES}),
+            'name': forms.TextInput(attrs={'class': INPUT_CLASSES, 'placeholder': _('e.g. Robotics')}),
+            'reason': forms.Textarea(attrs={
+                'class': INPUT_CLASSES, 'rows': 3,
+                'placeholder': _('Why should this track exist? (optional)'),
+            }),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['parent'].queryset = Track.objects.filter(parent__isnull=True, is_active=True)
+        self.fields['parent'].empty_label = _('Select a category…')
+        self.fields['reason'].required = False
 
 
 # Module Form (Instructor organizes course into sections)
