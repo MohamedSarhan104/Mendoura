@@ -15,6 +15,13 @@
       <a href="{% url 'instructor_dashboard' %}" class="px-8 py-3 rounded-xl bg-brand-600 text-white font-semibold hover:bg-brand-700 transition shadow-lg shadow-brand-600/30">
         {% trans "Go to Your Dashboard" %}
       </a>
+    {% elif user.is_authenticated and user.is_student %}
+      <a href="{% url 'my_learning' %}" class="px-8 py-3 rounded-xl bg-brand-600 text-white font-semibold hover:bg-brand-700 transition shadow-lg shadow-brand-600/30">
+        {% trans "Continue Learning" %}
+      </a>
+      <a href="{% url 'track_list' %}" class="px-8 py-3 rounded-xl border border-gray-300 dark:border-gray-700 font-semibold hover:bg-gray-100 dark:hover:bg-gray-800 transition">
+        {% trans "Browse Courses" %}
+      </a>
     {% else %}
       <a href="{% url 'track_list' %}" class="px-8 py-3 rounded-xl bg-brand-600 text-white font-semibold hover:bg-brand-700 transition shadow-lg shadow-brand-600/30">
         {% trans "Start Learning" %}

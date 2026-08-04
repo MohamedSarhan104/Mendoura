@@ -70,7 +70,10 @@ class StudentSignUpForm(DuplicateGuardMixin, UserCreationForm):
     def save(self, commit=True):
         user = super().save(commit=False)
         user.is_student = True
-        user.is_approved = False
+        # Unlike instructors (revenue-share, payout, and course-quality
+        # implications), a student account carries no risk that warrants
+        # holding signup for manual admin review -- is_approved stays at
+        # its model default of True.
         user.terms_accepted_at = timezone.now()
         if commit:
             user.save()

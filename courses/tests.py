@@ -874,11 +874,14 @@ class SignupApprovalFlowTests(TestCase):
         data.update(overrides)
         return data
 
-    def test_student_signup_creates_unapproved_pending_account(self):
+    def test_student_signup_creates_approved_account(self):
+        # Unlike instructors, students carry no revenue-share/payout/
+        # course-quality risk, so signup doesn't hold them for manual
+        # admin review.
         self.client.post(reverse('student_signup'), self._signup_data())
         user = User.objects.get(username='newbie')
         self.assertTrue(user.is_student)
-        self.assertFalse(user.is_approved)
+        self.assertTrue(user.is_approved)
 
     def test_instructor_signup_creates_unapproved_pending_account(self):
         self.client.post(reverse('instructor_signup'), self._instructor_signup_data())
@@ -886,18 +889,34 @@ class SignupApprovalFlowTests(TestCase):
         self.assertTrue(user.is_instructor)
         self.assertFalse(user.is_approved)
 
-    def test_signup_does_not_auto_login(self):
+    def test_student_signup_auto_logs_in(self):
+        # A student account is immediately usable (no approval to wait
+        # on), so there's no reason to bounce them to the login form for
+        # credentials they just typed in.
         response = self.client.post(reverse('student_signup'), self._signup_data(), follow=True)
+        self.assertTrue(response.wsgi_request.user.is_authenticated)
+        self.assertEqual(response.wsgi_request.user.username, 'newbie')
+
+    def test_instructor_signup_does_not_auto_login(self):
+        response = self.client.post(reverse('instructor_signup'), self._instructor_signup_data(), follow=True)
         self.assertFalse(response.wsgi_request.user.is_authenticated)
 
-    def test_signup_redirects_to_login_with_pending_message(self):
+    def test_student_signup_redirects_to_homepage_with_welcome_message(self):
         response = self.client.post(reverse('student_signup'), self._signup_data(), follow=True)
+        self.assertRedirects(response, reverse('platform_home'))
+        self.assertContains(response, 'Welcome to Mendoura')
+
+    def test_instructor_signup_redirects_to_login_with_pending_message(self):
+        response = self.client.post(reverse('instructor_signup'), self._instructor_signup_data(), follow=True)
         self.assertRedirects(response, reverse('login'))
         self.assertContains(response, 'pending administrator approval')
 
     def test_unapproved_user_cannot_login(self):
-        self.client.post(reverse('student_signup'), self._signup_data())
-        response = self.client.post(reverse('login'), {'username': 'newbie', 'password': 'a-strong-password-1'})
+        # Only instructor signups still produce a pending account -- see
+        # test_student_signup_creates_approved_account above.
+        self.client.post(reverse('instructor_signup'), self._instructor_signup_data())
+        response = self.client.post(
+            reverse('login'), {'username': 'newbie_inst', 'password': 'a-strong-password-1'})
         self.assertContains(response, 'Your account is currently pending administrator approval.')
         self.assertFalse(response.wsgi_request.user.is_authenticated)
 
@@ -959,7 +978,7 @@ class SignupApprovalFlowTests(TestCase):
         # student email must never crash the signup or silently drop the
         # internal notification.
         response = self.client.post(reverse('student_signup'), self._signup_data(email=''))
-        self.assertRedirects(response, reverse('login'))
+        self.assertRedirects(response, reverse('platform_home'))
         self.assertEqual(len(mail.outbox), 1)
         self.assertEqual(mail.outbox[0].to, [settings.INSTRUCTOR_APPLICATION_NOTIFICATION_EMAIL])
 
@@ -2216,6 +2235,17 @@ class RoleAwarePostLoginRedirectTests(TestCase):
         self.client.login(username='login_redirect_inst', password='pw12345678')
         response = self.client.get(reverse('platform_home'))
         self.assertContains(response, 'Go to Your Dashboard')
+        self.assertNotContains(response, 'Become an Instructor')
+
+    def test_homepage_shows_continue_learning_link_for_logged_in_student(self):
+        # Regression test: the instructor-only branch added to the homepage
+        # hero CTA left students falling through to the same "Start
+        # Learning" / "Become an Instructor" pitch shown to a logged-out
+        # visitor -- nonsensical for someone already learning.
+        self.client.login(username='login_redirect_stud', password='pw12345678')
+        response = self.client.get(reverse('platform_home'))
+        self.assertContains(response, 'Continue Learning')
+        self.assertNotContains(response, 'Start Learning')
         self.assertNotContains(response, 'Become an Instructor')
 
     def test_homepage_shows_marketing_ctas_for_logged_out_visitor(self):

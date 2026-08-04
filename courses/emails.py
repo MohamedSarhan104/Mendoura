@@ -103,9 +103,11 @@ def _send(*, subject, text_body, html_body, to_email, attachments=None) -> Email
 
 @_never_raises
 def send_welcome_email(user, *, to_email=None) -> EmailResult:
-    """Sent once, right after a new Student or Instructor account is
-    created (before admin approval -- this just confirms the signup, it
-    doesn't imply the account is already usable).
+    """Sent once, right after a new Student account is created -- signup
+    already leaves the account usable immediately (see
+    StudentSignUpForm.save()), so unlike the instructor equivalent
+    (send_instructor_application_received_email) this doesn't need to
+    hedge about admin approval.
 
     to_email overrides the recipient without changing whose name/content
     is used -- only used by the admin "send a test email" tool so an admin

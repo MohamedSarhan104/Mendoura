@@ -9,6 +9,7 @@ from functools import wraps
 import markdown
 import requests
 from django.contrib import messages
+from django.contrib.auth import login as auth_login
 from django.contrib.auth import views as auth_views
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import redirect_to_login
@@ -130,11 +131,13 @@ def student_signup(request):
             else:
                 emails.send_welcome_email(user)
                 emails.send_student_signup_notification(user)
-                messages.success(
-                    request,
-                    _("Your account has been created and is pending administrator approval. "
-                      "You'll be able to log in once it's approved."))
-                return redirect('login')
+                # Unlike instructor_signup below, a student account needs no
+                # admin review (see StudentSignUpForm.save()) -- sign them
+                # in immediately instead of bouncing them to the login form
+                # for an account that's already usable.
+                auth_login(request, user, backend='django.contrib.auth.backends.ModelBackend')
+                messages.success(request, _('Welcome to Mendoura! Your account is ready.'))
+                return redirect('platform_home')
     else:
         form = StudentSignUpForm()
     return render(request, 'registration/signup_student.html', {'form': form})
