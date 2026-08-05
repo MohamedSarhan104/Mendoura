@@ -92,6 +92,48 @@
     </div>
   </div>
 
+  {# ── AI-generated transcript: feeds the player's Transcript tab and grounds the AI Coach for this lesson ── #}
+  <div class="mt-8 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-8">
+    <h2 class="text-lg font-bold mb-1">{% trans "Transcript" %}</h2>
+    <p class="text-sm text-gray-500 dark:text-gray-400 mb-5">
+      {% trans "Powers the Transcript tab and lets the AI Coach answer questions about this specific lesson." %}
+    </p>
+
+    <div id="transcript-status-wrap" data-status-url="{% url 'lecture_transcript_status' lecture.id %}">
+      {% if lecture.transcript_status == 'processing' %}
+        <p id="transcript-status-msg" class="text-sm text-yellow-600 flex items-center gap-2">
+          <i class="fa-solid fa-spinner fa-spin"></i>
+          {% trans "Generating transcript… this can take a few minutes for longer videos." %}
+        </p>
+      {% elif lecture.transcript_status == 'failed' %}
+        <p id="transcript-status-msg" class="text-sm text-red-600">{{ lecture.transcript_error }}</p>
+      {% elif lecture.ai_generated_script %}
+        <p id="transcript-status-msg" class="text-sm text-green-600 font-semibold mb-3">
+          <i class="fa-solid fa-circle-check"></i> {% trans "Transcript generated." %}
+        </p>
+        <div class="max-h-40 overflow-y-auto text-sm text-gray-600 dark:text-gray-300 whitespace-pre-line bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4">{{ lecture.ai_generated_script }}</div>
+      {% else %}
+        <p id="transcript-status-msg" class="text-sm text-gray-400">{% trans "No transcript yet." %}</p>
+      {% endif %}
+    </div>
+
+    {% if lecture.bunny_video_id and lecture.bunny_ready %}
+      <form method="post" action="{% url 'generate_lecture_transcript' lecture.id %}" class="mt-4">
+        {% csrf_token %}
+        <button type="submit" id="generate-transcript-btn"
+                {% if lecture.transcript_status == 'processing' %}disabled{% endif %}
+                class="px-5 py-2.5 rounded-lg bg-brand-600 text-white font-semibold hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed">
+          <i class="fa-solid fa-closed-captioning mr-1"></i>
+          {% if lecture.ai_generated_script %}{% trans "Regenerate Transcript" %}{% else %}{% trans "Generate Transcript" %}{% endif %}
+        </button>
+      </form>
+    {% else %}
+      <p class="text-sm text-gray-400 mt-4">
+        {% trans "Upload a video and wait for it to finish processing to generate a transcript." %}
+      </p>
+    {% endif %}
+  </div>
+
 </div>
 {% endblock %}
 
@@ -170,4 +212,29 @@
   })();
 </script>
 {% endif %}
+<script>
+  // Polls lecture_transcript_status while generation is running (the
+  // button starts disabled only when transcript_status was "processing"
+  // at page load) and reloads once it's done/failed, so the instructor
+  // sees the result without needing to refresh manually.
+  (function () {
+    const wrap = document.getElementById('transcript-status-wrap');
+    const btn = document.getElementById('generate-transcript-btn');
+    if (!wrap || !btn || !btn.disabled) return;
+
+    const statusUrl = wrap.dataset.statusUrl;
+    const poll = setInterval(async () => {
+      try {
+        const res = await fetch(statusUrl);
+        const data = await res.json();
+        if (data.status !== 'processing') {
+          clearInterval(poll);
+          window.location.reload();
+        }
+      } catch (e) {
+        // Transient network hiccup -- keep polling, next tick will retry.
+      }
+    }, 4000);
+  })();
+</script>
 {% endblock %}

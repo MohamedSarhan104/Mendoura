@@ -1,6 +1,7 @@
 import json
 import logging
 import re
+import threading
 import uuid
 from datetime import timedelta
 from decimal import Decimal
@@ -499,8 +500,13 @@ def course_wizard_review(request, course_id):
 
 def _with_stats(queryset):
     """Annotate courses with a live average rating and enrolled-student count,
-    for display on course cards and detail pages."""
-    return queryset.annotate(avg_rating=Avg('reviews__rating'), enrolled_count=Count('enrollments'))
+    for display on course cards and detail pages. Also prefetches
+    modules/lectures so Course.total_duration_seconds()/
+    effective_thumbnail_url() (card-grid duration + auto-thumbnail
+    fallback) stay a single query instead of one extra query per course."""
+    return queryset.annotate(
+        avg_rating=Avg('reviews__rating'), enrolled_count=Count('enrollments')
+    ).prefetch_related('modules__lectures')
 
 
 def _rating_breakdown(course):
@@ -1001,15 +1007,12 @@ def course_player(request, course_id, lecture_id):
     # several shorter lessons.
     total_duration_seconds = sum(l.duration_seconds for l in all_lectures)
 
-    # Transcript tab only makes sense for Script Only courses (the only
-    # production type that stores any lesson text at all, via
-    # ai_generated_script) and only for a lecture that actually has one --
-    # Full Production courses never have transcript text to show.
-    has_transcript = bool(
-        course.production_type == Course.ProductionType.SCRIPT_ONLY
-        and lecture.ai_generated_script
-        and lecture.ai_generated_script.strip()
-    )
+    # ai_generated_script is populated by two independent paths -- a Script
+    # Only course's manual script, or the "Generate Transcript" button
+    # (any production type, once an instructor runs it) -- so the tab
+    # shows whenever there's actually text in it, regardless of
+    # production_type.
+    has_transcript = bool(lecture.ai_generated_script and lecture.ai_generated_script.strip())
 
     return render(request, 'courses/player.html', {
         'course': course,
@@ -1330,11 +1333,14 @@ def ai_coach_widget_history(request):
 def _lesson_ai_context(course, lecture):
     """Grounding text for the lesson-embedded AI Coach: everything actually
     known about the current lesson's module, so it can answer "brief this
-    lesson"/"summarize this module" from real text. Full Production courses
-    never have a transcript (ai_generated_script is only ever populated for
-    Script Only courses) -- lessons without one are labeled as such rather
-    than silently omitted, so the model can tell the student which lessons
-    it couldn't cover instead of pretending the gap doesn't exist."""
+    lesson"/"summarize this module" from real text. ai_generated_script is
+    populated by two independent paths -- a Script Only course's manual
+    script, or the "Generate Transcript" button (any production type) --
+    so a lesson counts as having a transcript whenever that field actually
+    has text, not based on production_type. Lessons without one are
+    labeled as such rather than silently omitted, so the model can tell
+    the student which lessons it couldn't cover instead of pretending the
+    gap doesn't exist."""
     module = lecture.module
     lines = [
         f'Course: {course.title}',
@@ -1347,11 +1353,7 @@ def _lesson_ai_context(course, lecture):
     for l in module.lectures.order_by('order', 'id'):
         marker = ' <- currently viewing' if l.id == lecture.id else ''
         lines.append(f'- "{l.title}"{marker}')
-        has_script = (
-            course.production_type == Course.ProductionType.SCRIPT_ONLY
-            and l.ai_generated_script and l.ai_generated_script.strip()
-        )
-        if has_script:
+        if l.ai_generated_script and l.ai_generated_script.strip():
             lines.append(f'  Transcript: """{l.ai_generated_script.strip()[:4000]}"""')
         else:
             lines.append('  Transcript: not available for this lesson.')
@@ -1699,6 +1701,74 @@ def edit_lecture(request, lecture_id):
     return render(request, 'dashboard/edit_lecture.html', {
         'course': course, 'module': lecture.module, 'lecture': lecture, 'form': form,
         'bunny_configured': bunny.is_configured(),
+    })
+
+
+def _run_transcript_generation(lecture_id):
+    """Runs in a background thread kicked off by generate_lecture_transcript.
+    This project has no task queue (Celery/etc.), so a plain daemon thread
+    within the same process is the simplest way to avoid blocking the
+    request for however long Gemini takes on a real lecture video --
+    mirroring the same "best-effort, never block the page" philosophy as
+    _sync_bunny_status elsewhere in this file. A dyno restart mid-run would
+    leave the lecture stuck on "processing" with no automatic retry, same
+    known limitation as a missed Bunny webhook; the instructor can just
+    click the button again."""
+    try:
+        lecture = Lecture.objects.get(id=lecture_id)
+    except Lecture.DoesNotExist:
+        return
+    try:
+        text = ai_coach_client.transcribe_video(lecture.bunny_video_id)
+    except ai_coach_client.AICoachError as exc:
+        Lecture.objects.filter(id=lecture_id).update(
+            transcript_status=Lecture.TranscriptStatus.FAILED, transcript_error=str(exc))
+        return
+    except Exception:
+        logger.error('[TRANSCRIPT] unexpected failure generating transcript lecture_id=%s',
+                      lecture_id, exc_info=True)
+        Lecture.objects.filter(id=lecture_id).update(
+            transcript_status=Lecture.TranscriptStatus.FAILED,
+            transcript_error=_('An unexpected error occurred. Please try again.'))
+        return
+    Lecture.objects.filter(id=lecture_id).update(
+        ai_generated_script=text, transcript_status=Lecture.TranscriptStatus.DONE, transcript_error='')
+
+
+# Kicks off transcription in the background and returns immediately --
+# edit_lecture.html polls lecture_transcript_status below to show progress
+# and knows to reload once it's done/failed, rather than holding this
+# request open for however long Gemini takes.
+@login_required
+def generate_lecture_transcript(request, lecture_id):
+    lecture = get_object_or_404(Lecture, id=lecture_id, module__course__instructor=request.user)
+    if request.method != 'POST':
+        return HttpResponse(status=405)
+
+    if not lecture.bunny_video_id or not lecture.bunny_ready:
+        messages.error(
+            request,
+            _('Upload a video and wait for it to finish processing before generating a transcript.'))
+        return redirect('edit_lecture', lecture_id=lecture.id)
+
+    # Idempotent -- clicking again while already processing doesn't start a
+    # second thread racing the first to write the same row.
+    if lecture.transcript_status != Lecture.TranscriptStatus.PROCESSING:
+        lecture.transcript_status = Lecture.TranscriptStatus.PROCESSING
+        lecture.transcript_error = ''
+        lecture.save(update_fields=['transcript_status', 'transcript_error'])
+        threading.Thread(target=_run_transcript_generation, args=(lecture.id,), daemon=True).start()
+
+    return redirect('edit_lecture', lecture_id=lecture.id)
+
+
+@login_required
+def lecture_transcript_status(request, lecture_id):
+    lecture = get_object_or_404(Lecture, id=lecture_id, module__course__instructor=request.user)
+    return JsonResponse({
+        'status': lecture.transcript_status,
+        'error': lecture.transcript_error,
+        'has_script': bool(lecture.ai_generated_script and lecture.ai_generated_script.strip()),
     })
 
 

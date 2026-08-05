@@ -238,9 +238,21 @@ PAYMOB_HMAC_SECRET = config('PAYMOB_HMAC_SECRET', default='')
 #   BUNNY_TOKEN_KEY  -- the Stream library's Token Authentication Key (signs
 #                       embed URLs); leave blank to fall back to referrer-only
 #                       security until it's provided.
+#   BUNNY_PULL_ZONE_HOSTNAME -- the library's own CDN hostname (e.g.
+#                       "vz-xxxxxxxx-xxx.b-cdn.net"), from that library's
+#                       Hostname/CDN settings in Bunny's dashboard. Only
+#                       needed for auto-thumbnails and video transcription
+#                       (bunny.thumbnail_url/mp4_url) -- Bunny serves actual
+#                       media files from this per-library hostname rather
+#                       than the shared iframe.mediadelivery.net domain
+#                       everything else in this project uses, and that
+#                       hostname isn't retrievable through the same
+#                       library-scoped AccessKey as BUNNY_API_KEY. Leave
+#                       blank to just skip those two features.
 BUNNY_LIBRARY_ID = config('BUNNY_LIBRARY_ID', default='')
 BUNNY_API_KEY = config('BUNNY_API_KEY', default='')
 BUNNY_TOKEN_KEY = config('BUNNY_TOKEN_KEY', default='')
+BUNNY_PULL_ZONE_HOSTNAME = config('BUNNY_PULL_ZONE_HOSTNAME', default='').strip()
 # How long a signed embed URL stays valid (seconds). Long enough to watch a
 # lecture without the token expiring mid-video.
 BUNNY_EMBED_TOKEN_TTL = 60 * 60 * 6  # 6 hours

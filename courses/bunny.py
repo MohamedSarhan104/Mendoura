@@ -108,11 +108,15 @@ def create_video(title: str) -> str:
 
 def get_video_info(video_id: str) -> dict:
     """Ask Bunny directly for this video's current encoding status (the same
-    integer bunny_webhook receives) and its encoded duration in seconds
-    ('length' -- 0 until Bunny finishes processing). Used as a fallback where
-    the webhook delivery might have been missed, so the instructor-facing
-    status can't get permanently stuck, and to backfill
-    Lecture.duration_seconds once Bunny actually knows the video's length."""
+    integer bunny_webhook receives), its encoded duration in seconds
+    ('length' -- 0 until Bunny finishes processing), and whether/at what
+    resolutions it has an MP4 fallback file (needed to build a direct,
+    Gemini-fetchable URL for transcription -- see mp4_url below; Bunny's
+    HLS/iframe playback doesn't give Gemini anything it can read as a
+    single video file). Used as a fallback where the webhook delivery
+    might have been missed, so the instructor-facing status can't get
+    permanently stuck, and to backfill Lecture.duration_seconds once Bunny
+    actually knows the video's length."""
     url = f'{VIDEO_API_BASE}/library/{settings.BUNNY_LIBRARY_ID}/videos/{video_id}'
     logger.info(
         '%s calling Bunny get-video-status API: url=%s library_id=%s video_id=%s',
@@ -150,10 +154,20 @@ def get_video_info(video_id: str) -> dict:
         raise BunnyError('Bunny did not return a video status.')
 
     length = body.get('length') or 0
+    has_mp4_fallback = bool(body.get('hasMP4Fallback'))
+    available_resolutions = [
+        r.strip() for r in (body.get('availableResolutions') or '').split(',') if r.strip()
+    ]
     logger.info(
-        '%s Bunny get-video-status SUCCEEDED after %.2fs: video_id=%s status=%s length=%s',
-        _STATUS_DEBUG_TAG, elapsed, video_id, status, length)
-    return {'status': int(status), 'length': int(length)}
+        '%s Bunny get-video-status SUCCEEDED after %.2fs: video_id=%s status=%s length=%s '
+        'has_mp4_fallback=%s available_resolutions=%s',
+        _STATUS_DEBUG_TAG, elapsed, video_id, status, length, has_mp4_fallback, available_resolutions)
+    return {
+        'status': int(status),
+        'length': int(length),
+        'has_mp4_fallback': has_mp4_fallback,
+        'available_resolutions': available_resolutions,
+    }
 
 
 def get_video_status(video_id: str) -> int:
@@ -193,3 +207,38 @@ def embed_url(video_id: str) -> str:
     token = hashlib.sha256(
         f'{settings.BUNNY_TOKEN_KEY}{video_id}{expiration}'.encode()).hexdigest()
     return f'{base}?token={token}&expires={expiration}'
+
+
+# Unlike embed_url/upload_credentials/create_video, actual media files
+# (thumbnails, MP4 fallback files) are served from the library's own CDN
+# pull zone hostname (e.g. "vz-xxxxxxxx-xxx.b-cdn.net"), not the shared
+# iframe.mediadelivery.net domain -- Bunny doesn't expose that hostname
+# through the same per-library AccessKey used everywhere else in this
+# module (it lives behind a separate account-level API), so it's a plain
+# setting the instructor account owner copies once from Bunny's dashboard
+# (Stream library -> that library -> Hostname/CDN settings) rather than
+# something this code can derive on its own.
+def _pull_zone_base(video_id: str) -> str | None:
+    if not settings.BUNNY_PULL_ZONE_HOSTNAME:
+        return None
+    return f'https://{settings.BUNNY_PULL_ZONE_HOSTNAME}/{video_id}'
+
+
+def thumbnail_url(video_id: str) -> str | None:
+    """Bunny auto-generates a thumbnail for every encoded video. None if
+    BUNNY_PULL_ZONE_HOSTNAME isn't configured -- callers fall back to
+    their own placeholder in that case."""
+    base = _pull_zone_base(video_id)
+    return f'{base}/thumbnail.jpg' if base else None
+
+
+def mp4_url(video_id: str, resolution: str) -> str | None:
+    """A direct, publicly-fetchable MP4 URL for this video at the given
+    resolution (e.g. '360p') -- used to hand Gemini something it can read
+    as a single video file for transcription, since neither the HLS stream
+    nor the token-signed iframe embed is a fetchable video file. Only
+    populated once Bunny has finished encoding an MP4 fallback for this
+    resolution (see get_video_info's has_mp4_fallback/available_resolutions).
+    None if BUNNY_PULL_ZONE_HOSTNAME isn't configured."""
+    base = _pull_zone_base(video_id)
+    return f'{base}/play_{resolution}.mp4' if base else None

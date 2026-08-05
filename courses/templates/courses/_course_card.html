@@ -1,12 +1,14 @@
-{% load i18n %}
+{% load i18n course_extras %}
 <a href="{% url 'course_detail' course.id %}" class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 block">
-  {% if course.thumbnail %}
-    <img src="{{ course.thumbnail.url }}" class="w-full h-40 object-cover">
-  {% else %}
-    <div class="w-full h-40 bg-brand-50 dark:bg-gray-800 flex items-center justify-center">
-      <i class="fa-solid fa-book text-4xl text-brand-400"></i>
-    </div>
-  {% endif %}
+  {% with cover=course.effective_thumbnail_url %}
+    {% if cover %}
+      <img src="{{ cover }}" class="w-full h-40 object-cover">
+    {% else %}
+      <div class="w-full h-40 bg-brand-50 dark:bg-gray-800 flex items-center justify-center">
+        <i class="fa-solid fa-book text-4xl text-brand-400"></i>
+      </div>
+    {% endif %}
+  {% endwith %}
   <div class="p-5">
     <span class="text-xs font-semibold text-brand-600 uppercase">{{ course.track.translated_name }}</span>
     <h3 class="font-bold text-lg mt-1 mb-1 line-clamp-1">{{ course.title }}</h3>
@@ -19,6 +21,9 @@
         </span>
       {% endif %}
       <span><i class="fa-solid fa-user-group mr-1"></i>{% blocktrans count counter=course.enrolled_count %}{{ counter }} student{% plural %}{{ counter }} students{% endblocktrans %}</span>
+      {% with d=course.total_duration_seconds|duration_display %}
+        {% if d %}<span><i class="fa-solid fa-clock mr-1"></i>{{ d }}</span>{% endif %}
+      {% endwith %}
     </div>
 
     <div class="flex items-center justify-between">

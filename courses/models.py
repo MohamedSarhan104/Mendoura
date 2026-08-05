@@ -12,7 +12,7 @@ from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import get_language
 
-from . import auto_translate, certificates, emails, poster
+from . import auto_translate, bunny, certificates, emails, poster
 from .money import SUBSCRIPTION_INSTRUCTOR_SHARE, calculate_split, get_instructor_share
 
 logger = logging.getLogger(__name__)
@@ -386,6 +386,37 @@ class Course(models.Model):
     def has_successful_sale(self):
         return self.payments.filter(status=Payment.Status.SUCCEEDED).exists()
 
+    def total_duration_seconds(self):
+        """Sum of every lecture's duration_seconds across every module --
+        for course cards/listings. Written as plain Python sums over
+        self.modules.all()/module.lectures.all() (not a query annotation)
+        so it stays a single query when the caller has
+        prefetch_related('modules__lectures') (see _with_stats in
+        views.py) -- annotating this in the same call as _with_stats'
+        existing Avg('reviews__rating')/Count('enrollments') would silently
+        inflate the total via the classic multi-join fan-out problem."""
+        return sum(
+            lecture.duration_seconds
+            for module in self.modules.all()
+            for lecture in module.lectures.all()
+        )
+
+    def effective_thumbnail_url(self):
+        """The manually-uploaded cover photo if there is one, otherwise
+        Bunny's auto-generated thumbnail for the first lecture (in module/
+        lecture order) that has a Bunny video -- so a course without a
+        cover photo shows a real frame from its own content instead of a
+        generic placeholder icon. None if neither is available (falls back
+        to the placeholder in the template), e.g. BUNNY_PULL_ZONE_HOSTNAME
+        isn't configured or the course has no Bunny-hosted video yet."""
+        if self.thumbnail:
+            return self.thumbnail.url
+        for module in self.modules.all():
+            for lecture in module.lectures.all():
+                if lecture.bunny_video_id:
+                    return bunny.thumbnail_url(lecture.bunny_video_id)
+        return None
+
     def get_instructor_share_percentage(self) -> Decimal:
         return get_instructor_share(self.production_type)
 
@@ -436,6 +467,12 @@ class Lecture(models.Model):
         ARTICLE = 'article', _('Article')
         QUIZ = 'quiz', _('Quiz')
 
+    class TranscriptStatus(models.TextChoices):
+        NOT_STARTED = 'not_started', _('Not started')
+        PROCESSING = 'processing', _('Processing')
+        DONE = 'done', _('Done')
+        FAILED = 'failed', _('Failed')
+
     module = models.ForeignKey(Module, on_delete=models.CASCADE, related_name='lectures', null=True)
     title = models.CharField(max_length=255)
     content_type = models.CharField(max_length=20, choices=ContentType.choices, default=ContentType.VIDEO)
@@ -455,7 +492,17 @@ class Lecture(models.Model):
     accepts_submission = models.BooleanField(
         default=False, help_text=_('Students can upload homework for this lecture'))
     order = models.PositiveIntegerField(default=0)
+    # ai_generated_script is the one field both Script Only courses' manual
+    # scripts AND the "Generate Transcript" button (instructor-triggered,
+    # Full Production courses) write into -- the AI Coach's lesson-grounding
+    # and the Transcript tab both read this single field regardless of
+    # which path populated it, so a Full Production lecture with a
+    # generated transcript gets exactly the same treatment as a Script
+    # Only one written by hand.
     ai_generated_script = models.TextField(blank=True, null=True)
+    transcript_status = models.CharField(
+        max_length=20, choices=TranscriptStatus.choices, default=TranscriptStatus.NOT_STARTED)
+    transcript_error = models.TextField(blank=True, default='')
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

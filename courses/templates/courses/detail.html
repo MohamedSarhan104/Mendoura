@@ -12,9 +12,11 @@
   <div class="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-8">
 
     <div class="lg:col-span-2">
-      {% if course.thumbnail %}
-        <img src="{{ course.thumbnail.url }}" class="w-full h-64 object-cover rounded-2xl mb-6">
-      {% endif %}
+      {% with cover=course.effective_thumbnail_url %}
+        {% if cover %}
+          <img src="{{ cover }}" class="w-full h-64 object-cover rounded-2xl mb-6">
+        {% endif %}
+      {% endwith %}
       <span class="text-xs font-semibold text-brand-600 uppercase">{{ course.track.translated_name }}</span>
       <h1 class="text-3xl font-extrabold mt-2 mb-3">{{ course.title }}</h1>
       {% if course.subtitle %}<p class="text-lg text-gray-500 dark:text-gray-400 mb-3">{{ course.subtitle }}</p>{% endif %}

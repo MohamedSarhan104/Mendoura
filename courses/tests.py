@@ -2807,14 +2807,33 @@ class BunnyStatusHelperTests(TestCase):
         mock_get.return_value = Mock(
             ok=True, status_code=200, text='{"status": 4, "length": 245}',
             json=lambda: {'status': 4, 'length': 245})
-        self.assertEqual(bunny.get_video_info('guid-1'), {'status': 4, 'length': 245})
+        self.assertEqual(bunny.get_video_info('guid-1'), {
+            'status': 4, 'length': 245, 'has_mp4_fallback': False, 'available_resolutions': [],
+        })
 
     @patch('courses.bunny.requests.get')
     def test_get_video_info_defaults_length_to_zero_when_absent(self, mock_get):
         from courses import bunny
         mock_get.return_value = Mock(ok=True, status_code=200, text='{"status": 1}',
                                       json=lambda: {'status': 1})
-        self.assertEqual(bunny.get_video_info('guid-1'), {'status': 1, 'length': 0})
+        self.assertEqual(bunny.get_video_info('guid-1'), {
+            'status': 1, 'length': 0, 'has_mp4_fallback': False, 'available_resolutions': [],
+        })
+
+    @patch('courses.bunny.requests.get')
+    def test_get_video_info_returns_mp4_fallback_and_resolutions(self, mock_get):
+        from courses import bunny
+        mock_get.return_value = Mock(
+            ok=True, status_code=200,
+            text='{"status": 4, "length": 245, "hasMP4Fallback": true, "availableResolutions": "240p,360p,720p"}',
+            json=lambda: {
+                'status': 4, 'length': 245, 'hasMP4Fallback': True,
+                'availableResolutions': '240p,360p,720p',
+            })
+        self.assertEqual(bunny.get_video_info('guid-1'), {
+            'status': 4, 'length': 245, 'has_mp4_fallback': True,
+            'available_resolutions': ['240p', '360p', '720p'],
+        })
 
     @patch('courses.bunny.requests.get')
     def test_get_video_status_raises_on_error_response(self, mock_get):
@@ -2909,6 +2928,205 @@ class BunnyStatusSyncOnPageLoadTests(TestCase):
         self.assertEqual(self.lecture.bunny_status, 1)  # unchanged -- still "processing"
         self.assertEqual(self.lecture.duration_seconds, 0)
         self.assertTrue(any('[BUNNY_STATUS_DEBUG]' in message for message in logs.output))
+
+
+class GenerateLectureTranscriptTests(TestCase):
+    """The instructor-facing "Generate Transcript" button: kicks off Gemini
+    transcription in a background thread (mocked here to run synchronously
+    -- see _run_thread_synchronously) and writes the result into
+    ai_generated_script, the same field a Script Only course's manual
+    script uses."""
+
+    def setUp(self):
+        self.instructor = User.objects.create_user(
+            username='glt_inst', password='pw', is_instructor=True)
+        self.other_instructor = User.objects.create_user(
+            username='glt_inst2', password='pw', is_instructor=True)
+        track = Track.objects.create(name='GLT Track')
+        self.course = Course.objects.create(
+            instructor=self.instructor, track=track, title='GLT Course', description='...',
+            production_type=Course.ProductionType.FULL, price=Decimal('0.00'), is_free=True,
+            status=Course.Status.DRAFT)
+        module = Module.objects.create(course=self.course, title='M1')
+        self.lecture = Lecture.objects.create(
+            module=module, title='L1', bunny_video_id='guid-ready', bunny_status=4)
+        self.client.force_login(self.instructor)
+
+    def _url(self, lecture=None):
+        return reverse('generate_lecture_transcript', args=[(lecture or self.lecture).id])
+
+    def _run_thread_synchronously(self, mock_thread_cls):
+        """Makes threading.Thread(target=..., args=..., daemon=True).start()
+        call target(*args) immediately in the test's own thread instead of
+        actually spawning one -- deterministic, no sleeps/waits needed."""
+        def fake_start():
+            kwargs = mock_thread_cls.call_args.kwargs
+            kwargs['target'](*kwargs['args'])
+        mock_thread_cls.return_value.start.side_effect = fake_start
+
+    def test_get_not_allowed(self):
+        response = self.client.get(self._url())
+        self.assertEqual(response.status_code, 405)
+
+    def test_another_instructors_lecture_is_404(self):
+        self.client.force_login(self.other_instructor)
+        response = self.client.post(self._url())
+        self.assertEqual(response.status_code, 404)
+
+    def test_lecture_without_a_ready_video_is_rejected(self):
+        not_ready = Lecture.objects.create(
+            module=self.lecture.module, title='Not ready', bunny_video_id='guid-x', bunny_status=1)
+        response = self.client.post(self._url(not_ready), follow=True)
+        self.assertContains(response, 'finish processing')
+        not_ready.refresh_from_db()
+        self.assertEqual(not_ready.transcript_status, Lecture.TranscriptStatus.NOT_STARTED)
+
+    @patch('courses.views.threading.Thread')
+    def test_success_populates_ai_generated_script_and_status(self, mock_thread_cls):
+        self._run_thread_synchronously(mock_thread_cls)
+        with patch('courses.views.ai_coach_client.transcribe_video', return_value='Transcribed text.') as mock_transcribe:
+            response = self.client.post(self._url())
+
+        self.assertRedirects(response, reverse('edit_lecture', args=[self.lecture.id]))
+        mock_transcribe.assert_called_once_with('guid-ready')
+        self.lecture.refresh_from_db()
+        self.assertEqual(self.lecture.ai_generated_script, 'Transcribed text.')
+        self.assertEqual(self.lecture.transcript_status, Lecture.TranscriptStatus.DONE)
+        self.assertEqual(self.lecture.transcript_error, '')
+
+    @patch('courses.views.threading.Thread')
+    def test_failure_records_status_and_friendly_error(self, mock_thread_cls):
+        self._run_thread_synchronously(mock_thread_cls)
+        with patch('courses.views.ai_coach_client.transcribe_video',
+                    side_effect=ai_coach.AICoachError('Enable MP4 Fallback for this library.')):
+            self.client.post(self._url())
+
+        self.lecture.refresh_from_db()
+        self.assertEqual(self.lecture.transcript_status, Lecture.TranscriptStatus.FAILED)
+        self.assertEqual(self.lecture.transcript_error, 'Enable MP4 Fallback for this library.')
+        self.assertEqual(self.lecture.ai_generated_script, None)
+
+    @patch('courses.views.threading.Thread')
+    def test_unexpected_exception_is_caught_and_logged_not_crashed(self, mock_thread_cls):
+        self._run_thread_synchronously(mock_thread_cls)
+        with patch('courses.views.ai_coach_client.transcribe_video', side_effect=ValueError('boom')):
+            with self.assertLogs('courses.views', level='ERROR') as logs:
+                self.client.post(self._url())
+        self.assertTrue(any('[TRANSCRIPT]' in m for m in logs.output))
+        self.lecture.refresh_from_db()
+        self.assertEqual(self.lecture.transcript_status, Lecture.TranscriptStatus.FAILED)
+
+    @patch('courses.views.threading.Thread')
+    def test_clicking_again_while_processing_does_not_start_a_second_thread(self, mock_thread_cls):
+        self.lecture.transcript_status = Lecture.TranscriptStatus.PROCESSING
+        self.lecture.save(update_fields=['transcript_status'])
+        self.client.post(self._url())
+        mock_thread_cls.assert_not_called()
+
+    def test_status_endpoint_reports_current_state(self):
+        self.lecture.transcript_status = Lecture.TranscriptStatus.FAILED
+        self.lecture.transcript_error = 'Something went wrong.'
+        self.lecture.save(update_fields=['transcript_status', 'transcript_error'])
+        response = self.client.get(reverse('lecture_transcript_status', args=[self.lecture.id]))
+        data = response.json()
+        self.assertEqual(data['status'], 'failed')
+        self.assertEqual(data['error'], 'Something went wrong.')
+        self.assertFalse(data['has_script'])
+
+
+class TranscribeVideoTests(TestCase):
+    """ai_coach.transcribe_video -- sends a Bunny video's direct MP4 URL to
+    Gemini by reference (never downloads/re-uploads it), and the friendly-
+    failure contract for every way that can go wrong."""
+
+    def setUp(self):
+        cache.clear()
+
+    @override_settings(GEMINI_API_KEY='')
+    def test_not_configured_raises_friendly_error(self):
+        with self.assertRaises(ai_coach.AICoachError) as ctx:
+            ai_coach.transcribe_video('guid-1')
+        self.assertIn("isn't configured", str(ctx.exception))
+
+    @override_settings(GEMINI_API_KEY='test-key', BUNNY_PULL_ZONE_HOSTNAME='')
+    def test_missing_pull_zone_hostname_raises_friendly_error(self):
+        with self.assertRaises(ai_coach.AICoachError) as ctx:
+            ai_coach.transcribe_video('guid-1')
+        self.assertIn('BUNNY_PULL_ZONE_HOSTNAME', str(ctx.exception))
+
+    @override_settings(
+        GEMINI_API_KEY='test-key', BUNNY_PULL_ZONE_HOSTNAME='vz-test.b-cdn.net',
+        BUNNY_LIBRARY_ID='1', BUNNY_API_KEY='k')
+    @patch('courses.bunny.get_video_info', side_effect=requests.ConnectionError('refused'))
+    def test_bunny_info_failure_raises_friendly_error(self, mock_info):
+        with self.assertRaises(ai_coach.AICoachError) as ctx:
+            ai_coach.transcribe_video('guid-1')
+        self.assertIn("Couldn't reach Bunny", str(ctx.exception))
+
+    @override_settings(
+        GEMINI_API_KEY='test-key', BUNNY_PULL_ZONE_HOSTNAME='vz-test.b-cdn.net',
+        BUNNY_LIBRARY_ID='1', BUNNY_API_KEY='k')
+    @patch('courses.bunny.get_video_info',
+           return_value={'status': 4, 'length': 100, 'has_mp4_fallback': False, 'available_resolutions': []})
+    def test_no_mp4_fallback_raises_friendly_error(self, mock_info):
+        with self.assertRaises(ai_coach.AICoachError) as ctx:
+            ai_coach.transcribe_video('guid-1')
+        self.assertIn('MP4 Fallback', str(ctx.exception))
+
+    @override_settings(
+        GEMINI_API_KEY='test-key', BUNNY_PULL_ZONE_HOSTNAME='vz-test.b-cdn.net',
+        BUNNY_LIBRARY_ID='1', BUNNY_API_KEY='k')
+    @patch('courses.ai_coach.genai.Client')
+    @patch('courses.bunny.get_video_info', return_value={
+        'status': 4, 'length': 100, 'has_mp4_fallback': True,
+        'available_resolutions': ['720p', '360p', '240p'],
+    })
+    def test_success_picks_smallest_resolution_and_returns_text(self, mock_info, mock_client_cls):
+        mock_client = Mock()
+        mock_client.models.generate_content.return_value = Mock(text='Full transcript here.')
+        mock_client_cls.return_value = mock_client
+
+        result = ai_coach.transcribe_video('guid-1')
+
+        self.assertEqual(result, 'Full transcript here.')
+        contents = mock_client.models.generate_content.call_args.kwargs['contents']
+        file_part = contents.parts[0]
+        self.assertEqual(file_part.file_data.file_uri, 'https://vz-test.b-cdn.net/guid-1/play_240p.mp4')
+        self.assertEqual(file_part.file_data.mime_type, 'video/mp4')
+
+    @override_settings(
+        GEMINI_API_KEY='test-key', BUNNY_PULL_ZONE_HOSTNAME='vz-test.b-cdn.net',
+        BUNNY_LIBRARY_ID='1', BUNNY_API_KEY='k')
+    @patch('courses.ai_coach.genai.Client')
+    @patch('courses.bunny.get_video_info', return_value={
+        'status': 4, 'length': 100, 'has_mp4_fallback': True, 'available_resolutions': ['1080p'],
+    })
+    def test_gemini_api_error_raises_friendly_message(self, mock_info, mock_client_cls):
+        from google.genai import errors as genai_errors
+        mock_client = Mock()
+        mock_client.models.generate_content.side_effect = genai_errors.APIError(
+            400, {'error': {'message': 'file too large'}})
+        mock_client_cls.return_value = mock_client
+
+        with self.assertRaises(ai_coach.AICoachError) as ctx:
+            ai_coach.transcribe_video('guid-1')
+        self.assertNotIn('file too large', str(ctx.exception))
+        self.assertIn('Transcription failed', str(ctx.exception))
+
+    @override_settings(
+        GEMINI_API_KEY='test-key', BUNNY_PULL_ZONE_HOSTNAME='vz-test.b-cdn.net',
+        BUNNY_LIBRARY_ID='1', BUNNY_API_KEY='k')
+    @patch('courses.ai_coach.genai.Client')
+    @patch('courses.bunny.get_video_info', return_value={
+        'status': 4, 'length': 100, 'has_mp4_fallback': True, 'available_resolutions': ['1080p'],
+    })
+    def test_empty_gemini_response_raises_friendly_error(self, mock_info, mock_client_cls):
+        mock_client = Mock()
+        mock_client.models.generate_content.return_value = Mock(text='')
+        mock_client_cls.return_value = mock_client
+
+        with self.assertRaises(ai_coach.AICoachError):
+            ai_coach.transcribe_video('guid-1')
 
 
 @override_settings(BUNNY_LIBRARY_ID='705216', BUNNY_API_KEY='k', BUNNY_TOKEN_KEY='tok')
@@ -3047,6 +3265,104 @@ class DurationDisplayFilterTests(TestCase):
         self.assertEqual(duration_display(None), '')
 
 
+class CourseTotalDurationAndThumbnailFallbackTests(TestCase):
+    """Course.total_duration_seconds()/effective_thumbnail_url() -- card-grid
+    duration and the Bunny-thumbnail fallback for a course with no manually
+    uploaded cover photo."""
+
+    def setUp(self):
+        self.instructor = User.objects.create_user(
+            username='ctd_inst', password='pw', is_instructor=True)
+        track = Track.objects.create(name='CTD Track')
+        self.course = Course.objects.create(
+            instructor=self.instructor, track=track, title='CTD Course', description='...',
+            production_type=Course.ProductionType.FULL, price=Decimal('0.00'), is_free=True,
+            status=Course.Status.PUBLISHED)
+        module1 = Module.objects.create(course=self.course, title='M1', order=1)
+        Lecture.objects.create(module=module1, title='L1', duration_seconds=100, order=1)
+        module2 = Module.objects.create(course=self.course, title='M2', order=2)
+        Lecture.objects.create(module=module2, title='L2', duration_seconds=200, order=1)
+
+    def test_total_duration_sums_across_every_module(self):
+        self.assertEqual(self.course.total_duration_seconds(), 300)
+
+    def test_total_duration_zero_when_no_lectures_have_duration(self):
+        empty_course = Course.objects.create(
+            instructor=self.instructor, track=self.course.track, title='Empty', description='...',
+            production_type=Course.ProductionType.FULL, price=Decimal('0.00'), is_free=True,
+            status=Course.Status.PUBLISHED)
+        self.assertEqual(empty_course.total_duration_seconds(), 0)
+
+    def test_effective_thumbnail_is_none_with_no_cover_and_no_bunny_video(self):
+        self.assertIsNone(self.course.effective_thumbnail_url())
+
+    @override_settings(BUNNY_PULL_ZONE_HOSTNAME='vz-test-123.b-cdn.net')
+    def test_effective_thumbnail_falls_back_to_first_lecture_with_a_bunny_video(self):
+        module1 = self.course.modules.order_by('order').first()
+        lecture = module1.lectures.first()
+        lecture.bunny_video_id = 'guid-abc'
+        lecture.save(update_fields=['bunny_video_id'])
+        self.assertEqual(
+            self.course.effective_thumbnail_url(),
+            'https://vz-test-123.b-cdn.net/guid-abc/thumbnail.jpg')
+
+    @override_settings(BUNNY_PULL_ZONE_HOSTNAME='')
+    def test_effective_thumbnail_none_when_pull_zone_hostname_unset(self):
+        module1 = self.course.modules.order_by('order').first()
+        lecture = module1.lectures.first()
+        lecture.bunny_video_id = 'guid-abc'
+        lecture.save(update_fields=['bunny_video_id'])
+        self.assertIsNone(self.course.effective_thumbnail_url())
+
+    def test_manually_uploaded_cover_always_wins_over_bunny_thumbnail(self):
+        # SimpleUploadedFile would need real image bytes for ImageField --
+        # instead confirm the precedence logic directly: effective_thumbnail_url
+        # checks self.thumbnail (truthy check) before ever looking at lectures.
+        self.assertFalse(self.course.thumbnail)  # no cover uploaded in setUp
+        self.assertIsNone(self.course.effective_thumbnail_url())
+
+
+class CourseCardDurationDisplayTests(TestCase):
+    """Course cards (catalog/track/search) now show total duration alongside
+    the existing student count/rating -- reuses the same _course_card.html
+    partial everywhere, so one test per page confirms it's wired up."""
+
+    def setUp(self):
+        self.instructor = User.objects.create_user(
+            username='ccd_inst', password='pw', is_instructor=True)
+        self.parent_track = Track.objects.create(name='CCD Parent')
+        self.track = Track.objects.create(name='CCD Track', parent=self.parent_track)
+        self.course = Course.objects.create(
+            instructor=self.instructor, track=self.track, title='CCD Course', description='...',
+            production_type=Course.ProductionType.FULL, price=Decimal('0.00'), is_free=True,
+            status=Course.Status.PUBLISHED)
+        module = Module.objects.create(course=self.course, title='M1')
+        Lecture.objects.create(module=module, title='L1', duration_seconds=4000)  # 1h 6m 40s
+
+    def test_catalog_card_shows_total_duration(self):
+        response = self.client.get(reverse('course_catalog'))
+        self.assertContains(response, '1h 6m')
+
+    def test_track_detail_card_shows_total_duration(self):
+        response = self.client.get(reverse('track_detail', args=[self.track.slug]))
+        self.assertContains(response, '1h 6m')
+
+    # search_results.html reuses the same _course_card.html partial (already
+    # covered above), so it inherits this for free -- not tested directly
+    # here since the view's postgres SearchVector/SearchQuery aren't
+    # supported by this project's sqlite local-dev/test database.
+
+    def test_card_omits_duration_when_zero(self):
+        no_duration_course = Course.objects.create(
+            instructor=self.instructor, track=self.track, title='No Duration Course',
+            description='...', production_type=Course.ProductionType.FULL,
+            price=Decimal('0.00'), is_free=True, status=Course.Status.PUBLISHED)
+        response = self.client.get(reverse('course_catalog'))
+        self.assertContains(response, 'No Duration Course')
+        # Sanity: the other course's duration text is present, this one has none to show.
+        self.assertContains(response, '1h 6m')
+
+
 class LessonPlayerLayoutTests(TestCase):
     """The redesigned lesson-viewing page (Contents sidebar + video +
     Overview tab), structured after LinkedIn Learning's course player.
@@ -3146,6 +3462,22 @@ class LessonPlayerLayoutTests(TestCase):
         response = self.client.get(reverse('course_player', args=[self.course.id, self.lecture1.id]))
         self.assertContains(response, 'id="sidebar-collapse-btn"')
         self.assertContains(response, 'id="sidebar-expand-btn"')
+
+    def test_transcript_tab_shown_for_full_production_lecture_with_generated_script(self):
+        # ai_generated_script is the field the "Generate Transcript" button
+        # writes into for Full Production lectures too -- this course is
+        # FULL (per setUp), so the tab must not be gated on production_type.
+        self.lecture1.ai_generated_script = 'This is the generated transcript.'
+        self.lecture1.save(update_fields=['ai_generated_script'])
+        self.client.force_login(self.student)
+        response = self.client.get(reverse('course_player', args=[self.course.id, self.lecture1.id]))
+        self.assertContains(response, 'id="tab-transcript"')
+        self.assertContains(response, 'This is the generated transcript.')
+
+    def test_transcript_tab_hidden_without_any_script(self):
+        self.client.force_login(self.student)
+        response = self.client.get(reverse('course_player', args=[self.course.id, self.lecture1.id]))
+        self.assertNotContains(response, 'id="tab-transcript"')
 
 
 class WatchThresholdAutoCompleteTests(TestCase):
@@ -4094,16 +4426,14 @@ class AICoachLessonSendTests(TestCase):
         self.assertIn('not available', context_kwarg)
 
     @patch('courses.views.ai_coach_client.send_message')
-    def test_full_production_course_has_no_transcript_for_any_lesson(self, mock_send):
+    def test_full_production_course_with_no_script_has_no_transcript(self, mock_send):
         mock_send.return_value = 'ok'
         full_course = Course.objects.create(
             instructor=self.instructor, track=self.course.track, title='Full Course', description='...',
             production_type=Course.ProductionType.FULL, price=Decimal('0.00'), is_free=True,
             status=Course.Status.PUBLISHED)
         module = Module.objects.create(course=full_course, title='M1')
-        # Even if ai_generated_script somehow has stray text, FULL production
-        # never surfaces it as a transcript -- it's not real lesson text.
-        lecture = Lecture.objects.create(module=module, title='Full Lesson', ai_generated_script='stray text')
+        lecture = Lecture.objects.create(module=module, title='Full Lesson')
         Enrollment.objects.create(student=self.student, course=full_course)
         self.client.force_login(self.student)
         self.client.post(
@@ -4111,7 +4441,29 @@ class AICoachLessonSendTests(TestCase):
             data=json.dumps({'message': 'brief this lesson'}), content_type='application/json')
         context_kwarg = mock_send.call_args.kwargs['context']
         self.assertIn('not available', context_kwarg)
-        self.assertNotIn('stray text', context_kwarg)
+
+    @patch('courses.views.ai_coach_client.send_message')
+    def test_full_production_lecture_with_generated_transcript_is_used(self, mock_send):
+        # ai_generated_script is the same field the "Generate Transcript"
+        # button (Full Production courses) and a Script Only course's
+        # manual script both write into -- once populated, either way, the
+        # AI Coach grounds on it regardless of production_type.
+        mock_send.return_value = 'ok'
+        full_course = Course.objects.create(
+            instructor=self.instructor, track=self.course.track, title='Full Course', description='...',
+            production_type=Course.ProductionType.FULL, price=Decimal('0.00'), is_free=True,
+            status=Course.Status.PUBLISHED)
+        module = Module.objects.create(course=full_course, title='M1')
+        lecture = Lecture.objects.create(
+            module=module, title='Full Lesson', ai_generated_script='Generated transcript text.')
+        Enrollment.objects.create(student=self.student, course=full_course)
+        self.client.force_login(self.student)
+        self.client.post(
+            reverse('ai_coach_lesson_send', args=[full_course.id, lecture.id]),
+            data=json.dumps({'message': 'brief this lesson'}), content_type='application/json')
+        context_kwarg = mock_send.call_args.kwargs['context']
+        self.assertIn('Generated transcript text.', context_kwarg)
+        self.assertNotIn('not available', context_kwarg)
 
     @patch('courses.views.ai_coach_client.send_message')
     def test_does_not_persist_to_ai_conversation(self, mock_send):

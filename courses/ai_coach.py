@@ -14,12 +14,15 @@ import logging
 import re
 import time
 
+import requests
 from django.conf import settings
 from django.core.cache import cache
 from django.utils.translation import gettext as _
 from google import genai
 from google.genai import errors as genai_errors
 from google.genai import types as genai_types
+
+from . import bunny
 
 logger = logging.getLogger(__name__)
 
@@ -482,4 +485,105 @@ def send_message(history: list[dict], user_id=None, context: str | None = None) 
         raise AICoachError(_(
             "Mendoura AI Coach couldn't generate a reply just now. Please try again."
         ))
+    return text
+
+
+# Bunny's typical resolution ladder, smallest first. Transcription only
+# needs the audio track to be intelligible -- picking the smallest
+# available MP4 fallback keeps the file Gemini has to fetch as small as
+# possible, both for speed and to stay clear of Gemini's ~100MB ceiling
+# for fetching a file by URL on a longer lecture video.
+RESOLUTION_LADDER = ('240p', '360p', '480p', '720p', '1080p', '1440p', '2160p')
+
+TRANSCRIPTION_PROMPT = (
+    "Transcribe the spoken audio of this lecture video verbatim, as plain text. "
+    "Do not summarize, do not add commentary, do not add timestamps -- just the "
+    "words actually spoken, organized into readable paragraphs."
+)
+
+
+def _smallest_available_resolution(available_resolutions: list[str]) -> str | None:
+    for resolution in RESOLUTION_LADDER:
+        if resolution in available_resolutions:
+            return resolution
+    return available_resolutions[0] if available_resolutions else None
+
+
+def transcribe_video(bunny_video_id: str, user_id=None) -> str:
+    """Sends a Bunny-hosted lecture video directly to Gemini for
+    transcription -- by URL (bunny.mp4_url), so Gemini fetches the file
+    itself and this process never downloads/re-uploads it. Returns plain
+    transcript text on success; the caller is responsible for saving it
+    into Lecture.ai_generated_script, the same field a Script Only
+    course's manual script uses.
+
+    Raises AICoachError with an already-friendly message on any failure --
+    missing config, no MP4 fallback available on Bunny yet, hitting the
+    free-tier rate limit, or Gemini rejecting/failing on the file -- same
+    contract as send_message."""
+    if not is_configured():
+        raise AICoachError(_("AI transcription isn't configured yet -- GEMINI_API_KEY is missing."))
+    if not settings.BUNNY_PULL_ZONE_HOSTNAME:
+        raise AICoachError(_(
+            "Video transcription needs BUNNY_PULL_ZONE_HOSTNAME configured -- see this Bunny "
+            "library's CDN Hostname in its dashboard settings."
+        ))
+
+    try:
+        info = bunny.get_video_info(bunny_video_id)
+    except (bunny.BunnyError, requests.RequestException) as exc:
+        logger.error(
+            '[AI_COACH] transcribe_video failed to fetch Bunny video info: video_id=%s',
+            bunny_video_id, exc_info=True)
+        raise AICoachError(_(
+            "Couldn't reach Bunny to check this video's details. Please try again shortly."
+        )) from exc
+
+    if not info['has_mp4_fallback']:
+        raise AICoachError(_(
+            "This video doesn't have an MP4 file available for transcription yet -- enable "
+            "'MP4 Fallback' for this library in your Bunny dashboard (or re-upload the video), "
+            "then try again."
+        ))
+
+    resolution = _smallest_available_resolution(info['available_resolutions'])
+    if not resolution:
+        raise AICoachError(_(
+            "No downloadable resolution is available for this video yet. Please try again shortly."
+        ))
+
+    if _rate_limited(user_id):
+        raise AICoachError(_(
+            "Mendoura AI Coach is getting a lot of use right now (we run on a free tier with "
+            "limited capacity). Please wait a minute and try again."
+        ))
+
+    video_url = bunny.mp4_url(bunny_video_id, resolution)
+    client = genai.Client(api_key=settings.GEMINI_API_KEY)
+    try:
+        response = client.models.generate_content(
+            model=MODEL,
+            contents=genai_types.Content(parts=[
+                genai_types.Part(file_data=genai_types.FileData(
+                    file_uri=video_url, mime_type='video/mp4')),
+                genai_types.Part.from_text(text=TRANSCRIPTION_PROMPT),
+            ]),
+        )
+    except genai_errors.APIError as exc:
+        logger.error(
+            '[AI_COACH] transcribe_video Gemini call failed: code=%s status=%s message=%s details=%r',
+            exc.code, exc.status, exc.message, exc.details, exc_info=True)
+        if exc.code == 429:
+            raise AICoachError(_(
+                "Mendoura AI Coach hit Google's free-tier limit just now. Please wait a minute "
+                "and try again."
+            )) from exc
+        raise AICoachError(_(
+            "Transcription failed -- the video may be too large for the free tier, or Gemini "
+            "couldn't process it. Please try again shortly."
+        )) from exc
+
+    text = (getattr(response, 'text', None) or '').strip()
+    if not text:
+        raise AICoachError(_("Gemini didn't return a transcript for this video. Please try again."))
     return text
