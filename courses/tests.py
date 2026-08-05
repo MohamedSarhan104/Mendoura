@@ -3001,6 +3001,27 @@ class CoursePlayerBackfillsEveryLectureTests(TestCase):
         self.lecture2.refresh_from_db()
         self.assertEqual(self.lecture2.duration_seconds, 200)
 
+    def test_one_lectures_bunny_404_does_not_block_the_others(self):
+        # lecture1's stored bunny_video_id doesn't match any real video on
+        # Bunny (deleted directly on Bunny, or an orphaned reference) --
+        # that 404 must not short-circuit the loop and skip lecture2, and
+        # the page itself must still render.
+        def side_effect(video_id):
+            if video_id == 'guid-1':
+                response = Mock(ok=False, status_code=404, text='{"Message": "Not Found"}')
+                response.raise_for_status.side_effect = requests.HTTPError('404 Not Found')
+                raise requests.HTTPError('404 Not Found', response=response)
+            return {'status': 4, 'length': 200}
+
+        with patch('courses.bunny.get_video_info', side_effect=side_effect):
+            response = self.client.get(reverse('course_player', args=[self.course.id, self.lecture1.id]))
+
+        self.assertEqual(response.status_code, 200)
+        self.lecture1.refresh_from_db()
+        self.lecture2.refresh_from_db()
+        self.assertEqual(self.lecture1.duration_seconds, 0)  # unchanged -- its sync failed
+        self.assertEqual(self.lecture2.duration_seconds, 200)  # unaffected by lecture1's failure
+
 
 class DurationDisplayFilterTests(TestCase):
     """The `duration_display` template filter (courses/templatetags/

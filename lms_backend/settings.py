@@ -304,24 +304,31 @@ INSTRUCTOR_APPLICATION_NOTIFICATION_EMAIL = config(
 # right at a glance, and fails auth with no obvious clue why.
 GEMINI_API_KEY = config('GEMINI_API_KEY', default='').strip().strip('"\'')
 
-# Free-tier-eligible by default. Google no longer publishes a single fixed
-# rate-limit table (it varies and is best checked in your own AI Studio
-# dashboard), so both the model and the throttling thresholds below are
-# deliberately conservative and env-overridable rather than hardcoded to
-# whatever numbers are current today.
-GEMINI_MODEL = config('GEMINI_MODEL', default='gemini-2.5-flash-lite').strip()
+# Free-tier-eligible by default. gemini-2.5-flash-lite (this project's
+# original choice) started returning a hard 404 in production --
+# "This model models/gemini-2.5-flash-lite is no longer available to new
+# users" -- confirmed via Render's logs, not a guess. gemini-3.1-flash-lite
+# is its GA (since May 2026) successor and is still free-tier eligible as
+# of this writing. Google no longer publishes one fixed rate-limit table
+# (it varies and is best checked in your own AI Studio dashboard, and
+# model availability itself can change again the same way it just did) --
+# both the model and the throttling thresholds below stay env-overridable
+# rather than hardcoded to numbers that are only accurate today.
+GEMINI_MODEL = config('GEMINI_MODEL', default='gemini-3.1-flash-lite').strip()
 
 # Google enforces free-tier RPM/RPD against the whole API key/project, not
 # per Mendoura student -- these "global" ceilings are the real guardrail
 # against a 429 from Google; keep them at or below whatever your AI Studio
-# dashboard currently shows for GEMINI_MODEL.
-GEMINI_RATE_LIMIT_PER_MINUTE = config('GEMINI_RATE_LIMIT_PER_MINUTE', default=10, cast=int)
-GEMINI_RATE_LIMIT_PER_DAY = config('GEMINI_RATE_LIMIT_PER_DAY', default=200, cast=int)
+# dashboard currently shows for GEMINI_MODEL. gemini-3.1-flash-lite's free
+# tier is commonly reported at 30 RPM / 1,500 RPD -- set with headroom
+# below that, not at the exact ceiling.
+GEMINI_RATE_LIMIT_PER_MINUTE = config('GEMINI_RATE_LIMIT_PER_MINUTE', default=20, cast=int)
+GEMINI_RATE_LIMIT_PER_DAY = config('GEMINI_RATE_LIMIT_PER_DAY', default=1200, cast=int)
 
 # Per-student ceilings, well under the global ones above -- stop one student
 # from using up the whole shared free-tier budget alone.
-GEMINI_USER_RATE_LIMIT_PER_MINUTE = config('GEMINI_USER_RATE_LIMIT_PER_MINUTE', default=4, cast=int)
-GEMINI_USER_RATE_LIMIT_PER_DAY = config('GEMINI_USER_RATE_LIMIT_PER_DAY', default=40, cast=int)
+GEMINI_USER_RATE_LIMIT_PER_MINUTE = config('GEMINI_USER_RATE_LIMIT_PER_MINUTE', default=8, cast=int)
+GEMINI_USER_RATE_LIMIT_PER_DAY = config('GEMINI_USER_RATE_LIMIT_PER_DAY', default=240, cast=int)
 
 # Auto-translation of Track/Course/legal content (courses/auto_translate.py)
 # uses deep-translator's free GoogleTranslator -- no key or billing needed,

@@ -23,7 +23,7 @@ from google.genai import types as genai_types
 
 logger = logging.getLogger(__name__)
 
-MODEL = getattr(settings, 'GEMINI_MODEL', 'gemini-2.5-flash-lite')
+MODEL = getattr(settings, 'GEMINI_MODEL', 'gemini-3.1-flash-lite')
 
 SYSTEM_PROMPT = (
     "You are Mendoura AI Coach, a friendly, encouraging, and elite academic "
