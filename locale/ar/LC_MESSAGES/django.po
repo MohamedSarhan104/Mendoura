@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-05 16:02+0000\n"
+"POT-Creation-Date: 2026-08-05 17:01+0000\n"
 "PO-Revision-Date: 2026-07-14 19:49+0000\n"
 "Last-Translator: Mendoura\n"
 "Language-Team: Arabic\n"
@@ -14,6 +14,24 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=6; plural=n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 "
 "&& n%100<=10 ? 3 : n%100>=11 && n%100<=99 ? 4 : 5;\n"
+
+#: courses/ai_coach.py:446
+msgid ""
+"Mendoura AI Coach is getting a lot of questions right now (we run on a free "
+"tier with limited capacity). Please wait a minute and try again."
+msgstr ""
+"مساعد مندورة الذكي مشغول بأسئلة كثيرة الآن (نعمل على خطة مجانية بسعة "
+"محدودة). فضلاً انتظر دقيقة وحاول مرة أخرى."
+
+#: courses/ai_coach.py:465
+msgid ""
+"Mendoura AI Coach couldn't reach the AI service just now. Please try again "
+"shortly."
+msgstr "تعذّر على مساعد مندورة الذكي الوصول لخدمة الذكاء الاصطناعي الآن. حاول مرة أخرى بعد قليل."
+
+#: courses/ai_coach.py:472
+msgid "Mendoura AI Coach couldn't generate a reply just now. Please try again."
+msgstr "تعذّر على مساعد مندورة الذكي إنشاء رد الآن. حاول مرة أخرى."
 
 #: courses/forms.py:29
 msgid "An account with this username already exists."
@@ -402,6 +420,7 @@ msgstr ""
 
 #: courses/templates/courses/_course_card.html:21
 #: courses/templates/courses/detail.html:28
+#: courses/templates/courses/player.html:269
 #, python-format
 msgid "%(counter)s student"
 msgid_plural "%(counter)s students"
@@ -457,11 +476,11 @@ msgid "Awarded to"
 msgstr ""
 
 #: courses/templates/courses/certificate.html:21
-#: courses/templates/courses/player.html:234
+#: courses/templates/courses/player.html:244
 #: courses/templates/dashboard/admin_payouts.html:18
 #: courses/templates/dashboard/admin_subscription_revenue.html:47
 #: courses/templates/dashboard/admin_test_emails.html:88
-#: courses/templates/dashboard/admin_users.html:39 courses/views.py:2029
+#: courses/templates/dashboard/admin_users.html:39 courses/views.py:2207
 msgid "Instructor"
 msgstr "المدرّب"
 
@@ -671,40 +690,60 @@ msgstr "تم تفعيل حماية التشغيل"
 msgid "Reload the page to keep watching."
 msgstr "أعد تحميل الصفحة لمتابعة المشاهدة."
 
-#: courses/templates/courses/player.html:180
+#: courses/templates/courses/player.html:181
+#: courses/templates/courses/player.html:406
 msgid "Completed"
 msgstr "مكتمل"
 
-#: courses/templates/courses/player.html:184
+#: courses/templates/courses/player.html:185
 msgid "Mark as Complete"
 msgstr "وضع علامة مكتمل"
 
-#: courses/templates/courses/player.html:193
+#: courses/templates/courses/player.html:195
 msgid "Previous"
 msgstr "السابق"
 
-#: courses/templates/courses/player.html:198
+#: courses/templates/courses/player.html:200
 msgid "Next"
 msgstr "التالي"
 
-#: courses/templates/courses/player.html:207
+#: courses/templates/courses/player.html:209
 #: courses/templates/dashboard/manage_lectures.html:30
 msgid "Homework"
 msgstr "الواجب"
 
-#: courses/templates/courses/player.html:208
+#: courses/templates/courses/player.html:210
 msgid "This lecture has a homework submission."
 msgstr "يحتوي هذا الدرس على واجب للتسليم."
 
-#: courses/templates/courses/player.html:211
+#: courses/templates/courses/player.html:213
 msgid "Submit / View Homework"
 msgstr "إرسال / عرض الواجب"
 
-#: courses/templates/courses/player.html:219
+#: courses/templates/courses/player.html:222
 msgid "Overview"
 msgstr "نظرة عامة"
 
-#: courses/templates/courses/player.html:240
+#: courses/templates/courses/player.html:227
+msgid "Transcript"
+msgstr "النص المكتوب"
+
+#: courses/templates/courses/player.html:253
+msgid "total"
+msgstr "إجمالاً"
+
+#: courses/templates/courses/player.html:281
+#, python-format
+msgid "%(counter)s rating"
+msgid_plural "%(counter)s ratings"
+msgstr[0] "بلا تقييمات"
+msgstr[1] "تقييم واحد"
+msgstr[2] "تقييمان"
+msgstr[3] "%(counter)s تقييمات"
+msgstr[4] "%(counter)s تقييمًا"
+msgstr[5] "%(counter)s تقييم"
+
+#: courses/templates/courses/player.html:299
 msgid "Resources"
 msgstr "الموارد"
 
@@ -1091,7 +1130,7 @@ msgstr ""
 #: courses/templates/dashboard/admin_test_emails.html:26
 #: courses/templates/dashboard/admin_users.html:41
 #: courses/templates/dashboard/course_students.html:19
-#: courses/templates/dashboard/instructor.html:103 courses/views.py:2029
+#: courses/templates/dashboard/instructor.html:103 courses/views.py:2207
 msgid "Student"
 msgstr ""
 
@@ -1510,10 +1549,13 @@ msgid "No instructors found."
 msgstr "أرباح المدرّبين"
 
 #: courses/templates/dashboard/ai_buddy.html:32
+#: templates/partials/_ai_coach_widget.html:51
+#: templates/partials/_ai_coach_widget.html:65
 msgid "Mendoura AI Coach"
 msgstr ""
 
 #: courses/templates/dashboard/ai_buddy.html:33
+#: templates/partials/_ai_coach_widget.html:69
 msgid "Your 24/7 Study Partner"
 msgstr ""
 
@@ -1537,10 +1579,12 @@ msgid "Ask your AI Coach anything..."
 msgstr ""
 
 #: courses/templates/dashboard/ai_buddy.html:87
+#: templates/partials/_ai_coach_widget.html:101
 msgid "Something went wrong. Please try again."
 msgstr ""
 
 #: courses/templates/dashboard/ai_buddy.html:88
+#: templates/partials/_ai_coach_widget.html:102
 msgid "Network error -- please try again."
 msgstr ""
 
@@ -1857,7 +1901,7 @@ msgstr ""
 
 #: courses/templates/dashboard/edit_lecture.html:103
 #: courses/templates/dashboard/wizard_module_content.html:258
-#: courses/views.py:1623
+#: courses/views.py:1801
 msgid "Could not start the upload. Please try again."
 msgstr ""
 
@@ -2567,334 +2611,334 @@ msgid ""
 "be able to log in once it's approved."
 msgstr ""
 
-#: courses/views.py:432
+#: courses/views.py:444
 msgid "Add your script for this module before continuing."
 msgstr ""
 
-#: courses/views.py:434
+#: courses/views.py:446
 msgid ""
 "Upload a video (or add an external video link) for this module before "
 "continuing."
 msgstr ""
 
-#: courses/views.py:471
+#: courses/views.py:483
 #, python-format
 msgid "%(title)s submitted for review. We'll email you once it's approved."
 msgstr ""
 
-#: courses/views.py:519
+#: courses/views.py:545
 #, python-format
 msgid ""
 "%(title)s was live, so this change has been resubmitted for admin review."
 msgstr ""
 
-#: courses/views.py:583 courses/views.py:590
+#: courses/views.py:609 courses/views.py:616
 #, python-format
 msgid "You are now enrolled in %(title)s."
 msgstr ""
 
-#: courses/views.py:636
+#: courses/views.py:662
 msgid "Unable to start checkout right now. Please try again shortly."
 msgstr ""
 
-#: courses/views.py:876
+#: courses/views.py:903
 msgid "Enroll in this course to watch this lecture."
 msgstr ""
 
-#: courses/views.py:1082
+#: courses/views.py:1157
 msgid "Homework submitted."
 msgstr ""
 
-#: courses/views.py:1131
+#: courses/views.py:1206 courses/views.py:1313 courses/views.py:1320
 msgid "Malformed request."
 msgstr ""
 
-#: courses/views.py:1134
+#: courses/views.py:1209 courses/views.py:1316
 msgid "Message cannot be empty."
 msgstr ""
 
-#: courses/views.py:1136
+#: courses/views.py:1211 courses/views.py:1318
 msgid "That message is too long -- please shorten it."
 msgstr ""
 
-#: courses/views.py:1314
+#: courses/views.py:1492
 #, python-format
 msgid "%(title)s updated."
 msgstr ""
 
-#: courses/views.py:1340
+#: courses/views.py:1518
 #, python-format
 msgid ""
 "%(title)s has enrollment or payment history, so it has been archived instead "
 "of deleted."
 msgstr ""
 
-#: courses/views.py:1345
+#: courses/views.py:1523
 #, python-format
 msgid "%(title)s has been deleted."
 msgstr ""
 
-#: courses/views.py:1351
+#: courses/views.py:1529
 #, python-format
 msgid ""
 "%(title)s has watch-time or revenue history, so it has been archived instead "
 "of deleted."
 msgstr ""
 
-#: courses/views.py:1404
+#: courses/views.py:1582
 #, python-format
 msgid ""
 "\"%(title)s\" has watch-time history on one of its lectures and cannot be "
 "deleted."
 msgstr ""
 
-#: courses/views.py:1467
+#: courses/views.py:1645
 #, python-format
 msgid "\"%(title)s\" has watch-time history and cannot be deleted."
 msgstr ""
 
-#: courses/views.py:1611
+#: courses/views.py:1789
 msgid "Video hosting is not configured."
 msgstr ""
 
-#: courses/views.py:1690
+#: courses/views.py:1868
 msgid "This submission has already been graded."
 msgstr ""
 
-#: courses/views.py:1698
+#: courses/views.py:1876
 #, python-format
 msgid "Graded %(username)s's submission."
 msgstr ""
 
-#: courses/views.py:1748
+#: courses/views.py:1926
 #, python-format
 msgid "You can request a payout once a week. Next available: %(date)s."
 msgstr ""
 
-#: courses/views.py:1764
+#: courses/views.py:1942
 msgid "Payout request submitted."
 msgstr ""
 
-#: courses/views.py:1766
+#: courses/views.py:1944
 msgid "Payout amount cannot exceed your available balance."
 msgstr ""
 
-#: courses/views.py:1768
+#: courses/views.py:1946
 msgid "Please enter a valid payout amount."
 msgstr ""
 
-#: courses/views.py:1792
+#: courses/views.py:1970
 #, python-format
 msgid "Your request for \"%(name)s\" has been submitted for review."
 msgstr ""
 
-#: courses/views.py:1870
+#: courses/views.py:2048
 #, python-format
 msgid "Send failed: %(reason)s"
 msgstr ""
 
-#: courses/views.py:1870
+#: courses/views.py:2048
 msgid "unknown error"
 msgstr ""
 
-#: courses/views.py:1884
+#: courses/views.py:2062
 msgid "Enter a target email address first."
 msgstr ""
 
-#: courses/views.py:1890
+#: courses/views.py:2068
 #, python-format
 msgid "Student welcome email sent to %(email)s."
 msgstr ""
 
-#: courses/views.py:1898
+#: courses/views.py:2076
 msgid "No enrollments exist yet -- enroll in a course, then retry this test."
 msgstr ""
 
-#: courses/views.py:1903
+#: courses/views.py:2081
 #, python-format
 msgid ""
 "Enrollment-confirmation email sent to %(email)s (using real enrollment in "
 "\"%(course)s\" as sample data)."
 msgstr ""
 
-#: courses/views.py:1910
+#: courses/views.py:2088
 #, python-format
 msgid "Instructor application-received email sent to %(email)s."
 msgstr ""
 
-#: courses/views.py:1916
+#: courses/views.py:2094
 #, python-format
 msgid ""
 "Internal application-notification email sent to %(email)s (using your own "
 "account's details as sample applicant data)."
 msgstr ""
 
-#: courses/views.py:1922
+#: courses/views.py:2100
 #, python-format
 msgid "Instructor welcome email sent to %(email)s."
 msgstr ""
 
-#: courses/views.py:1927
+#: courses/views.py:2105
 #, python-format
 msgid "Instructor rejection email sent to %(email)s."
 msgstr ""
 
-#: courses/views.py:1934
+#: courses/views.py:2112
 msgid "No courses exist yet -- create one, then retry this test."
 msgstr ""
 
-#: courses/views.py:1939
+#: courses/views.py:2117
 #, python-format
 msgid ""
 "Course-approved email sent to %(email)s (using real course \"%(course)s\" as "
 "sample data)."
 msgstr ""
 
-#: courses/views.py:1945
+#: courses/views.py:2123
 #, python-format
 msgid ""
 "Course-rejected email sent to %(email)s (using real course \"%(course)s\" as "
 "sample data)."
 msgstr ""
 
-#: courses/views.py:1954
+#: courses/views.py:2132
 msgid "No track requests exist yet -- submit one, then retry this test."
 msgstr ""
 
-#: courses/views.py:1959
+#: courses/views.py:2137
 #, python-format
 msgid ""
 "Internal track-request notification sent to %(email)s (using real request "
 "\"%(track)s\" as sample data)."
 msgstr ""
 
-#: courses/views.py:1970
+#: courses/views.py:2148
 msgid ""
 "No track requests have been approved yet -- approve one, then retry this "
 "test."
 msgstr ""
 
-#: courses/views.py:1975
+#: courses/views.py:2153
 #, python-format
 msgid ""
 "Track-approved email sent to %(email)s (using real request \"%(track)s\" as "
 "sample data)."
 msgstr ""
 
-#: courses/views.py:1986
+#: courses/views.py:2164
 msgid ""
 "No track requests have been rejected yet -- reject one, then retry this test."
 msgstr ""
 
-#: courses/views.py:1991
+#: courses/views.py:2169
 #, python-format
 msgid ""
 "Track-rejected email sent to %(email)s (using real request \"%(track)s\" as "
 "sample data)."
 msgstr ""
 
-#: courses/views.py:2003
+#: courses/views.py:2181
 msgid ""
 "No certificates have been issued yet -- complete a course to generate one, "
 "then retry this test."
 msgstr ""
 
-#: courses/views.py:2009
+#: courses/views.py:2187
 #, python-format
 msgid ""
 "Certificate email sent to %(email)s (using real certificate data for "
 "\"%(course)s\")."
 msgstr ""
 
-#: courses/views.py:2021
+#: courses/views.py:2199
 msgid "Your admin account has no email address on file."
 msgstr ""
 
-#: courses/views.py:2027
+#: courses/views.py:2205
 #, python-format
 msgid ""
 "Password reset email (%(role)s template) sent to your own address "
 "(%(email)s) -- this is a real, working reset link."
 msgstr ""
 
-#: courses/views.py:2046
+#: courses/views.py:2224
 msgid "Subscription revenue distribution ran successfully."
 msgstr ""
 
-#: courses/views.py:2084
+#: courses/views.py:2262
 #, python-format
 msgid "%(title)s approved and published."
 msgstr ""
 
-#: courses/views.py:2098
+#: courses/views.py:2276
 #, python-format
 msgid "Please enter a rejection reason before rejecting %(title)s."
 msgstr ""
 
-#: courses/views.py:2105
+#: courses/views.py:2283
 #, python-format
 msgid "%(title)s rejected."
 msgstr ""
 
-#: courses/views.py:2130
+#: courses/views.py:2308
 #, python-format
 msgid ""
 "%(username)s can't be approved yet -- a Payoneer account is required for "
 "instructors based outside Egypt."
 msgstr ""
 
-#: courses/views.py:2137
+#: courses/views.py:2315
 #, python-format
 msgid "%(username)s has been approved."
 msgstr ""
 
-#: courses/views.py:2152
+#: courses/views.py:2330
 #, python-format
 msgid ""
 "%(username)s has existing activity on the platform and can't be rejected."
 msgstr ""
 
-#: courses/views.py:2161
+#: courses/views.py:2339
 #, python-format
 msgid "%(username)s's registration was rejected and removed."
 msgstr ""
 
-#: courses/views.py:2170
+#: courses/views.py:2348
 msgid "You can't delete your own account."
 msgstr ""
 
-#: courses/views.py:2172
+#: courses/views.py:2350
 msgid "Admin accounts can't be deleted from here."
 msgstr ""
 
-#: courses/views.py:2177
+#: courses/views.py:2355
 #, python-format
 msgid "%(username)s was permanently deleted."
 msgstr ""
 
-#: courses/views.py:2181
+#: courses/views.py:2359
 #, python-format
 msgid "%(username)s has payment or revenue history and can't be deleted."
 msgstr ""
 
-#: courses/views.py:2304
+#: courses/views.py:2482
 #, python-format
 msgid ""
 "A track named \"%(name)s\" already exists. Reject this request or rename it "
 "first."
 msgstr ""
 
-#: courses/views.py:2312
+#: courses/views.py:2490
 #, python-format
 msgid "\"%(name)s\" approved and is now live."
 msgstr ""
 
-#: courses/views.py:2326
+#: courses/views.py:2504
 #, python-format
 msgid "Please enter a rejection reason before rejecting \"%(name)s\"."
 msgstr ""
 
-#: courses/views.py:2333
+#: courses/views.py:2511
 #, python-format
 msgid "\"%(name)s\" rejected."
 msgstr ""
@@ -2964,15 +3008,15 @@ msgstr "تسجيل الدخول"
 msgid "Sign Up"
 msgstr "إنشاء حساب"
 
-#: templates/base.html:304
+#: templates/base.html:308
 msgid "Terms & Conditions"
 msgstr "الشروط والأحكام"
 
-#: templates/base.html:305
+#: templates/base.html:309
 msgid "Privacy Policy"
 msgstr "سياسة الخصوصية"
 
-#: templates/base.html:308 templates/legal/document.html:25
+#: templates/base.html:312 templates/legal/document.html:25
 msgid "Cairo, Egypt"
 msgstr "القاهرة، مصر"
 
@@ -2992,6 +3036,50 @@ msgstr "التواصل:"
 #, python-format
 msgid "Last updated: %(date)s"
 msgstr "آخر تحديث: %(date)s"
+
+#: templates/partials/_ai_coach_widget.html:45
+msgid "Open Mendoura AI Coach"
+msgstr "افتح مساعد مندورة الذكي"
+
+#: templates/partials/_ai_coach_widget.html:78
+msgid "Brief this lesson"
+msgstr "لخّص هذا الدرس"
+
+#: templates/partials/_ai_coach_widget.html:79
+msgid "Summarize this module"
+msgstr "لخّص هذه الوحدة"
+
+#: templates/partials/_ai_coach_widget.html:80
+msgid "What should I focus on here?"
+msgstr "على ماذا يجب أن أركّز هنا؟"
+
+#: templates/partials/_ai_coach_widget.html:82
+msgid "Recommend a course for me"
+msgstr "رشّح لي دورة"
+
+#: templates/partials/_ai_coach_widget.html:83
+msgid "Build me a study schedule"
+msgstr "اقترح لي جدول مذاكرة"
+
+#: templates/partials/_ai_coach_widget.html:84
+msgid "Give me career advice"
+msgstr "أعطني نصيحة مهنية"
+
+#: templates/partials/_ai_coach_widget.html:91
+msgid "Ask your AI Coach..."
+msgstr "اسأل مساعدك الذكي..."
+
+#: templates/partials/_ai_coach_widget.html:103
+msgid ""
+"Welcome! Ask me anything -- career advice, course recommendations, or study "
+"guidance."
+msgstr "أهلاً! اسألني أي شيء -- نصائح مهنية، ترشيح دورات، أو إرشاد للمذاكرة."
+
+#: templates/partials/_ai_coach_widget.html:104
+msgid ""
+"Ask me about this lesson -- I can brief it or summarize the whole module for "
+"you."
+msgstr "اسألني عن هذا الدرس -- يمكنني تلخيصه أو تلخيص الوحدة كاملة لك."
 
 #: templates/platform_home.html:8
 msgid ""

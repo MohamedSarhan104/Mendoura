@@ -261,24 +261,36 @@ def _sync_bunny_status(lecture):
     it, so a lecture can stay stuck showing "still processing" long after
     Bunny actually finished. Called whenever we're about to show this status
     to an instructor, so it reflects Bunny's real current state instead of a
-    possibly-stale local flag. Best-effort: a Bunny hiccup here should never
-    break the page that's just trying to display a status.
+    possibly-stale local flag. Also backfills duration_seconds the first time
+    Bunny reports a real length -- nothing else in the upload flow ever
+    populates it. Best-effort: a Bunny hiccup here should never break the
+    page that's just trying to display a status.
     [BUNNY_STATUS_DEBUG]"""
-    if not lecture.bunny_video_id or lecture.bunny_ready:
+    if not lecture.bunny_video_id:
+        return
+    if lecture.bunny_ready and lecture.duration_seconds:
         return
     try:
-        status = bunny.get_video_status(lecture.bunny_video_id)
+        info = bunny.get_video_info(lecture.bunny_video_id)
     except (bunny.BunnyError, requests.RequestException):
         logger.error(
             '[BUNNY_STATUS_DEBUG] _sync_bunny_status failed to refresh lecture_id=%s guid=%s',
             lecture.id, lecture.bunny_video_id, exc_info=True)
         return
+
+    status = info['status']
+    update_fields = []
     if status != lecture.bunny_status:
         logger.info(
             '[BUNNY_STATUS_DEBUG] _sync_bunny_status updating lecture_id=%s guid=%s: %s -> %s',
             lecture.id, lecture.bunny_video_id, lecture.bunny_status, status)
         lecture.bunny_status = status
-        lecture.save(update_fields=['bunny_status'])
+        update_fields.append('bunny_status')
+    if not lecture.duration_seconds and info['length']:
+        lecture.duration_seconds = info['length']
+        update_fields.append('duration_seconds')
+    if update_fields:
+        lecture.save(update_fields=update_fields)
 
 
 def _module_content_ready(course, module):
@@ -489,6 +501,20 @@ def _with_stats(queryset):
     """Annotate courses with a live average rating and enrolled-student count,
     for display on course cards and detail pages."""
     return queryset.annotate(avg_rating=Avg('reviews__rating'), enrolled_count=Count('enrollments'))
+
+
+def _rating_breakdown(course):
+    """Per-star (5..1) review count and percentage of this course's total
+    reviews, for the lesson player Overview tab's ratings breakdown bars --
+    Review only stores each individual rating, so this aggregation doesn't
+    exist anywhere else yet."""
+    total = course.reviews.count()
+    counts = {row['rating']: row['n'] for row in course.reviews.values('rating').annotate(n=Count('id'))}
+    return [
+        {'stars': stars, 'count': counts.get(stars, 0),
+         'percent': round(counts.get(stars, 0) * 100 / total) if total else 0}
+        for stars in (5, 4, 3, 2, 1)
+    ]
 
 
 def _can_preview_unpublished(user, course):
@@ -852,8 +878,9 @@ def my_learning(request):
 # Course Player - watch a lecture. Preview lectures are open to anyone;
 # everything else requires an active enrollment.
 def course_player(request, course_id, lecture_id):
-    course = get_object_or_404(Course, id=course_id)
+    course = get_object_or_404(_with_stats(Course.objects.all()), id=course_id)
     lecture = get_object_or_404(Lecture, id=lecture_id, module__course=course)
+    _sync_bunny_status(lecture)
 
     # Lazily backfills the poster for any course that predates this field
     # (or was created outside the normal form, e.g. via Django admin) --
@@ -898,6 +925,21 @@ def course_player(request, course_id, lecture_id):
     # uses the secret key -- a fresh, expiring URL is minted on every load.
     bunny_embed_url = bunny.embed_url(lecture.bunny_video_id) if lecture.bunny_video_id else None
 
+    # Overview tab: total course duration is the sum across every lecture in
+    # every module (not just the current one), since a module can hold
+    # several shorter lessons.
+    total_duration_seconds = sum(l.duration_seconds for l in all_lectures)
+
+    # Transcript tab only makes sense for Script Only courses (the only
+    # production type that stores any lesson text at all, via
+    # ai_generated_script) and only for a lecture that actually has one --
+    # Full Production courses never have transcript text to show.
+    has_transcript = bool(
+        course.production_type == Course.ProductionType.SCRIPT_ONLY
+        and lecture.ai_generated_script
+        and lecture.ai_generated_script.strip()
+    )
+
     return render(request, 'courses/player.html', {
         'course': course,
         'lecture': lecture,
@@ -909,6 +951,9 @@ def course_player(request, course_id, lecture_id):
         'next_lecture': next_lecture,
         'completed_lecture_ids': completed_lecture_ids,
         'passed_quiz_ids': passed_quiz_ids,
+        'total_duration_seconds': total_duration_seconds,
+        'has_transcript': has_transcript,
+        'rating_breakdown': _rating_breakdown(course),
     })
 
 
@@ -991,11 +1036,21 @@ def quiz_result(request, course_id, module_id, attempt_id):
     })
 
 
+# A lecture counts as "watched" once accumulated watch-time reaches this
+# fraction of its known duration -- matches the ~90% threshold requested for
+# gating auto-complete, mirroring how most video platforms treat a lecture
+# as finished without requiring every last second.
+WATCH_COMPLETE_THRESHOLD = 0.9
+
+
 # Records a client-flushed watch-time heartbeat (aggregated client-side,
 # sent roughly every 30s -- never one row per second). This is the only
 # input the subscription revenue-distribution job trusts; every check here
 # exists because watch-time is now money and a browser client cannot be
-# trusted to report it honestly.
+# trusted to report it honestly. Also the trigger for watch-threshold-gated
+# auto-complete: once this student's total logged watch-time on this lecture
+# reaches WATCH_COMPLETE_THRESHOLD of its duration, it's marked complete here
+# automatically, without waiting for the manual "Mark as Complete" click.
 @login_required
 def record_watch_event(request, course_id, lecture_id):
     if request.method != 'POST':
@@ -1034,7 +1089,27 @@ def record_watch_event(request, course_id, lecture_id):
             return HttpResponse(status=429)
 
     WatchEvent.objects.create(student=request.user, lecture=lecture, course=course, seconds_watched=seconds)
-    return HttpResponse(status=204)
+
+    completed = False
+    enrollment = Enrollment.objects.filter(student=request.user, course=course).first()
+    if enrollment is not None and lecture.duration_seconds:
+        progress = LectureProgress.objects.filter(enrollment=enrollment, lecture=lecture).first()
+        if not progress or not progress.completed:
+            total_watched = WatchEvent.objects.filter(
+                student=request.user, lecture=lecture
+            ).aggregate(total=Sum('seconds_watched'))['total'] or 0
+            if total_watched >= lecture.duration_seconds * WATCH_COMPLETE_THRESHOLD:
+                progress, _created = LectureProgress.objects.get_or_create(
+                    enrollment=enrollment, lecture=lecture)
+                progress.completed = True
+                progress.completed_at = timezone.now()
+                progress.save()
+                enrollment.issue_certificate_if_complete()
+                completed = True
+        elif progress.completed:
+            completed = True
+
+    return JsonResponse({'completed': completed})
 
 
 # Public certificate verification page -- no login required, so anyone
@@ -1149,7 +1224,7 @@ def ai_coach_send(request):
     ][::-1]
 
     try:
-        reply = ai_coach_client.send_message(history)
+        reply = ai_coach_client.send_message(history, user_id=request.user.id)
     except ai_coach_client.AICoachError as exc:
         return JsonResponse({'error': str(exc)}, status=502)
 
@@ -1157,6 +1232,109 @@ def ai_coach_send(request):
     conversation.save(update_fields=['updated_at'])
 
     return JsonResponse({
+        'reply_html': markdown.markdown(reply, extensions=['fenced_code', 'tables', 'nl2br']),
+    })
+
+
+# Lets the floating AI Coach widget (base.html, any page) preload the same
+# persisted conversation the full /dashboard/ai-coach/ page shows, without
+# a full page render -- opening the widget looks like resuming one ongoing
+# thread instead of starting over.
+@login_required
+def ai_coach_widget_history(request):
+    if not request.user.is_student:
+        return HttpResponseForbidden()
+
+    conversation = AIConversation.objects.filter(student=request.user).first()
+    messages_out = [
+        {'role': m.role,
+         'html': markdown.markdown(m.content, extensions=['fenced_code', 'tables', 'nl2br'])
+                 if m.role == AIMessage.Role.ASSISTANT else None,
+         'content': m.content}
+        for m in (conversation.messages.all() if conversation else [])
+    ]
+    return JsonResponse({'messages': messages_out})
+
+
+def _lesson_ai_context(course, lecture):
+    """Grounding text for the lesson-embedded AI Coach: everything actually
+    known about the current lesson's module, so it can answer "brief this
+    lesson"/"summarize this module" from real text. Full Production courses
+    never have a transcript (ai_generated_script is only ever populated for
+    Script Only courses) -- lessons without one are labeled as such rather
+    than silently omitted, so the model can tell the student which lessons
+    it couldn't cover instead of pretending the gap doesn't exist."""
+    module = lecture.module
+    lines = [
+        f'Course: {course.title}',
+        f"Course description: {(course.description or '').strip()[:1500]}",
+        f'Module: {module.title}',
+        f'Lesson the student is currently viewing: {lecture.title}',
+        '',
+        f"All lessons in the '{module.title}' module, in order:",
+    ]
+    for l in module.lectures.order_by('order', 'id'):
+        marker = ' <- currently viewing' if l.id == lecture.id else ''
+        lines.append(f'- "{l.title}"{marker}')
+        has_script = (
+            course.production_type == Course.ProductionType.SCRIPT_ONLY
+            and l.ai_generated_script and l.ai_generated_script.strip()
+        )
+        if has_script:
+            lines.append(f'  Transcript: """{l.ai_generated_script.strip()[:4000]}"""')
+        else:
+            lines.append('  Transcript: not available for this lesson.')
+    return '\n'.join(lines)
+
+
+# Ephemeral counterpart to ai_coach_send for the lesson-embedded AI Coach
+# widget on the player page: grounded in the current lesson/module's actual
+# content (see _lesson_ai_context) instead of general chat. Deliberately
+# does not persist to AIConversation/AIMessage -- this is a short per-lesson
+# Q&A, not the student's one long-running study thread, so the client holds
+# and resends its own short-lived history each turn.
+@login_required
+def ai_coach_lesson_send(request, course_id, lecture_id):
+    if not request.user.is_student:
+        return HttpResponseForbidden()
+    if request.method != 'POST':
+        return HttpResponse(status=405)
+
+    course = get_object_or_404(Course, id=course_id)
+    lecture = get_object_or_404(Lecture, id=lecture_id, module__course=course)
+    if not student_has_access(request.user, course) and not lecture.is_preview:
+        return HttpResponseForbidden()
+
+    try:
+        payload = json.loads(request.body)
+        text = (payload.get('message') or '').strip()
+        prior_history = payload.get('history') or []
+    except (ValueError, json.JSONDecodeError, AttributeError):
+        return JsonResponse({'error': _('Malformed request.')}, status=400)
+
+    if not text:
+        return JsonResponse({'error': _('Message cannot be empty.')}, status=400)
+    if len(text) > 6000:
+        return JsonResponse({'error': _('That message is too long -- please shorten it.')}, status=400)
+    if not isinstance(prior_history, list):
+        return JsonResponse({'error': _('Malformed request.')}, status=400)
+
+    # Client-held history, same cap as the persisted thread -- trusted only
+    # as far as role/content strings, never as anything executable.
+    history = [
+        {'role': m.get('role'), 'content': str(m.get('content', ''))[:6000]}
+        for m in prior_history[-40:] if m.get('role') in ('user', 'assistant')
+    ]
+    history.append({'role': 'user', 'content': text})
+
+    try:
+        reply = ai_coach_client.send_message(
+            history, user_id=request.user.id, context=_lesson_ai_context(course, lecture))
+    except ai_coach_client.AICoachError as exc:
+        return JsonResponse({'error': str(exc)}, status=502)
+
+    return JsonResponse({
+        'reply': reply,
         'reply_html': markdown.markdown(reply, extensions=['fenced_code', 'tables', 'nl2br']),
     })
 

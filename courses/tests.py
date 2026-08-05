@@ -10,6 +10,7 @@ import requests
 from django.conf import settings
 from django.contrib.auth.tokens import default_token_generator
 from django.core import mail
+from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.core.management import call_command
 from django.test import TestCase, override_settings
@@ -2784,6 +2785,21 @@ class BunnyStatusHelperTests(TestCase):
         self.assertEqual(bunny.get_video_status('guid-1'), 4)
 
     @patch('courses.bunny.requests.get')
+    def test_get_video_info_returns_status_and_length(self, mock_get):
+        from courses import bunny
+        mock_get.return_value = Mock(
+            ok=True, status_code=200, text='{"status": 4, "length": 245}',
+            json=lambda: {'status': 4, 'length': 245})
+        self.assertEqual(bunny.get_video_info('guid-1'), {'status': 4, 'length': 245})
+
+    @patch('courses.bunny.requests.get')
+    def test_get_video_info_defaults_length_to_zero_when_absent(self, mock_get):
+        from courses import bunny
+        mock_get.return_value = Mock(ok=True, status_code=200, text='{"status": 1}',
+                                      json=lambda: {'status': 1})
+        self.assertEqual(bunny.get_video_info('guid-1'), {'status': 1, 'length': 0})
+
+    @patch('courses.bunny.requests.get')
     def test_get_video_status_raises_on_error_response(self, mock_get):
         from courses import bunny
         response = Mock(ok=False, status_code=401, text='{"Message": "Invalid AccessKey"}')
@@ -2823,42 +2839,58 @@ class BunnyStatusSyncOnPageLoadTests(TestCase):
             module=self.module, title='L1', bunny_video_id='guid-stuck', bunny_status=1)
         self.client.force_login(self.instructor)
 
-    @patch('courses.bunny.get_video_status', return_value=4)
-    def test_wizard_content_step_refreshes_stale_status(self, mock_status):
+    @patch('courses.bunny.get_video_info', return_value={'status': 4, 'length': 245})
+    def test_wizard_content_step_refreshes_stale_status(self, mock_info):
         response = self.client.get(
             reverse('course_wizard_module_content', args=[self.course.id, self.module.id]))
         self.assertEqual(response.status_code, 200)
-        mock_status.assert_called_once_with('guid-stuck')
+        mock_info.assert_called_once_with('guid-stuck')
         self.lecture.refresh_from_db()
         self.assertEqual(self.lecture.bunny_status, 4)
+        self.assertEqual(self.lecture.duration_seconds, 245)
         self.assertContains(response, 'Video ready')
         self.assertNotContains(response, 'still processing')
 
-    @patch('courses.bunny.get_video_status', return_value=4)
-    def test_edit_lecture_page_refreshes_stale_status(self, mock_status):
+    @patch('courses.bunny.get_video_info', return_value={'status': 4, 'length': 245})
+    def test_edit_lecture_page_refreshes_stale_status(self, mock_info):
         response = self.client.get(reverse('edit_lecture', args=[self.lecture.id]))
         self.assertEqual(response.status_code, 200)
-        mock_status.assert_called_once_with('guid-stuck')
+        mock_info.assert_called_once_with('guid-stuck')
         self.lecture.refresh_from_db()
         self.assertEqual(self.lecture.bunny_status, 4)
+        self.assertEqual(self.lecture.duration_seconds, 245)
 
-    @patch('courses.bunny.get_video_status')
-    def test_already_ready_lecture_does_not_call_bunny_again(self, mock_status):
+    @patch('courses.bunny.get_video_info')
+    def test_already_ready_lecture_does_not_call_bunny_again(self, mock_info):
+        self.lecture.bunny_status = 4
+        self.lecture.duration_seconds = 245
+        self.lecture.save(update_fields=['bunny_status', 'duration_seconds'])
+        response = self.client.get(
+            reverse('course_wizard_module_content', args=[self.course.id, self.module.id]))
+        self.assertEqual(response.status_code, 200)
+        mock_info.assert_not_called()
+
+    @patch('courses.bunny.get_video_info')
+    def test_ready_lecture_missing_duration_still_backfills_it(self, mock_info):
+        mock_info.return_value = {'status': 4, 'length': 245}
         self.lecture.bunny_status = 4
         self.lecture.save(update_fields=['bunny_status'])
         response = self.client.get(
             reverse('course_wizard_module_content', args=[self.course.id, self.module.id]))
         self.assertEqual(response.status_code, 200)
-        mock_status.assert_not_called()
+        mock_info.assert_called_once_with('guid-stuck')
+        self.lecture.refresh_from_db()
+        self.assertEqual(self.lecture.duration_seconds, 245)
 
-    @patch('courses.bunny.get_video_status', side_effect=requests.ConnectionError('refused'))
-    def test_bunny_failure_during_sync_does_not_break_the_page(self, mock_status):
+    @patch('courses.bunny.get_video_info', side_effect=requests.ConnectionError('refused'))
+    def test_bunny_failure_during_sync_does_not_break_the_page(self, mock_info):
         with self.assertLogs('courses.views', level='ERROR') as logs:
             response = self.client.get(
                 reverse('course_wizard_module_content', args=[self.course.id, self.module.id]))
         self.assertEqual(response.status_code, 200)
         self.lecture.refresh_from_db()
         self.assertEqual(self.lecture.bunny_status, 1)  # unchanged -- still "processing"
+        self.assertEqual(self.lecture.duration_seconds, 0)
         self.assertTrue(any('[BUNNY_STATUS_DEBUG]' in message for message in logs.output))
 
 
@@ -3007,6 +3039,76 @@ class LessonPlayerLayoutTests(TestCase):
         response = self.client.get(reverse('course_player', args=[self.course.id, self.lecture1.id]))
         self.assertContains(response, 'id="sidebar-collapse-btn"')
         self.assertContains(response, 'id="sidebar-expand-btn"')
+
+
+class WatchThresholdAutoCompleteTests(TestCase):
+    """record_watch_event's watch-threshold-gated auto-complete: once a
+    student's total logged watch-time on a lecture reaches
+    WATCH_COMPLETE_THRESHOLD (90%) of its known duration, it's marked
+    complete automatically -- no manual "Mark as Complete" click needed."""
+
+    def setUp(self):
+        self.instructor = User.objects.create_user(
+            username='wtac_inst', password='pw', is_instructor=True)
+        self.student = User.objects.create_user(username='wtac_stud', password='pw', is_student=True)
+        track = Track.objects.create(name='WTAC Track')
+        self.course = Course.objects.create(
+            instructor=self.instructor, track=track, title='WTAC Course', description='...',
+            production_type=Course.ProductionType.FULL, price=Decimal('0.00'), is_free=True,
+            status=Course.Status.PUBLISHED)
+        module = Module.objects.create(course=self.course, title='M1')
+        self.lecture = Lecture.objects.create(module=module, title='L1', duration_seconds=100)
+        # A second, never-completed lecture keeps the enrollment permanently
+        # incomplete -- issue_certificate_if_complete() short-circuits before
+        # ever calling generate_pdf(), so these tests don't need real
+        # Cloudinary credentials just to complete lecture 1.
+        Lecture.objects.create(module=module, title='L2')
+        self.enrollment = Enrollment.objects.create(student=self.student, course=self.course)
+        self.client.force_login(self.student)
+
+    def _watch(self, seconds):
+        return self.client.post(
+            reverse('record_watch_event', args=[self.course.id, self.lecture.id]),
+            data=json.dumps({'seconds': seconds}), content_type='application/json')
+
+    def test_reaching_90_percent_auto_completes(self):
+        # A prior event 10 minutes ago clears the anti-spoofing elapsed-time
+        # checks (which only apply relative to the student's *last* event).
+        WatchEvent.objects.create(
+            student=self.student, lecture=self.lecture, course=self.course,
+            seconds_watched=50, occurred_at=timezone.now() - timedelta(minutes=10))
+        response = self._watch(45)  # 50 + 45 = 95 -- crosses the 90/100 threshold
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.json()['completed'])
+        progress = LectureProgress.objects.get(enrollment=self.enrollment, lecture=self.lecture)
+        self.assertTrue(progress.completed)
+
+    def test_under_threshold_does_not_complete(self):
+        response = self._watch(30)
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(response.json()['completed'])
+        self.assertFalse(
+            LectureProgress.objects.filter(
+                enrollment=self.enrollment, lecture=self.lecture, completed=True).exists())
+
+    def test_unknown_duration_never_auto_completes(self):
+        self.lecture.duration_seconds = 0
+        self.lecture.save(update_fields=['duration_seconds'])
+        response = self._watch(90)
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(response.json()['completed'])
+
+    def test_already_completed_lecture_reports_completed_without_reprocessing(self):
+        LectureProgress.objects.create(enrollment=self.enrollment, lecture=self.lecture, completed=True)
+        response = self._watch(10)
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.json()['completed'])
+
+    def test_manual_mark_complete_still_works_independently(self):
+        response = self.client.post(reverse('mark_lecture_complete', args=[self.course.id, self.lecture.id]))
+        self.assertEqual(response.status_code, 302)
+        progress = LectureProgress.objects.get(enrollment=self.enrollment, lecture=self.lecture)
+        self.assertTrue(progress.completed)
 
 
 class HomeworkSubmissionTests(TestCase):
@@ -3253,13 +3355,13 @@ class AICoachTests(TestCase):
 
     def test_page_shows_sandbox_badge_when_api_key_missing(self):
         self.client.force_login(self.student)
-        with override_settings(AI_API_KEY=''):
+        with override_settings(GEMINI_API_KEY=''):
             response = self.client.get(reverse('ai_coach'))
         self.assertContains(response, 'Mendoura General AI Coach')
 
     def test_no_sandbox_badge_when_api_key_configured(self):
         self.client.force_login(self.student)
-        with override_settings(AI_API_KEY='test-key'):
+        with override_settings(GEMINI_API_KEY='test-key'):
             response = self.client.get(reverse('ai_coach'))
         self.assertNotContains(response, 'Mendoura General AI Coach')
 
@@ -3347,7 +3449,7 @@ class AICoachTests(TestCase):
             content_type='application/json')
         self.assertEqual(AIConversation.objects.filter(student=self.student).count(), 1)
 
-    @override_settings(AI_API_KEY='')
+    @override_settings(GEMINI_API_KEY='')
     def test_send_without_ai_configured_returns_200_with_sandbox_reply(self):
         self.client.force_login(self.student)
         response = self.client.post(
@@ -3361,7 +3463,7 @@ class AICoachTests(TestCase):
         self.assertEqual(len(messages), 2)
         self.assertEqual(messages[1].role, AIMessage.Role.ASSISTANT)
 
-    @override_settings(AI_API_KEY='')
+    @override_settings(GEMINI_API_KEY='')
     def test_send_without_ai_configured_matches_tech_keyword(self):
         self.client.force_login(self.student)
         response = self.client.post(
@@ -3370,7 +3472,7 @@ class AICoachTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn('Modern Software Engineering', response.json()['reply_html'])
 
-    @override_settings(AI_API_KEY='')
+    @override_settings(GEMINI_API_KEY='')
     def test_send_without_ai_configured_matches_business_keyword(self):
         self.client.force_login(self.student)
         response = self.client.post(
@@ -3379,7 +3481,7 @@ class AICoachTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn('Elite Entrepreneurship Framework', response.json()['reply_html'])
 
-    @override_settings(AI_API_KEY='')
+    @override_settings(GEMINI_API_KEY='')
     def test_send_without_ai_configured_matches_language_keyword(self):
         self.client.force_login(self.student)
         response = self.client.post(
@@ -3388,7 +3490,7 @@ class AICoachTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn('Language Learning Roadmap', response.json()['reply_html'])
 
-    @override_settings(AI_API_KEY='')
+    @override_settings(GEMINI_API_KEY='')
     def test_send_without_ai_configured_matches_study_schedule_keyword(self):
         self.client.force_login(self.student)
         response = self.client.post(
@@ -3397,7 +3499,7 @@ class AICoachTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn('Weekly Study Schedule', response.json()['reply_html'])
 
-    @override_settings(AI_API_KEY='')
+    @override_settings(GEMINI_API_KEY='')
     def test_send_without_ai_configured_matches_math_science_keyword_in_arabic(self):
         self.client.force_login(self.student)
         response = self.client.post(
@@ -3406,7 +3508,7 @@ class AICoachTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn('Math &amp; Science', response.json()['reply_html'])
 
-    @override_settings(AI_API_KEY='')
+    @override_settings(GEMINI_API_KEY='')
     def test_send_without_ai_configured_matches_career_keyword(self):
         self.client.force_login(self.student)
         response = self.client.post(
@@ -3415,7 +3517,7 @@ class AICoachTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn('Career &amp; Interview Prep Kit', response.json()['reply_html'])
 
-    @override_settings(AI_API_KEY='')
+    @override_settings(GEMINI_API_KEY='')
     def test_send_without_ai_configured_matches_design_keyword(self):
         self.client.force_login(self.student)
         response = self.client.post(
@@ -3424,7 +3526,7 @@ class AICoachTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn('Design Fundamentals', response.json()['reply_html'])
 
-    @override_settings(AI_API_KEY='')
+    @override_settings(GEMINI_API_KEY='')
     def test_send_without_ai_configured_matches_productivity_keyword_in_arabic(self):
         self.client.force_login(self.student)
         response = self.client.post(
@@ -3433,7 +3535,7 @@ class AICoachTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn('Focus &amp; Productivity Framework', response.json()['reply_html'])
 
-    @override_settings(AI_API_KEY='')
+    @override_settings(GEMINI_API_KEY='')
     def test_send_without_ai_configured_unmatched_query_gets_dynamic_catch_all(self):
         self.client.force_login(self.student)
         response = self.client.post(
@@ -3447,13 +3549,13 @@ class AICoachTests(TestCase):
 
 class AICoachClientTests(TestCase):
     def test_is_configured_reflects_setting(self):
-        with override_settings(AI_API_KEY=''):
+        with override_settings(GEMINI_API_KEY=''):
             self.assertFalse(ai_coach.is_configured())
-        with override_settings(AI_API_KEY='some-key'):
+        with override_settings(GEMINI_API_KEY='some-key'):
             self.assertTrue(ai_coach.is_configured())
 
     def test_send_message_returns_sandbox_reply_when_not_configured(self):
-        with override_settings(AI_API_KEY=''):
+        with override_settings(GEMINI_API_KEY=''):
             reply = ai_coach.send_message([{'role': 'user', 'content': 'hi'}])
         self.assertEqual(reply, ai_coach._catch_all_reply('hi'))
 
@@ -3546,6 +3648,273 @@ class AICoachClientTests(TestCase):
         long_query = 'why ' * 50
         reply = ai_coach._catch_all_reply(long_query)
         self.assertIn('...', reply)
+
+
+@override_settings(GEMINI_API_KEY='test-gemini-key')
+class GeminiBackendTests(TestCase):
+    """send_message's real (non-sandbox) path -- the Anthropic-to-Gemini
+    swap. The one network call (genai.Client) is mocked, same pattern as
+    bunny.create_video's requests.post."""
+
+    def setUp(self):
+        cache.clear()
+
+    @patch('courses.ai_coach.genai.Client')
+    def test_send_message_returns_gemini_text(self, mock_client_cls):
+        mock_client = Mock()
+        mock_client.models.generate_content.return_value = Mock(text='Hello from Gemini')
+        mock_client_cls.return_value = mock_client
+
+        reply = ai_coach.send_message([{'role': 'user', 'content': 'hi'}], user_id=1)
+        self.assertEqual(reply, 'Hello from Gemini')
+        mock_client_cls.assert_called_once_with(api_key='test-gemini-key')
+
+    @patch('courses.ai_coach.genai.Client')
+    def test_assistant_role_mapped_to_model_for_gemini(self, mock_client_cls):
+        mock_client = Mock()
+        mock_client.models.generate_content.return_value = Mock(text='ok')
+        mock_client_cls.return_value = mock_client
+
+        ai_coach.send_message(
+            [{'role': 'user', 'content': 'first'}, {'role': 'assistant', 'content': 'prior reply'}],
+            user_id=1)
+
+        contents = mock_client.models.generate_content.call_args.kwargs['contents']
+        self.assertEqual(contents[0].role, 'user')
+        self.assertEqual(contents[1].role, 'model')
+
+    @patch('courses.ai_coach.genai.Client')
+    def test_lesson_context_appended_to_system_instruction(self, mock_client_cls):
+        mock_client = Mock()
+        mock_client.models.generate_content.return_value = Mock(text='ok')
+        mock_client_cls.return_value = mock_client
+
+        ai_coach.send_message(
+            [{'role': 'user', 'content': 'brief this lesson'}], user_id=1,
+            context='Lesson: Intro to Loops\nTranscript: """for loops repeat code"""')
+
+        config = mock_client.models.generate_content.call_args.kwargs['config']
+        self.assertIn('Intro to Loops', config.system_instruction)
+        self.assertIn('Never invent or guess', config.system_instruction)
+
+    @patch('courses.ai_coach.genai.Client')
+    def test_api_error_raises_friendly_ai_coach_error(self, mock_client_cls):
+        from google.genai import errors as genai_errors
+        mock_client = Mock()
+        mock_client.models.generate_content.side_effect = genai_errors.APIError(
+            429, {'error': {'message': 'quota exceeded'}})
+        mock_client_cls.return_value = mock_client
+
+        with self.assertRaises(ai_coach.AICoachError) as ctx:
+            ai_coach.send_message([{'role': 'user', 'content': 'hi'}], user_id=1)
+        # The student never sees Google's raw error text -- just a friendly message.
+        self.assertNotIn('quota exceeded', str(ctx.exception))
+
+    @patch('courses.ai_coach.genai.Client')
+    def test_empty_gemini_response_raises_ai_coach_error(self, mock_client_cls):
+        mock_client = Mock()
+        mock_client.models.generate_content.return_value = Mock(text='')
+        mock_client_cls.return_value = mock_client
+
+        with self.assertRaises(ai_coach.AICoachError):
+            ai_coach.send_message([{'role': 'user', 'content': 'hi'}], user_id=1)
+
+
+@override_settings(
+    GEMINI_API_KEY='test-gemini-key',
+    GEMINI_RATE_LIMIT_PER_MINUTE=2, GEMINI_RATE_LIMIT_PER_DAY=100,
+    GEMINI_USER_RATE_LIMIT_PER_MINUTE=1, GEMINI_USER_RATE_LIMIT_PER_DAY=100)
+class AICoachRateLimitTests(TestCase):
+    """Basic per-user and shared project-wide throttling, sized to stay
+    within Gemini's free tier -- Google enforces its quota against the whole
+    API key, not per Mendoura student, so both buckets are tested."""
+
+    def setUp(self):
+        cache.clear()
+
+    @patch('courses.ai_coach.genai.Client')
+    def test_user_over_their_own_limit_is_blocked(self, mock_client_cls):
+        mock_client = Mock()
+        mock_client.models.generate_content.return_value = Mock(text='ok')
+        mock_client_cls.return_value = mock_client
+
+        ai_coach.send_message([{'role': 'user', 'content': 'one'}], user_id=42)
+        with self.assertRaises(ai_coach.AICoachError):
+            ai_coach.send_message([{'role': 'user', 'content': 'two'}], user_id=42)
+
+    @patch('courses.ai_coach.genai.Client')
+    def test_different_users_share_the_global_budget(self, mock_client_cls):
+        mock_client = Mock()
+        mock_client.models.generate_content.return_value = Mock(text='ok')
+        mock_client_cls.return_value = mock_client
+
+        # Global cap is 2/minute; each of these 2 users is within their own
+        # (1/minute) budget, but together they exhaust the shared ceiling.
+        ai_coach.send_message([{'role': 'user', 'content': 'one'}], user_id=1)
+        ai_coach.send_message([{'role': 'user', 'content': 'two'}], user_id=2)
+        with self.assertRaises(ai_coach.AICoachError):
+            ai_coach.send_message([{'role': 'user', 'content': 'three'}], user_id=3)
+
+    @patch('courses.ai_coach.genai.Client')
+    def test_sandbox_mode_is_never_rate_limited(self, mock_client_cls):
+        # Rate limiting only matters once real API calls cost quota --
+        # sandbox mode never calls Gemini at all.
+        with override_settings(GEMINI_API_KEY=''):
+            for _ in range(5):
+                ai_coach.send_message([{'role': 'user', 'content': 'hi'}], user_id=42)
+        mock_client_cls.assert_not_called()
+
+
+class AICoachWidgetHistoryTests(TestCase):
+    """GET endpoint the floating AI Coach widget uses to preload the same
+    persisted conversation the full /dashboard/ai-coach/ page shows."""
+
+    def setUp(self):
+        self.student = User.objects.create_user(username='wh_stud', password='pw', is_student=True)
+
+    def test_non_student_forbidden(self):
+        instructor = User.objects.create_user(username='wh_inst', password='pw', is_instructor=True)
+        self.client.force_login(instructor)
+        response = self.client.get(reverse('ai_coach_widget_history'))
+        self.assertEqual(response.status_code, 403)
+
+    def test_empty_history_when_no_conversation_yet(self):
+        self.client.force_login(self.student)
+        response = self.client.get(reverse('ai_coach_widget_history'))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['messages'], [])
+
+    def test_returns_persisted_conversation_markdown_rendered(self):
+        conversation = AIConversation.objects.create(student=self.student)
+        AIMessage.objects.create(conversation=conversation, role=AIMessage.Role.USER, content='hi')
+        AIMessage.objects.create(
+            conversation=conversation, role=AIMessage.Role.ASSISTANT, content='hello **there**')
+        self.client.force_login(self.student)
+        messages = self.client.get(reverse('ai_coach_widget_history')).json()['messages']
+        self.assertEqual(len(messages), 2)
+        self.assertIn('<strong>there</strong>', messages[1]['html'])
+        self.assertIsNone(messages[0]['html'])
+
+
+class AICoachLessonSendTests(TestCase):
+    """The lesson-embedded AI Coach: grounded in the current lesson/module's
+    actual content instead of general chat, and deliberately ephemeral (no
+    AIConversation/AIMessage row) since it's a per-lesson Q&A, not the
+    student's one long-running study thread."""
+
+    def setUp(self):
+        self.instructor = User.objects.create_user(
+            username='als_inst', password='pw', is_instructor=True)
+        self.student = User.objects.create_user(username='als_stud', password='pw', is_student=True)
+        self.outsider = User.objects.create_user(username='als_out', password='pw', is_student=True)
+        track = Track.objects.create(name='ALS Track')
+        self.course = Course.objects.create(
+            instructor=self.instructor, track=track, title='ALS Course', description='...',
+            production_type=Course.ProductionType.SCRIPT_ONLY, price=Decimal('0.00'), is_free=True,
+            status=Course.Status.PUBLISHED)
+        self.module = Module.objects.create(course=self.course, title='M1')
+        self.lecture_with_script = Lecture.objects.create(
+            module=self.module, title='Scripted Lesson',
+            ai_generated_script='This lesson covers loops.', order=1)
+        self.lecture_without_script = Lecture.objects.create(
+            module=self.module, title='Unscripted Lesson', order=2)
+        Enrollment.objects.create(student=self.student, course=self.course)
+
+    def _url(self, lecture):
+        return reverse('ai_coach_lesson_send', args=[self.course.id, lecture.id])
+
+    def _post(self, lecture, message, history=None):
+        body = {'message': message}
+        if history is not None:
+            body['history'] = history
+        return self.client.post(self._url(lecture), data=json.dumps(body), content_type='application/json')
+
+    def test_unenrolled_non_preview_forbidden(self):
+        self.client.force_login(self.outsider)
+        response = self._post(self.lecture_with_script, 'brief this lesson')
+        self.assertEqual(response.status_code, 403)
+
+    def test_instructor_cannot_use_student_endpoint(self):
+        self.client.force_login(self.instructor)
+        response = self._post(self.lecture_with_script, 'brief this lesson')
+        self.assertEqual(response.status_code, 403)
+
+    def test_preview_lecture_accessible_without_enrollment(self):
+        preview_lecture = Lecture.objects.create(module=self.module, title='Preview', is_preview=True, order=3)
+        self.client.force_login(self.outsider)
+        with patch('courses.views.ai_coach_client.send_message', return_value='ok'):
+            response = self._post(preview_lecture, 'hi')
+        self.assertEqual(response.status_code, 200)
+
+    def test_empty_message_rejected(self):
+        self.client.force_login(self.student)
+        response = self._post(self.lecture_with_script, '   ')
+        self.assertEqual(response.status_code, 400)
+
+    @patch('courses.views.ai_coach_client.send_message')
+    def test_enrolled_student_gets_lesson_context_grounded_reply(self, mock_send):
+        mock_send.return_value = 'This lesson is about loops.'
+        self.client.force_login(self.student)
+        response = self._post(self.lecture_with_script, 'brief this lesson')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['reply'], 'This lesson is about loops.')
+        context_kwarg = mock_send.call_args.kwargs['context']
+        self.assertIn('This lesson covers loops.', context_kwarg)
+        self.assertIn('Scripted Lesson', context_kwarg)
+
+    @patch('courses.views.ai_coach_client.send_message')
+    def test_context_notes_missing_transcript_for_unscripted_lesson(self, mock_send):
+        mock_send.return_value = 'ok'
+        self.client.force_login(self.student)
+        self._post(self.lecture_without_script, 'brief this lesson')
+        context_kwarg = mock_send.call_args.kwargs['context']
+        self.assertIn('Unscripted Lesson', context_kwarg)
+        self.assertIn('not available', context_kwarg)
+
+    @patch('courses.views.ai_coach_client.send_message')
+    def test_full_production_course_has_no_transcript_for_any_lesson(self, mock_send):
+        mock_send.return_value = 'ok'
+        full_course = Course.objects.create(
+            instructor=self.instructor, track=self.course.track, title='Full Course', description='...',
+            production_type=Course.ProductionType.FULL, price=Decimal('0.00'), is_free=True,
+            status=Course.Status.PUBLISHED)
+        module = Module.objects.create(course=full_course, title='M1')
+        # Even if ai_generated_script somehow has stray text, FULL production
+        # never surfaces it as a transcript -- it's not real lesson text.
+        lecture = Lecture.objects.create(module=module, title='Full Lesson', ai_generated_script='stray text')
+        Enrollment.objects.create(student=self.student, course=full_course)
+        self.client.force_login(self.student)
+        self.client.post(
+            reverse('ai_coach_lesson_send', args=[full_course.id, lecture.id]),
+            data=json.dumps({'message': 'brief this lesson'}), content_type='application/json')
+        context_kwarg = mock_send.call_args.kwargs['context']
+        self.assertIn('not available', context_kwarg)
+        self.assertNotIn('stray text', context_kwarg)
+
+    @patch('courses.views.ai_coach_client.send_message')
+    def test_does_not_persist_to_ai_conversation(self, mock_send):
+        mock_send.return_value = 'ok'
+        self.client.force_login(self.student)
+        self._post(self.lecture_with_script, 'brief this lesson')
+        self.assertFalse(AIConversation.objects.filter(student=self.student).exists())
+
+    @patch('courses.views.ai_coach_client.send_message')
+    def test_client_held_history_is_resent(self, mock_send):
+        mock_send.return_value = 'ok'
+        self.client.force_login(self.student)
+        history = [{'role': 'user', 'content': 'earlier q'}, {'role': 'assistant', 'content': 'earlier a'}]
+        self._post(self.lecture_with_script, 'and now?', history=history)
+        sent_history = mock_send.call_args.args[0]
+        self.assertEqual(sent_history[0]['content'], 'earlier q')
+        self.assertEqual(sent_history[-1]['content'], 'and now?')
+
+    @patch('courses.views.ai_coach_client.send_message')
+    def test_api_error_returns_502_with_friendly_message(self, mock_send):
+        mock_send.side_effect = ai_coach.AICoachError('Friendly message.')
+        self.client.force_login(self.student)
+        response = self._post(self.lecture_with_script, 'brief this lesson')
+        self.assertEqual(response.status_code, 502)
+        self.assertEqual(response.json()['error'], 'Friendly message.')
 
 
 class AutoTranslateClientTests(TestCase):

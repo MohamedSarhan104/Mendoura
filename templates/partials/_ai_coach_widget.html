@@ -1,0 +1,311 @@
+{% load static i18n %}
+{% comment %}
+  Floating Mendoura AI Coach widget -- included once from base.html for any
+  logged-in student, on every page. Two modes, chosen purely by whether the
+  including page passes lesson_course_id/lesson_lecture_id:
+
+    General mode (no lesson_* vars): posts to ai_coach_send, the same
+    persisted AIConversation thread as the full /dashboard/ai-coach/ page --
+    opening the widget resumes that one thread rather than starting a
+    parallel history.
+
+    Lesson mode (player.html passes lesson_course_id/lesson_lecture_id):
+    posts to ai_coach_lesson_send instead, grounded server-side in the
+    current lesson/module's actual content. Deliberately ephemeral -- the
+    conversation lives only in this page's JS state (reset on navigating to
+    a different lesson), never persisted, per the "doesn't need to persist
+    long-term" call for this feature.
+
+  Positioned bottom-6 (bottom-24 in lesson mode, to clear the video's own
+  controls and the Prev/Next row beneath it), mirrored to the left in RTL
+  like every other fixed/floating element on the site.
+{% endcomment %}
+<style>
+  /* No @tailwindcss/typography plugin installed (see dashboard/ai_buddy.html) --
+     styled by hand here too, tuned for this widget's light bubble background. */
+  .ai-coach-md p { margin: 0 0 0.5em; }
+  .ai-coach-md p:last-child { margin-bottom: 0; }
+  .ai-coach-md ul, .ai-coach-md ol { margin: 0.3em 0 0.5em; padding-left: 1.2em; }
+  .ai-coach-md li { margin: 0.15em 0; }
+  .ai-coach-md strong { font-weight: 700; }
+  .ai-coach-md h1, .ai-coach-md h2, .ai-coach-md h3 { font-weight: 700; margin: 0.6em 0 0.3em; font-size: 1em; }
+  .ai-coach-md h1:first-child, .ai-coach-md h2:first-child, .ai-coach-md h3:first-child { margin-top: 0; }
+  .ai-coach-md code { background: rgba(0,0,0,0.06); padding: 0.1em 0.3em; border-radius: 0.3em; font-size: 0.85em; }
+  .dark .ai-coach-md code { background: rgba(255,255,255,0.1); }
+  .ai-coach-md pre { background: rgba(0,0,0,0.06); padding: 0.6em 0.8em; border-radius: 0.5em; overflow-x: auto; margin: 0.5em 0; }
+  .dark .ai-coach-md pre { background: rgba(255,255,255,0.08); }
+  .ai-coach-md pre code { background: none; padding: 0; }
+  .ai-coach-md a { color: #7c3aed; text-decoration: underline; }
+  .ai-coach-md table { border-collapse: collapse; margin: 0.5em 0; font-size: 0.9em; }
+  .ai-coach-md th, .ai-coach-md td { border: 1px solid rgba(0,0,0,0.12); padding: 0.3em 0.5em; }
+  .dark .ai-coach-md th, .dark .ai-coach-md td { border-color: rgba(255,255,255,0.15); }
+</style>
+<div id="ai-coach-widget" class="{% if lesson_course_id %}ai-coach-widget-lesson{% endif %}">
+  <button type="button" id="ai-coach-toggle"
+          aria-label="{% trans 'Open Mendoura AI Coach' %}" aria-expanded="false" aria-controls="ai-coach-panel"
+          class="fixed {% if lesson_course_id %}bottom-24{% else %}bottom-6{% endif %} ltr:right-6 rtl:left-6 z-[90] w-14 h-14 rounded-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-xl hover:scale-105 transition flex items-center justify-center">
+    <img src="{% static 'img/logo.png' %}" alt="" class="w-8 h-8 object-contain" id="ai-coach-toggle-icon">
+    <i class="fa-solid fa-xmark text-brand-600 text-xl hidden" id="ai-coach-toggle-close-icon"></i>
+  </button>
+
+  <div id="ai-coach-panel" role="dialog" aria-label="{% trans 'Mendoura AI Coach' %}" aria-hidden="true"
+       data-history-url="{% url 'ai_coach_widget_history' %}"
+       data-general-send-url="{% url 'ai_coach_send' %}"
+       {% if lesson_course_id %}
+       data-lesson-send-url="{% url 'ai_coach_lesson_send' lesson_course_id lesson_lecture_id %}"
+       data-course-id="{{ lesson_course_id }}" data-lecture-id="{{ lesson_lecture_id }}"
+       {% endif %}
+       class="hidden fixed {% if lesson_course_id %}bottom-44{% else %}bottom-24{% endif %} ltr:right-6 rtl:left-6 z-[90] w-[calc(100vw-3rem)] max-w-sm h-[32rem] max-h-[70vh] bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+
+    <div class="px-4 py-3 border-b border-gray-100 dark:border-gray-800 flex items-center gap-3 shrink-0">
+      <div class="w-8 h-8 rounded-full bg-brand-50 dark:bg-brand-600/10 flex items-center justify-center shrink-0">
+        <img src="{% static 'img/logo.png' %}" alt="" class="w-5 h-5 object-contain">
+      </div>
+      <div class="min-w-0 flex-1">
+        <p class="text-sm font-bold truncate">{% trans "Mendoura AI Coach" %}</p>
+        {% if lesson_course_id %}
+          <p class="text-xs text-gray-400 truncate">{{ lesson_title }}</p>
+        {% else %}
+          <p class="text-xs text-gray-400">{% trans "Your 24/7 Study Partner" %}</p>
+        {% endif %}
+      </div>
+      <button type="button" id="ai-coach-panel-close" aria-label="{% trans 'Close' %}"
+              class="w-8 h-8 shrink-0 flex items-center justify-center rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+
+    <div id="ai-coach-log" class="flex-1 overflow-y-auto px-4 py-4 space-y-3"></div>
+
+    <div id="ai-coach-chips" class="px-4 pb-2 flex flex-wrap gap-2 shrink-0">
+      {% if lesson_course_id %}
+        <button type="button" class="ai-coach-chip px-3 py-1.5 rounded-full text-xs font-medium bg-brand-50 dark:bg-brand-600/10 text-brand-600 hover:bg-brand-100 dark:hover:bg-brand-600/20">{% trans "Brief this lesson" %}</button>
+        <button type="button" class="ai-coach-chip px-3 py-1.5 rounded-full text-xs font-medium bg-brand-50 dark:bg-brand-600/10 text-brand-600 hover:bg-brand-100 dark:hover:bg-brand-600/20">{% trans "Summarize this module" %}</button>
+        <button type="button" class="ai-coach-chip px-3 py-1.5 rounded-full text-xs font-medium bg-brand-50 dark:bg-brand-600/10 text-brand-600 hover:bg-brand-100 dark:hover:bg-brand-600/20">{% trans "What should I focus on here?" %}</button>
+      {% else %}
+        <button type="button" class="ai-coach-chip px-3 py-1.5 rounded-full text-xs font-medium bg-brand-50 dark:bg-brand-600/10 text-brand-600 hover:bg-brand-100 dark:hover:bg-brand-600/20">{% trans "Recommend a course for me" %}</button>
+        <button type="button" class="ai-coach-chip px-3 py-1.5 rounded-full text-xs font-medium bg-brand-50 dark:bg-brand-600/10 text-brand-600 hover:bg-brand-100 dark:hover:bg-brand-600/20">{% trans "Build me a study schedule" %}</button>
+        <button type="button" class="ai-coach-chip px-3 py-1.5 rounded-full text-xs font-medium bg-brand-50 dark:bg-brand-600/10 text-brand-600 hover:bg-brand-100 dark:hover:bg-brand-600/20">{% trans "Give me career advice" %}</button>
+      {% endif %}
+    </div>
+
+    <form id="ai-coach-form" class="border-t border-gray-100 dark:border-gray-800 p-3 flex items-end gap-2 shrink-0">
+      {% csrf_token %}
+      <textarea id="ai-coach-input" rows="1" maxlength="6000"
+                placeholder="{% trans "Ask your AI Coach..." %}"
+                class="flex-1 resize-none bg-gray-50 dark:bg-gray-800 text-sm rounded-xl px-3 py-2 border border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-brand-500 outline-none disabled:opacity-50"></textarea>
+      <button type="submit" id="ai-coach-send"
+              class="w-10 h-10 shrink-0 rounded-xl bg-brand-600 hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed text-white flex items-center justify-center transition">
+        <i class="fa-solid fa-paper-plane text-sm"></i>
+      </button>
+    </form>
+  </div>
+</div>
+
+{% trans "Something went wrong. Please try again." as ai_coach_msg_generic_error %}
+{% trans "Network error -- please try again." as ai_coach_msg_network_error %}
+{% trans "Welcome! Ask me anything -- career advice, course recommendations, or study guidance." as ai_coach_msg_general_greeting %}
+{% trans "Ask me about this lesson -- I can brief it or summarize the whole module for you." as ai_coach_msg_lesson_greeting %}
+<script>
+(function () {
+  const widget = document.getElementById('ai-coach-widget');
+  const toggleBtn = document.getElementById('ai-coach-toggle');
+  const toggleIcon = document.getElementById('ai-coach-toggle-icon');
+  const toggleCloseIcon = document.getElementById('ai-coach-toggle-close-icon');
+  const panel = document.getElementById('ai-coach-panel');
+  const log = document.getElementById('ai-coach-log');
+  const chips = document.getElementById('ai-coach-chips');
+  const form = document.getElementById('ai-coach-form');
+  const input = document.getElementById('ai-coach-input');
+  const sendBtn = document.getElementById('ai-coach-send');
+  if (!widget || !toggleBtn || !panel || !form) return;
+
+  const isLessonMode = Boolean(panel.dataset.courseId);
+  const sendUrl = isLessonMode ? panel.dataset.lessonSendUrl : panel.dataset.generalSendUrl;
+  let history = [];       // {role, content} -- resent each turn in lesson mode
+  let historyLoaded = false;
+  let hasMessages = false;
+
+  function csrfToken() {
+    return document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '';
+  }
+
+  function scrollToBottom() { log.scrollTop = log.scrollHeight; }
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  function hideChips() {
+    chips.classList.add('hidden');
+  }
+
+  function appendGreeting() {
+    const wrap = document.createElement('div');
+    wrap.className = 'flex gap-2';
+    wrap.innerHTML = `
+      <div class="w-7 h-7 rounded-full bg-brand-50 dark:bg-brand-600/10 flex items-center justify-center shrink-0">
+        <img src="{% static 'img/logo.png' %}" class="w-4 h-4 object-contain" alt="">
+      </div>
+      <div class="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-2xl rounded-tl-sm px-3 py-2 max-w-[85%] text-sm leading-relaxed">
+        ${isLessonMode ? '{{ ai_coach_msg_lesson_greeting|escapejs }}' : '{{ ai_coach_msg_general_greeting|escapejs }}'}
+      </div>`;
+    log.appendChild(wrap);
+  }
+
+  function appendUserBubble(text) {
+    const wrap = document.createElement('div');
+    wrap.className = 'flex gap-2 justify-end';
+    wrap.innerHTML = `<div class="bg-brand-600 text-white rounded-2xl rounded-tr-sm px-3 py-2 max-w-[85%] text-sm leading-relaxed whitespace-pre-wrap"></div>`;
+    wrap.firstElementChild.textContent = text;
+    log.appendChild(wrap);
+    scrollToBottom();
+  }
+
+  function appendAssistantBubble(html) {
+    const wrap = document.createElement('div');
+    wrap.className = 'flex gap-2';
+    wrap.innerHTML = `
+      <div class="w-7 h-7 rounded-full bg-brand-50 dark:bg-brand-600/10 flex items-center justify-center shrink-0">
+        <img src="{% static 'img/logo.png' %}" class="w-4 h-4 object-contain" alt="">
+      </div>
+      <div class="ai-coach-md bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-100 rounded-2xl rounded-tl-sm px-3 py-2 max-w-[85%] text-sm leading-relaxed">${html}</div>`;
+    log.appendChild(wrap);
+    scrollToBottom();
+    return wrap;
+  }
+
+  function appendTypingIndicator() {
+    const wrap = document.createElement('div');
+    wrap.className = 'flex gap-2';
+    wrap.id = 'ai-coach-typing';
+    wrap.innerHTML = `
+      <div class="w-7 h-7 rounded-full bg-brand-50 dark:bg-brand-600/10 flex items-center justify-center shrink-0">
+        <img src="{% static 'img/logo.png' %}" class="w-4 h-4 object-contain" alt="">
+      </div>
+      <div class="bg-gray-100 dark:bg-gray-800 text-gray-400 rounded-2xl rounded-tl-sm px-3 py-2 text-sm">
+        <i class="fa-solid fa-ellipsis fa-fade"></i>
+      </div>`;
+    log.appendChild(wrap);
+    scrollToBottom();
+  }
+
+  async function loadGeneralHistory() {
+    try {
+      const res = await fetch(panel.dataset.historyUrl);
+      const data = await res.json();
+      if (data.messages && data.messages.length) {
+        hasMessages = true;
+        hideChips();
+        data.messages.forEach((m) => {
+          if (m.role === 'user') appendUserBubble(m.content);
+          else appendAssistantBubble(m.html);
+        });
+      } else {
+        appendGreeting();
+      }
+    } catch (err) {
+      appendGreeting();
+    }
+  }
+
+  function openPanel() {
+    panel.classList.remove('hidden');
+    panel.setAttribute('aria-hidden', 'false');
+    toggleBtn.setAttribute('aria-expanded', 'true');
+    toggleIcon.classList.add('hidden');
+    toggleCloseIcon.classList.remove('hidden');
+    if (!historyLoaded) {
+      historyLoaded = true;
+      if (isLessonMode) {
+        appendGreeting();
+      } else {
+        loadGeneralHistory();
+      }
+    }
+    input.focus();
+  }
+
+  function closePanel() {
+    panel.classList.add('hidden');
+    panel.setAttribute('aria-hidden', 'true');
+    toggleBtn.setAttribute('aria-expanded', 'false');
+    toggleIcon.classList.remove('hidden');
+    toggleCloseIcon.classList.add('hidden');
+  }
+
+  toggleBtn.addEventListener('click', () => {
+    panel.classList.contains('hidden') ? openPanel() : closePanel();
+  });
+  document.getElementById('ai-coach-panel-close')?.addEventListener('click', closePanel);
+
+  chips.querySelectorAll('.ai-coach-chip').forEach((chip) => {
+    chip.addEventListener('click', () => {
+      input.value = chip.textContent.trim();
+      form.requestSubmit();
+    });
+  });
+
+  input.addEventListener('input', () => {
+    input.style.height = 'auto';
+    input.style.height = Math.min(input.scrollHeight, 120) + 'px';
+  });
+
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      form.requestSubmit();
+    }
+  });
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const text = input.value.trim();
+    if (!text) return;
+
+    if (!hasMessages) {
+      hasMessages = true;
+      hideChips();
+    }
+    appendUserBubble(text);
+    input.value = '';
+    input.style.height = 'auto';
+    input.disabled = true;
+    sendBtn.disabled = true;
+    appendTypingIndicator();
+
+    const body = isLessonMode
+      ? JSON.stringify({ message: text, history })
+      : JSON.stringify({ message: text });
+
+    try {
+      const res = await fetch(sendUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken() },
+        body,
+      });
+      const data = await res.json();
+      document.getElementById('ai-coach-typing')?.remove();
+
+      if (!res.ok) {
+        appendAssistantBubble(`<p class="text-red-500">${escapeHtml(data.error || '{{ ai_coach_msg_generic_error|escapejs }}')}</p>`);
+      } else {
+        appendAssistantBubble(data.reply_html);
+        if (isLessonMode) {
+          history.push({ role: 'user', content: text });
+          history.push({ role: 'assistant', content: data.reply });
+        }
+      }
+    } catch (err) {
+      document.getElementById('ai-coach-typing')?.remove();
+      appendAssistantBubble('<p class="text-red-500">{{ ai_coach_msg_network_error|escapejs }}</p>');
+    } finally {
+      input.disabled = false;
+      sendBtn.disabled = false;
+      input.focus();
+    }
+  });
+})();
+</script>

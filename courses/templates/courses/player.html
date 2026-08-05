@@ -49,9 +49,9 @@
                   <a href="{% url 'course_player' course.id l.id %}"
                      class="flex items-start gap-3 px-4 py-2.5 text-sm transition {% if l.id == lecture.id %}bg-brand-50 dark:bg-brand-600/10{% else %}hover:bg-gray-50 dark:hover:bg-gray-800/60{% endif %}">
                     {% if l.id in completed_lecture_ids %}
-                      <i class="fa-solid fa-circle-check text-green-500 mt-0.5 shrink-0"></i>
+                      <i id="lesson-status-icon-{{ l.id }}" class="fa-solid fa-circle-check text-green-500 mt-0.5 shrink-0"></i>
                     {% else %}
-                      <i class="fa-regular fa-circle text-gray-300 dark:text-gray-600 mt-0.5 shrink-0"></i>
+                      <i id="lesson-status-icon-{{ l.id }}" class="fa-regular fa-circle text-gray-300 dark:text-gray-600 mt-0.5 shrink-0"></i>
                     {% endif %}
                     <span class="min-w-0">
                       <span class="block {% if l.id == lecture.id %}text-brand-600 font-semibold{% endif %}">{{ l.title }}</span>
@@ -171,18 +171,20 @@
 
       <div class="flex items-center justify-between flex-wrap gap-3 mt-4">
         {% if enrollment %}
-          <form method="post" action="{% url 'mark_lecture_complete' course.id lecture.id %}">
-            {% csrf_token %}
-            {% if progress.completed %}
-              <span class="inline-flex items-center gap-2 px-5 py-2 rounded-lg bg-green-50 dark:bg-green-600/10 text-green-600 font-semibold">
-                <i class="fa-solid fa-circle-check"></i> {% trans "Completed" %}
-              </span>
-            {% else %}
-              <button type="submit" class="px-5 py-2 rounded-lg bg-brand-600 text-white font-semibold hover:bg-brand-700 transition">
-                {% trans "Mark as Complete" %}
-              </button>
-            {% endif %}
-          </form>
+          <div id="completion-status" data-lecture-id="{{ lecture.id }}">
+            <form method="post" action="{% url 'mark_lecture_complete' course.id lecture.id %}">
+              {% csrf_token %}
+              {% if progress.completed %}
+                <span class="inline-flex items-center gap-2 px-5 py-2 rounded-lg bg-green-50 dark:bg-green-600/10 text-green-600 font-semibold">
+                  <i class="fa-solid fa-circle-check"></i> {% trans "Completed" %}
+                </span>
+              {% else %}
+                <button type="submit" class="px-5 py-2 rounded-lg bg-brand-600 text-white font-semibold hover:bg-brand-700 transition">
+                  {% trans "Mark as Complete" %}
+                </button>
+              {% endif %}
+            </form>
+          </div>
         {% else %}<span></span>{% endif %}
 
         <div class="flex items-center gap-4">
@@ -212,15 +214,23 @@
       {% endif %}
 
       <!-- ═══ Tabs ═══ -->
-      <div class="mt-8 border-b border-gray-200 dark:border-gray-800">
-        <span class="inline-block px-1 pb-3 text-sm font-semibold text-brand-600 border-b-2 border-brand-600">
+      <div class="mt-8 border-b border-gray-200 dark:border-gray-800 flex items-center gap-6">
+        <button type="button" data-tab-target="tab-overview"
+                class="player-tab-btn inline-block px-1 pb-3 text-sm font-semibold text-brand-600 border-b-2 border-brand-600">
           {% trans "Overview" %}
-        </span>
+        </button>
+        {% if has_transcript %}
+          <button type="button" data-tab-target="tab-transcript"
+                  class="player-tab-btn inline-block px-1 pb-3 text-sm font-semibold text-gray-400 border-b-2 border-transparent hover:text-gray-600 dark:hover:text-gray-300">
+            {% trans "Transcript" %}
+          </button>
+        {% endif %}
       </div>
-      <div class="py-6">
-        <p class="text-sm text-gray-600 dark:text-gray-300 whitespace-pre-line">{{ course.description }}</p>
 
-        <div class="flex items-center gap-3 mt-6 pt-6 border-t border-gray-100 dark:border-gray-800">
+      <div id="tab-overview" class="player-tab-panel py-6">
+
+        <!-- 1. Instructor -->
+        <div class="flex items-center gap-3 pb-6 border-b border-gray-100 dark:border-gray-800">
           <div class="w-12 h-12 rounded-full overflow-hidden shrink-0 flex items-center justify-center bg-brand-600 text-white font-bold">
             {% if course.instructor.avatar %}
               <img src="{{ course.instructor.avatar.url }}" class="w-full h-full object-cover" alt="{{ course.instructor.username }}">
@@ -234,6 +244,55 @@
           </div>
         </div>
 
+        <!-- 2. Course details -->
+        <div class="flex flex-wrap items-center gap-x-6 gap-y-2 py-6 border-b border-gray-100 dark:border-gray-800 text-sm">
+          {% with d=total_duration_seconds|duration_display %}
+            {% if d %}
+              <span><i class="fa-solid fa-clock text-brand-600 mr-1.5"></i>{{ d }} {% trans "total" %}</span>
+            {% endif %}
+          {% endwith %}
+          <span><i class="fa-solid fa-signal text-brand-600 mr-1.5"></i>{{ course.get_level_display }}</span>
+          {% if course.avg_rating %}
+            <span class="flex items-center gap-1 text-yellow-500 font-semibold">
+              <i class="fa-solid fa-star"></i> {{ course.avg_rating|floatformat:1 }} <span class="text-gray-400 font-normal">/ 5</span>
+            </span>
+          {% endif %}
+        </div>
+
+        <!-- 3. Description -->
+        <p class="text-sm text-gray-600 dark:text-gray-300 whitespace-pre-line py-6 border-b border-gray-100 dark:border-gray-800">{{ course.description }}</p>
+
+        <!-- 5. Learner stats -->
+        <div class="py-6 border-b border-gray-100 dark:border-gray-800 text-sm">
+          <span><i class="fa-solid fa-user-group text-brand-600 mr-1.5"></i>{% blocktrans count counter=course.enrolled_count %}{{ counter }} student{% plural %}{{ counter }} students{% endblocktrans %}</span>
+        </div>
+
+        <!-- 6. Full ratings breakdown -->
+        {% if course.avg_rating %}
+          <div class="py-6 border-b border-gray-100 dark:border-gray-800">
+            <div class="flex items-center gap-3 mb-4">
+              <span class="text-3xl font-extrabold">{{ course.avg_rating|floatformat:1 }}</span>
+              <div>
+                <div class="text-yellow-500 text-sm">
+                  {% for _ in "12345" %}<i class="fa-solid fa-star"></i>{% endfor %}
+                </div>
+                <p class="text-xs text-gray-400 mt-0.5">{% blocktrans count counter=course.reviews.count %}{{ counter }} rating{% plural %}{{ counter }} ratings{% endblocktrans %}</p>
+              </div>
+            </div>
+            <div class="space-y-1.5">
+              {% for row in rating_breakdown %}
+                <div class="flex items-center gap-2 text-xs">
+                  <span class="w-10 shrink-0 text-gray-500">{{ row.stars }} <i class="fa-solid fa-star text-yellow-500"></i></span>
+                  <div class="flex-1 h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                    <div class="h-full bg-yellow-400" style="width: {{ row.percent }}%"></div>
+                  </div>
+                  <span class="w-9 shrink-0 text-gray-400 text-right">{{ row.percent }}%</span>
+                </div>
+              {% endfor %}
+            </div>
+          </div>
+        {% endif %}
+
         {% if lecture.resources.all %}
           <h2 class="text-sm font-bold mt-6 mb-3">{% trans "Resources" %}</h2>
           <div class="space-y-2">
@@ -246,9 +305,21 @@
           </div>
         {% endif %}
       </div>
+
+      {% if has_transcript %}
+        <div id="tab-transcript" class="player-tab-panel py-6 hidden">
+          <p class="text-sm text-gray-600 dark:text-gray-300 whitespace-pre-line">{{ lecture.ai_generated_script }}</p>
+        </div>
+      {% endif %}
     </main>
   </div>
 </div>
+{% endblock %}
+
+{% block ai_coach_widget %}
+  {% if user.is_authenticated and user.is_student %}
+    {% include 'partials/_ai_coach_widget.html' with lesson_course_id=course.id lesson_lecture_id=lecture.id lesson_title=lecture.title %}
+  {% endif %}
 {% endblock %}
 
 {% block extra_js %}
@@ -305,8 +376,32 @@
       expandBtn.classList.remove('flex');
     });
   })();
+
+  // Overview / Transcript tabs -- Transcript only exists in the DOM at all
+  // when has_transcript is true (see the server-side conditional above), so
+  // there's nothing to wire up beyond simple show/hide + active-state toggling.
+  (function () {
+    const tabButtons = document.querySelectorAll('.player-tab-btn');
+    if (tabButtons.length < 2) return; // only Overview -- no switching needed
+
+    tabButtons.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        tabButtons.forEach((b) => {
+          const active = b === btn;
+          b.classList.toggle('text-brand-600', active);
+          b.classList.toggle('border-brand-600', active);
+          b.classList.toggle('text-gray-400', !active);
+          b.classList.toggle('border-transparent', !active);
+        });
+        document.querySelectorAll('.player-tab-panel').forEach((panel) => {
+          panel.classList.toggle('hidden', panel.id !== btn.dataset.tabTarget);
+        });
+      });
+    });
+  })();
 </script>
 {% if enrollment %}
+{% trans "Completed" as watch_complete_label %}
 <script>
   // Aggregates watch-time client-side and flushes every ~30s -- never one
   // request per second. Only counts while the tab is actually visible, so
@@ -315,6 +410,24 @@
     const FLUSH_INTERVAL_MS = 30000;
     const url = "{% url 'record_watch_event' course.id lecture.id %}";
     let accumulatedSeconds = 0;
+
+    // Watch-threshold-gated auto-complete: the server flips a lecture to
+    // completed once accumulated watch-time crosses ~90% of its duration
+    // (see WATCH_COMPLETE_THRESHOLD in views.record_watch_event) and reports
+    // that back on the same flush -- reflect it immediately here instead of
+    // waiting for a page reload, both on the completion button and this
+    // lecture's sidebar status icon.
+    function reflectAutoComplete() {
+      const statusEl = document.getElementById('completion-status');
+      if (statusEl && !statusEl.querySelector('.fa-circle-check')) {
+        statusEl.innerHTML = `<span class="inline-flex items-center gap-2 px-5 py-2 rounded-lg bg-green-50 dark:bg-green-600/10 text-green-600 font-semibold"><i class="fa-solid fa-circle-check"></i> {{ watch_complete_label|escapejs }}</span>`;
+      }
+      const icon = document.getElementById('lesson-status-icon-{{ lecture.id }}');
+      if (icon) {
+        icon.classList.remove('fa-regular', 'fa-circle', 'text-gray-300', 'dark:text-gray-600');
+        icon.classList.add('fa-solid', 'fa-circle-check', 'text-green-500');
+      }
+    }
 
     setInterval(() => {
       if (document.visibilityState === 'visible') accumulatedSeconds += 1;
@@ -332,7 +445,9 @@
         },
         body: JSON.stringify({ seconds }),
         keepalive: true,
-      }).catch(() => {});
+      }).then((res) => res.ok ? res.json() : null)
+        .then((data) => { if (data && data.completed) reflectAutoComplete(); })
+        .catch(() => {});
     }
 
     setInterval(flush, FLUSH_INTERVAL_MS);

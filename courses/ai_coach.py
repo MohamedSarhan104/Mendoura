@@ -1,14 +1,29 @@
-"""Mendoura AI Coach -- a thin wrapper around the Anthropic Messages API.
+"""Mendoura AI Coach -- a thin wrapper around Google's Gemini API.
+
+Runs on Gemini's free tier (see GEMINI_MODEL/rate-limit settings in
+lms_backend/settings.py) rather than a paid provider, which is why a basic
+per-user AND per-project rate limiter lives here too: Google enforces its
+free-tier RPM/RPD quota against the whole API key, not per Mendoura student,
+so a shared "global" bucket guards the real ceiling while the per-user
+bucket stops a single student from burning through it alone.
 
 The one network call (send_message) is isolated here so tests can mock it,
 same pattern as bunny.create_video / paymob's request helpers.
 """
+import logging
 import re
+import time
 
-import anthropic
 from django.conf import settings
+from django.core.cache import cache
+from django.utils.translation import gettext as _
+from google import genai
+from google.genai import errors as genai_errors
+from google.genai import types as genai_types
 
-MODEL = 'claude-opus-5'
+logger = logging.getLogger(__name__)
+
+MODEL = getattr(settings, 'GEMINI_MODEL', 'gemini-2.5-flash-lite')
 
 SYSTEM_PROMPT = (
     "You are Mendoura AI Coach, a friendly, encouraging, and elite academic "
@@ -17,8 +32,26 @@ SYSTEM_PROMPT = (
     "answers well-formatted with markdown and friendly tones."
 )
 
+# Appended to SYSTEM_PROMPT whenever a caller passes lesson/module grounding
+# text via send_message(..., context=...) -- see views.py's
+# _lesson_ai_context(). The one hard rule: never fabricate a summary of
+# video content that isn't in the reference material, since Full Production
+# courses have no transcript at all and a hallucinated "brief" would be
+# actively misleading.
+LESSON_CONTEXT_INSTRUCTIONS = (
+    "The student is asking about a specific lesson or module they're currently "
+    "viewing. Reference material about it follows below -- use ONLY that text "
+    "to answer questions about the lesson/module's actual content. Never invent "
+    "or guess at what a video says. If the reference material says no transcript "
+    "is available for a lesson, say so plainly instead of guessing, and offer to "
+    "help with what IS available instead (the title, the course description, or "
+    "general study guidance). When asked to brief/summarize a whole module, "
+    "combine only the lessons that do have transcript text, and explicitly name "
+    "any lesson in that module you couldn't summarize because it has none."
+)
+
 # General-Purpose Sandbox AI Engine -- keeps the chat itself usable across
-# any domain (demos, local dev, a deploy that hasn't got AI_API_KEY set yet)
+# any domain (demos, local dev, a deploy that hasn't got GEMINI_API_KEY set yet)
 # instead of locking the input and showing an admin-facing error. Clearly
 # labeled as a preview in both the copy and the UI badge (see
 # dashboard/ai_buddy.html) -- never presented as a real model response.
@@ -261,7 +294,7 @@ class AICoachError(Exception):
 
 
 def is_configured() -> bool:
-    return bool(settings.AI_API_KEY)
+    return bool(settings.GEMINI_API_KEY)
 
 
 def _matches_any(text: str, keywords: tuple[str, ...]) -> bool:
@@ -313,7 +346,7 @@ You asked about: *"{snippet}"* -- {depth_note}
 
 
 def _sandbox_reply(history: list[dict]) -> str:
-    """Keyword-matched canned reply used whenever AI_API_KEY isn't set.
+    """Keyword-matched canned reply used whenever GEMINI_API_KEY isn't set.
     Checked most-specific-first across a global, bilingual (English/Arabic)
     intent dictionary; anything that matches nothing falls through to the
     dynamic catch-all mentorship engine below instead of a single static
@@ -342,24 +375,100 @@ def _sandbox_reply(history: list[dict]) -> str:
     return _catch_all_reply(last_user_text)
 
 
-def send_message(history: list[dict]) -> str:
+def _bump(key: str, timeout: int) -> int:
+    """Atomically increment a cache-backed counter, initializing it to 1 the
+    first time this key is seen this window. Uses Django's default cache
+    (LocMemCache, no Redis configured) -- fine for the single-dyno deploy
+    this project already assumes elsewhere, though it means the count is
+    per-process rather than truly global across multiple worker processes."""
+    if cache.add(key, 1, timeout=timeout):
+        return 1
+    try:
+        return cache.incr(key)
+    except ValueError:
+        # Key expired between add() and incr() -- rare, just restart the count.
+        cache.set(key, 1, timeout=timeout)
+        return 1
+
+
+def _rate_limited(user_id) -> bool:
+    """True if sending now would exceed either bucket: the per-user budget
+    (stops one student from monopolizing the coach) or the shared
+    project-wide budget (the real Gemini free-tier ceiling, since Google
+    enforces RPM/RPD against the whole API key, not per end user)."""
+    now = time.time()
+    minute_bucket = int(now // 60)
+    day_bucket = time.strftime('%Y-%m-%d', time.gmtime(now))
+    ONE_MINUTE, ONE_DAY_PLUS_SLACK = 70, 90000
+
+    if _bump(f'ai_coach:rl:global:m:{minute_bucket}', ONE_MINUTE) > settings.GEMINI_RATE_LIMIT_PER_MINUTE:
+        return True
+    if _bump(f'ai_coach:rl:global:d:{day_bucket}', ONE_DAY_PLUS_SLACK) > settings.GEMINI_RATE_LIMIT_PER_DAY:
+        return True
+    if user_id is not None:
+        if _bump(f'ai_coach:rl:user:{user_id}:m:{minute_bucket}', ONE_MINUTE) > settings.GEMINI_USER_RATE_LIMIT_PER_MINUTE:
+            return True
+        if _bump(f'ai_coach:rl:user:{user_id}:d:{day_bucket}', ONE_DAY_PLUS_SLACK) > settings.GEMINI_USER_RATE_LIMIT_PER_DAY:
+            return True
+    return False
+
+
+def _contents_from_history(history: list[dict]) -> list:
+    """Gemini uses 'model' for the assistant's turns, not 'assistant'."""
+    return [
+        genai_types.Content(
+            role='model' if m.get('role') == 'assistant' else 'user',
+            parts=[genai_types.Part.from_text(text=m.get('content', ''))],
+        )
+        for m in history
+    ]
+
+
+def send_message(history: list[dict], user_id=None, context: str | None = None) -> str:
     """history is a list of {"role": "user"|"assistant", "content": str},
     oldest first. Returns the assistant's reply text -- a canned Sandbox
-    Mode reply when AI_API_KEY isn't configured, so the chat stays usable
-    instead of erroring."""
+    Mode reply when GEMINI_API_KEY isn't configured, so the chat stays
+    usable instead of erroring.
+
+    context, when given (the lesson-embedded coach's grounding text -- see
+    views._lesson_ai_context), is appended to the system prompt along with
+    LESSON_CONTEXT_INSTRUCTIONS so the model answers lesson/module questions
+    from that text instead of guessing at video content it never saw.
+
+    Raises AICoachError with an already-friendly, student-facing message on
+    any failure (including a free-tier rate limit being hit) -- callers can
+    show it directly in the chat rather than a raw exception."""
     if not is_configured():
         return _sandbox_reply(history)
 
-    client = anthropic.Anthropic(api_key=settings.AI_API_KEY)
-    try:
-        response = client.messages.create(
-            model=MODEL,
-            max_tokens=4096,
-            system=SYSTEM_PROMPT,
-            thinking={'type': 'adaptive'},
-            messages=history,
-        )
-    except anthropic.APIError as exc:
-        raise AICoachError(str(exc)) from exc
+    if _rate_limited(user_id):
+        raise AICoachError(_(
+            "Mendoura AI Coach is getting a lot of questions right now (we run on a "
+            "free tier with limited capacity). Please wait a minute and try again."
+        ))
 
-    return ''.join(block.text for block in response.content if block.type == 'text').strip()
+    system_prompt = SYSTEM_PROMPT
+    if context:
+        system_prompt = f'{SYSTEM_PROMPT}\n\n{LESSON_CONTEXT_INSTRUCTIONS}\n\n{context}'
+
+    client = genai.Client(api_key=settings.GEMINI_API_KEY)
+    try:
+        response = client.models.generate_content(
+            model=MODEL,
+            contents=_contents_from_history(history),
+            config=genai_types.GenerateContentConfig(
+                system_instruction=system_prompt, temperature=0.6, max_output_tokens=2048),
+        )
+    except genai_errors.APIError as exc:
+        logger.error('[AI_COACH] Gemini API call failed: %s', exc, exc_info=True)
+        raise AICoachError(_(
+            "Mendoura AI Coach couldn't reach the AI service just now. Please try again shortly."
+        )) from exc
+
+    text = (getattr(response, 'text', None) or '').strip()
+    if not text:
+        logger.error('[AI_COACH] Gemini returned an empty response: %r', response)
+        raise AICoachError(_(
+            "Mendoura AI Coach couldn't generate a reply just now. Please try again."
+        ))
+    return text

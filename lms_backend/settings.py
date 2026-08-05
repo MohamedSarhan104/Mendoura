@@ -283,14 +283,35 @@ PASSWORD_RESET_TIMEOUT = config('PASSWORD_RESET_TIMEOUT', default=60 * 60 * 24 *
 INSTRUCTOR_APPLICATION_NOTIFICATION_EMAIL = config(
     'INSTRUCTOR_APPLICATION_NOTIFICATION_EMAIL', default='support@mendoura.com')
 
-# AI Study Buddy -- Anthropic Claude API key. Blank in local dev/tests is
-# fine; the view surfaces a friendly error instead of crashing when it's unset.
-AI_API_KEY = config('AI_API_KEY', default='')
+# AI Coach -- Google Gemini API key (free tier: ai.google.dev/gemini-api,
+# via Google AI Studio -- no billing needed). Blank in local dev/tests is
+# fine; the view surfaces a friendly Sandbox-mode reply instead of crashing
+# when it's unset.
+GEMINI_API_KEY = config('GEMINI_API_KEY', default='')
+
+# Free-tier-eligible by default. Google no longer publishes a single fixed
+# rate-limit table (it varies and is best checked in your own AI Studio
+# dashboard), so both the model and the throttling thresholds below are
+# deliberately conservative and env-overridable rather than hardcoded to
+# whatever numbers are current today.
+GEMINI_MODEL = config('GEMINI_MODEL', default='gemini-2.5-flash-lite')
+
+# Google enforces free-tier RPM/RPD against the whole API key/project, not
+# per Mendoura student -- these "global" ceilings are the real guardrail
+# against a 429 from Google; keep them at or below whatever your AI Studio
+# dashboard currently shows for GEMINI_MODEL.
+GEMINI_RATE_LIMIT_PER_MINUTE = config('GEMINI_RATE_LIMIT_PER_MINUTE', default=10, cast=int)
+GEMINI_RATE_LIMIT_PER_DAY = config('GEMINI_RATE_LIMIT_PER_DAY', default=200, cast=int)
+
+# Per-student ceilings, well under the global ones above -- stop one student
+# from using up the whole shared free-tier budget alone.
+GEMINI_USER_RATE_LIMIT_PER_MINUTE = config('GEMINI_USER_RATE_LIMIT_PER_MINUTE', default=4, cast=int)
+GEMINI_USER_RATE_LIMIT_PER_DAY = config('GEMINI_USER_RATE_LIMIT_PER_DAY', default=40, cast=int)
 
 # Auto-translation of Track/Course/legal content (courses/auto_translate.py)
 # uses deep-translator's free GoogleTranslator -- no key or billing needed,
-# on by default. Unrelated to AI_API_KEY above (that's only the separate AI
-# Study Buddy feature). Defaults to off under `manage.py test` so the
+# on by default. Unrelated to GEMINI_API_KEY above (that's only the separate
+# AI Coach feature). Defaults to off under `manage.py test` so the
 # hundreds of tests that incidentally save a Track/Course/legal record as
 # test fixture setup don't all make real network calls -- the handful of
 # tests that specifically exercise translation opt back in with

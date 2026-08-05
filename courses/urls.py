@@ -137,4 +137,7 @@ urlpatterns = [
     path('certificates/<uuid:certificate_uuid>/download/', views.certificate_download, name='certificate_download'),
     path('dashboard/ai-coach/', views.ai_coach, name='ai_coach'),
     path('dashboard/ai-coach/send/', views.ai_coach_send, name='ai_coach_send'),
+    path('dashboard/ai-coach/history/', views.ai_coach_widget_history, name='ai_coach_widget_history'),
+    path('learn/<int:course_id>/<int:lecture_id>/ai-coach/', views.ai_coach_lesson_send,
+         name='ai_coach_lesson_send'),
 ]

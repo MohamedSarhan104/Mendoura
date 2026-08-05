@@ -273,6 +273,10 @@
   {% block content %}{% endblock %}
 </main>
 
+{% if user.is_authenticated and user.is_student %}
+  {% block ai_coach_widget %}{% include 'partials/_ai_coach_widget.html' %}{% endblock %}
+{% endif %}
+
 <footer class="border-t border-gray-200 dark:border-gray-800 mt-24 py-10 text-center text-sm text-gray-500 dark:text-gray-400">
   <div class="flex items-center justify-center gap-2 mb-5">
     <img src="{% static 'img/logo.png' %}" alt="" class="h-9 w-auto">

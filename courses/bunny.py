@@ -106,11 +106,13 @@ def create_video(title: str) -> str:
     return guid
 
 
-def get_video_status(video_id: str) -> int:
+def get_video_info(video_id: str) -> dict:
     """Ask Bunny directly for this video's current encoding status (the same
-    integer bunny_webhook receives). Used as a fallback where the webhook
-    delivery might have been missed, so the instructor-facing status can't
-    get permanently stuck."""
+    integer bunny_webhook receives) and its encoded duration in seconds
+    ('length' -- 0 until Bunny finishes processing). Used as a fallback where
+    the webhook delivery might have been missed, so the instructor-facing
+    status can't get permanently stuck, and to backfill
+    Lecture.duration_seconds once Bunny actually knows the video's length."""
     url = f'{VIDEO_API_BASE}/library/{settings.BUNNY_LIBRARY_ID}/videos/{video_id}'
     logger.info(
         '%s calling Bunny get-video-status API: url=%s library_id=%s video_id=%s',
@@ -147,10 +149,17 @@ def get_video_status(video_id: str) -> int:
             _STATUS_DEBUG_TAG, elapsed, url, video_id, response.text[:2000])
         raise BunnyError('Bunny did not return a video status.')
 
+    length = body.get('length') or 0
     logger.info(
-        '%s Bunny get-video-status SUCCEEDED after %.2fs: video_id=%s status=%s',
-        _STATUS_DEBUG_TAG, elapsed, video_id, status)
-    return int(status)
+        '%s Bunny get-video-status SUCCEEDED after %.2fs: video_id=%s status=%s length=%s',
+        _STATUS_DEBUG_TAG, elapsed, video_id, status, length)
+    return {'status': int(status), 'length': int(length)}
+
+
+def get_video_status(video_id: str) -> int:
+    """Back-compat wrapper around get_video_info() for callers that only need
+    the status integer."""
+    return get_video_info(video_id)['status']
 
 
 def _upload_signature(video_id: str, expiration: int) -> str:
