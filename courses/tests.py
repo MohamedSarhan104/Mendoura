@@ -2913,7 +2913,8 @@ class BunnyStatusSyncOnPageLoadTests(TestCase):
 
 @override_settings(BUNNY_LIBRARY_ID='705216', BUNNY_API_KEY='k', BUNNY_TOKEN_KEY='tok')
 class BunnyPlayerEmbedTests(TestCase):
-    def test_player_embeds_signed_bunny_iframe(self):
+    @patch('courses.bunny.get_video_info', return_value={'status': 4, 'length': 200})
+    def test_player_embeds_signed_bunny_iframe(self, mock_info):
         inst = User.objects.create_user(username='bp_inst', password='pw', is_instructor=True)
         student = User.objects.create_user(username='bp_stud', password='pw', is_student=True)
         track = Track.objects.create(name='BP Track')
@@ -2931,6 +2932,74 @@ class BunnyPlayerEmbedTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'iframe.mediadelivery.net/embed/705216/guid-abc')
         self.assertContains(response, 'token=')
+
+
+@override_settings(BUNNY_LIBRARY_ID='705216', BUNNY_API_KEY='k')
+class CoursePlayerBackfillsEveryLectureTests(TestCase):
+    """The Overview tab's total-duration sum needs every lecture in the
+    course backfilled, not just the one being watched -- course_player now
+    syncs every lecture on each load (each is a fast no-op once it already
+    has a ready status and a known duration, so this doesn't keep costing
+    Bunny API calls forever once a course is fully backfilled)."""
+
+    def setUp(self):
+        self.instructor = User.objects.create_user(
+            username='cpb_inst', password='pw', is_instructor=True)
+        self.student = User.objects.create_user(username='cpb_stud', password='pw', is_student=True)
+        track = Track.objects.create(name='CPB Track')
+        self.course = Course.objects.create(
+            instructor=self.instructor, track=track, title='CPB Course', description='...',
+            production_type=Course.ProductionType.FULL, price=Decimal('0.00'), is_free=True,
+            status=Course.Status.PUBLISHED)
+        module = Module.objects.create(course=self.course, title='M1')
+        self.lecture1 = Lecture.objects.create(
+            module=module, title='L1', bunny_video_id='guid-1', bunny_status=4, order=1)
+        self.lecture2 = Lecture.objects.create(
+            module=module, title='L2', bunny_video_id='guid-2', bunny_status=4, order=2)
+        Enrollment.objects.create(student=self.student, course=self.course)
+        self.client.force_login(self.student)
+
+    @patch('courses.bunny.get_video_info')
+    def test_viewing_one_lecture_backfills_duration_for_every_lecture_in_the_course(self, mock_info):
+        mock_info.side_effect = lambda video_id: {
+            'guid-1': {'status': 4, 'length': 100},
+            'guid-2': {'status': 4, 'length': 200},
+        }[video_id]
+
+        self.client.get(reverse('course_player', args=[self.course.id, self.lecture1.id]))
+
+        self.lecture1.refresh_from_db()
+        self.lecture2.refresh_from_db()
+        self.assertEqual(self.lecture1.duration_seconds, 100)
+        self.assertEqual(self.lecture2.duration_seconds, 200)
+        self.assertEqual(mock_info.call_count, 2)
+
+    @patch('courses.bunny.get_video_info')
+    def test_already_backfilled_course_makes_no_further_bunny_calls(self, mock_info):
+        self.lecture1.duration_seconds = 100
+        self.lecture1.save(update_fields=['duration_seconds'])
+        self.lecture2.duration_seconds = 200
+        self.lecture2.save(update_fields=['duration_seconds'])
+
+        self.client.get(reverse('course_player', args=[self.course.id, self.lecture1.id]))
+
+        mock_info.assert_not_called()
+
+    @patch('courses.bunny.get_video_info')
+    def test_retries_a_lecture_that_previously_got_a_zero_length_back(self, mock_info):
+        # lecture2's earlier sync got status=ready but length=0 (video not
+        # fully processed by Bunny yet at the time) -- still 0 in the DB.
+        # A later page view, once Bunny actually has the length, must not
+        # have given up after that first null response.
+        mock_info.side_effect = lambda video_id: {
+            'guid-1': {'status': 4, 'length': 100},
+            'guid-2': {'status': 4, 'length': 200},  # now available
+        }[video_id]
+
+        self.client.get(reverse('course_player', args=[self.course.id, self.lecture1.id]))
+
+        self.lecture2.refresh_from_db()
+        self.assertEqual(self.lecture2.duration_seconds, 200)
 
 
 class DurationDisplayFilterTests(TestCase):
@@ -3816,7 +3885,21 @@ class GeminiBackendTests(TestCase):
         self.assertIn('Never invent or guess', config.system_instruction)
 
     @patch('courses.ai_coach.genai.Client')
-    def test_api_error_raises_friendly_ai_coach_error(self, mock_client_cls):
+    def test_auth_or_other_api_error_raises_generic_friendly_message(self, mock_client_cls):
+        from google.genai import errors as genai_errors
+        mock_client = Mock()
+        mock_client.models.generate_content.side_effect = genai_errors.APIError(
+            401, {'error': {'message': 'API key not valid'}})
+        mock_client_cls.return_value = mock_client
+
+        with self.assertRaises(ai_coach.AICoachError) as ctx:
+            ai_coach.send_message([{'role': 'user', 'content': 'hi'}], user_id=1)
+        # The student never sees Google's raw error text -- just a friendly message.
+        self.assertNotIn('API key not valid', str(ctx.exception))
+        self.assertIn("couldn't reach the AI service", str(ctx.exception))
+
+    @patch('courses.ai_coach.genai.Client')
+    def test_gemini_429_raises_free_tier_limit_specific_message(self, mock_client_cls):
         from google.genai import errors as genai_errors
         mock_client = Mock()
         mock_client.models.generate_content.side_effect = genai_errors.APIError(
@@ -3825,8 +3908,8 @@ class GeminiBackendTests(TestCase):
 
         with self.assertRaises(ai_coach.AICoachError) as ctx:
             ai_coach.send_message([{'role': 'user', 'content': 'hi'}], user_id=1)
-        # The student never sees Google's raw error text -- just a friendly message.
         self.assertNotIn('quota exceeded', str(ctx.exception))
+        self.assertIn("free-tier limit", str(ctx.exception))
 
     @patch('courses.ai_coach.genai.Client')
     def test_empty_gemini_response_raises_ai_coach_error(self, mock_client_cls):

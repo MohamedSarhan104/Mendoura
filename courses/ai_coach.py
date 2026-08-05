@@ -460,7 +460,18 @@ def send_message(history: list[dict], user_id=None, context: str | None = None) 
                 system_instruction=system_prompt, temperature=0.6, max_output_tokens=2048),
         )
     except genai_errors.APIError as exc:
-        logger.error('[AI_COACH] Gemini API call failed: %s', exc, exc_info=True)
+        # str(exc) already folds in code/status/details, but logging the
+        # structured fields directly means a 401 (bad key), 404 (bad model),
+        # and 429 (quota) are unambiguous at a glance in Render's logs
+        # instead of depending on exc's own string formatting.
+        logger.error(
+            '[AI_COACH] Gemini API call failed: code=%s status=%s message=%s details=%r',
+            exc.code, exc.status, exc.message, exc.details, exc_info=True)
+        if exc.code == 429:
+            raise AICoachError(_(
+                "Mendoura AI Coach hit Google's free-tier limit just now. Please wait a minute "
+                "and try again."
+            )) from exc
         raise AICoachError(_(
             "Mendoura AI Coach couldn't reach the AI service just now. Please try again shortly."
         )) from exc

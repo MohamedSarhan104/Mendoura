@@ -298,15 +298,18 @@ INSTRUCTOR_APPLICATION_NOTIFICATION_EMAIL = config(
 # AI Coach -- Google Gemini API key (free tier: ai.google.dev/gemini-api,
 # via Google AI Studio -- no billing needed). Blank in local dev/tests is
 # fine; the view surfaces a friendly Sandbox-mode reply instead of crashing
-# when it's unset.
-GEMINI_API_KEY = config('GEMINI_API_KEY', default='')
+# when it's unset. Stripped of whitespace/quotes -- a key pasted into
+# Render's env var UI with a trailing newline or wrapping quote character
+# is a real, common way to end up with a subtly wrong key that still looks
+# right at a glance, and fails auth with no obvious clue why.
+GEMINI_API_KEY = config('GEMINI_API_KEY', default='').strip().strip('"\'')
 
 # Free-tier-eligible by default. Google no longer publishes a single fixed
 # rate-limit table (it varies and is best checked in your own AI Studio
 # dashboard), so both the model and the throttling thresholds below are
 # deliberately conservative and env-overridable rather than hardcoded to
 # whatever numbers are current today.
-GEMINI_MODEL = config('GEMINI_MODEL', default='gemini-2.5-flash-lite')
+GEMINI_MODEL = config('GEMINI_MODEL', default='gemini-2.5-flash-lite').strip()
 
 # Google enforces free-tier RPM/RPD against the whole API key/project, not
 # per Mendoura student -- these "global" ceilings are the real guardrail

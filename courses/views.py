@@ -939,7 +939,6 @@ def continue_learning(request):
 def course_player(request, course_id, lecture_id):
     course = get_object_or_404(_with_stats(Course.objects.all()), id=course_id)
     lecture = get_object_or_404(Lecture, id=lecture_id, module__course=course)
-    _sync_bunny_status(lecture)
 
     # Lazily backfills the poster for any course that predates this field
     # (or was created outside the normal form, e.g. via Django admin) --
@@ -965,6 +964,19 @@ def course_player(request, course_id, lecture_id):
 
     modules = course.modules.prefetch_related('lectures', 'quiz__questions').order_by('order')
     all_lectures = list(Lecture.objects.filter(module__course=course).order_by('module__order', 'order'))
+
+    # Every lecture in the course, not just the one being watched -- the
+    # Overview tab's total-duration sum needs every lecture's
+    # duration_seconds backfilled, and a lecture nobody's individually
+    # opened (in the player or the classic editor) since upload would
+    # otherwise never get synced. Each call is a fast no-op once a lecture
+    # already has both a ready status and a known duration (see the guard
+    # in _sync_bunny_status), so this only actually costs Bunny API calls
+    # for lectures still missing data -- it doesn't retry forever once
+    # everything is backfilled.
+    for l in all_lectures:
+        _sync_bunny_status(l)
+
     index = next((i for i, l in enumerate(all_lectures) if l.id == lecture.id), 0)
     prev_lecture = all_lectures[index - 1] if index > 0 else None
     next_lecture = all_lectures[index + 1] if index < len(all_lectures) - 1 else None
