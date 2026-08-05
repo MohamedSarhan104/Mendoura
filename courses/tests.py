@@ -220,6 +220,20 @@ class EnrollmentAndReviewTests(TestCase):
         self.assertTrue(
             Enrollment.objects.filter(student=self.student, course=self.free_course).exists())
 
+    def test_enroll_free_course_sends_confirmation_email(self):
+        # Regression test: enrolling (any path -- this is the free-course
+        # branch of enroll_course) previously sent no email to the student
+        # at all, only an internal admin notification for paid purchases.
+        student = User.objects.create_user(
+            username='free_enroll_stud', password='pw', is_student=True,
+            email='free_enroll_stud@example.com')
+        self.client.force_login(student)
+        self.client.post(reverse('enroll_course', args=[self.free_course.id]))
+        sent = next(m for m in mail.outbox if m.to == ['free_enroll_stud@example.com'])
+        self.assertIn(self.free_course.title, sent.subject)
+        self.assertIn(self.free_course.title, sent.body)
+        self.assertIn(self.instructor.username, sent.body)
+
     def test_only_enrolled_students_can_review(self):
         self.client.force_login(self.student)
         self.client.post(reverse('add_review', args=[self.free_course.id]),
@@ -681,6 +695,22 @@ class CourseVersioningTests(TestCase):
         self.assertEqual(self.course.status, Course.Status.PENDING_REVIEW)
         self.assertEqual(self.course.title, 'Ver Course Updated')
 
+    def test_editing_a_published_course_sends_admin_notification(self):
+        # Regression test: the pending_course_approvals_count badge picks
+        # this up for free (it's a live DB count), but nothing previously
+        # sent the actual admin-notification email for a resubmission --
+        # only the initial DRAFT/REJECTED -> PENDING_REVIEW submission
+        # (course_wizard_review/toggle_publish) did.
+        self.client.force_login(self.instructor)
+        self._edit()
+        notification = next(
+            m for m in mail.outbox
+            if m.to == [settings.INSTRUCTOR_APPLICATION_NOTIFICATION_EMAIL])
+        self.assertIn('Ver Course Updated', notification.subject)
+        self.assertIn('Ver Course Updated', notification.body)
+        self.assertIn('ver_inst', notification.body)
+        self.assertIn(reverse('course_approval_queue'), notification.body)
+
     def test_enrolled_student_keeps_access_while_edit_is_pending_review(self):
         self.client.force_login(self.instructor)
         self._edit()
@@ -726,6 +756,19 @@ class CourseVersioningTests(TestCase):
                           {'title': 'M1 renamed', 'order': 0})
         self.course.refresh_from_db()
         self.assertEqual(self.course.status, Course.Status.PENDING_REVIEW)
+
+    def test_editing_module_on_published_course_sends_admin_notification(self):
+        # Same regression as test_editing_a_published_course_sends_admin_
+        # notification above, exercised through a different one of
+        # _reenter_review_if_published's ~16 call sites -- confirms the
+        # fix lives in the shared helper, not bolted onto edit_course alone.
+        self.client.force_login(self.instructor)
+        self.client.post(reverse('edit_module', args=[self.course.id, self.module.id]),
+                          {'title': 'M1 renamed', 'order': 0})
+        notification = next(
+            m for m in mail.outbox
+            if m.to == [settings.INSTRUCTOR_APPLICATION_NOTIFICATION_EMAIL])
+        self.assertIn('Ver Course', notification.subject)
 
 
 class CourseDeletionTests(TestCase):
@@ -1858,7 +1901,8 @@ class PaymobWebhookTests(TestCase):
         self.instructor = User.objects.create_user(
             username='paymob_inst', password='pw', is_instructor=True)
         self.student = User.objects.create_user(
-            username='paymob_stud', password='pw', is_student=True)
+            username='paymob_stud', password='pw', is_student=True,
+            email='paymob_stud@example.com')
         track = Track.objects.create(name='Business & Marketing')
         self.course = Course.objects.create(
             instructor=self.instructor, track=track, title='Paid Course', description='...',
@@ -1902,6 +1946,17 @@ class PaymobWebhookTests(TestCase):
         self.assertIn('Paid Course', notification.body)
         self.assertIn('paymob_stud', notification.body)
         self.assertIn('50 USD', notification.body)
+
+    def test_successful_purchase_sends_enrollment_confirmation_to_student(self):
+        # Regression test: a paid enrollment (unlike the free-course path)
+        # only ever sent the internal admin notification -- the student
+        # who actually paid got nothing.
+        merchant_order_id = f'course{self.course.id}-student{self.student.id}-abc123'
+        nested, signature = _signed_transaction(merchant_order_id)
+        self._post_webhook(nested, signature)
+        sent = next(m for m in mail.outbox if m.to == ['paymob_stud@example.com'])
+        self.assertIn('Paid Course', sent.subject)
+        self.assertIn('Paid Course', sent.body)
 
     def test_duplicate_purchase_webhook_does_not_double_notify(self):
         merchant_order_id = f'course{self.course.id}-student{self.student.id}-abc123'
@@ -2028,7 +2083,8 @@ class SubscriptionAccessControlTests(TestCase):
         self.instructor = User.objects.create_user(
             username='sub_access_inst', password='pw', is_instructor=True)
         self.student = User.objects.create_user(
-            username='sub_access_stud', password='pw', is_student=True)
+            username='sub_access_stud', password='pw', is_student=True,
+            email='sub_access_stud@example.com')
         track = Track.objects.create(name='Cloud & DevOps')
         self.course = Course.objects.create(
             instructor=self.instructor, track=track, title='Paid Course', description='...',
@@ -2059,6 +2115,16 @@ class SubscriptionAccessControlTests(TestCase):
         response = self.client.get(
             reverse('course_player', args=[self.course.id, self.locked_lecture.id]))
         self.assertEqual(response.status_code, 403)
+
+    def test_subscriber_clicking_enroll_gets_confirmation_email(self):
+        # The explicit "Enroll"/"Buy Now" click (enroll_course's instant-
+        # unlock branch for an active subscriber) is a deliberate action and
+        # should be confirmed by email -- unlike course_player's passive
+        # auto-enrollment-on-first-view above, which stays silent.
+        self.client.force_login(self.student)
+        self.client.post(reverse('enroll_course', args=[self.course.id]))
+        sent = next(m for m in mail.outbox if m.to == ['sub_access_stud@example.com'])
+        self.assertIn('Paid Course', sent.subject)
 
 
 class SubscriptionRevenueDistributionTests(TestCase):
@@ -3742,6 +3808,30 @@ class AdminTestEmailToolTests(TestCase):
 
     def test_welcome_test_requires_target_email(self):
         response = self.client.post(reverse('send_test_emails'), {'which': 'welcome', 'target_email': ''})
+        self.assertRedirects(response, reverse('send_test_emails'))
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_enrollment_confirmation_test_send_uses_real_enrollment_and_typed_target(self):
+        student = User.objects.create_user(username='tool_enroll_stud', password='pw', is_student=True)
+        instructor = User.objects.create_user(username='tool_enroll_inst', password='pw', is_instructor=True)
+        track = Track.objects.create(name='Tool Enroll Track')
+        course = Course.objects.create(
+            instructor=instructor, track=track, title='Tool Enroll Course', description='...',
+            production_type=Course.ProductionType.FULL, price=Decimal('0.00'), is_free=True)
+        Enrollment.objects.create(student=student, course=course)
+        response = self.client.post(
+            reverse('send_test_emails'),
+            {'which': 'enrollment_confirmation', 'target_email': 'wherever9@example.com'})
+        self.assertRedirects(response, reverse('send_test_emails'))
+        self.assertEqual(len(mail.outbox), 1)
+        sent = mail.outbox[0]
+        self.assertEqual(sent.to, ['wherever9@example.com'])
+        self.assertIn('Tool Enroll Course', sent.subject)
+
+    def test_enrollment_confirmation_test_send_without_any_enrollment_shows_error_not_crash(self):
+        response = self.client.post(
+            reverse('send_test_emails'),
+            {'which': 'enrollment_confirmation', 'target_email': 'wherever@example.com'})
         self.assertRedirects(response, reverse('send_test_emails'))
         self.assertEqual(len(mail.outbox), 0)
 

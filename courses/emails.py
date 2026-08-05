@@ -138,6 +138,63 @@ def send_welcome_email(user, *, to_email=None) -> EmailResult:
 
 
 @_never_raises
+def send_enrollment_confirmation_email(enrollment, *, to_email=None) -> EmailResult:
+    """Sent once, right after a student is granted access to a course --
+    every path that creates a real Enrollment: enroll_course's free-course
+    branch, its active-subscriber instant-unlock branch, and
+    _handle_course_payment's paid-purchase webhook (inside the same
+    `if created:` guard the wallet credit happens in, so a retried webhook
+    delivery can't double-send this either).
+
+    Deliberately not sent from get_or_create_enrollment's other caller
+    (course_detail/course_player auto-granting a subscriber access just
+    for viewing a course page) -- that's a passive side effect of
+    browsing, not something a student did on purpose, so emailing it would
+    read as spam to someone who merely clicked into a course out of
+    curiosity.
+
+    to_email overrides the recipient, same escape hatch as
+    send_welcome_email -- used only by the admin test-email tool."""
+    student = enrollment.student
+    course = enrollment.course
+    to_email = to_email or student.email
+    if not to_email:
+        return False, 'This student has no email address on file.'
+
+    name = student.get_full_name() or student.username
+    instructor_name = course.instructor.get_full_name() or course.instructor.username
+    # Traverses course's own related managers rather than importing Module/
+    # Lecture here -- same reason bunny.py/certificates.py stay decoupled
+    # from the model layer they're called from.
+    first_module = course.modules.order_by('order', 'id').first()
+    first_lecture = first_module.lectures.order_by('order', 'id').first() if first_module else None
+    if first_lecture:
+        start_learning_link = f'{SITE_DOMAIN}{reverse("course_player", args=[course.id, first_lecture.id])}'
+    else:
+        start_learning_link = f'{SITE_DOMAIN}{reverse("my_learning")}'
+
+    context = {
+        'student_name': name,
+        'course_title': course.title,
+        'instructor_name': instructor_name,
+        'start_learning_link': start_learning_link,
+    }
+    html_body = render_to_string('emails/enrollment_confirmation_email.html', context)
+    text_body = (
+        f'Hi {name},\n\n'
+        f'You\'re enrolled in "{course.title}" -- taught by {instructor_name}.\n\n'
+        f'Start learning: {start_learning_link}\n\n'
+        f'Need help? Reach out to us anytime at support@mendoura.com — we\'re happy to assist.\n\n'
+        f'Happy learning,\n'
+        f'The Mendoura Team'
+    )
+    return _send(
+        subject=f'You\'re enrolled in "{course.title}"',
+        text_body=text_body, html_body=html_body, to_email=to_email,
+    )
+
+
+@_never_raises
 def send_instructor_application_received_email(user, *, to_email=None) -> EmailResult:
     """Sent once, right at Instructor registration -- the lighter
     "we got it, hang tight" counterpart to send_instructor_welcome_email,

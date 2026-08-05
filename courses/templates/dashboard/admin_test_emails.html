@@ -42,6 +42,21 @@
 
     <div class="flex items-center justify-between bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5 gap-4 flex-wrap">
       <div>
+        <p class="font-semibold">{% trans "Enrollment Confirmation Email" %}</p>
+        <p class="text-xs text-gray-400 mt-1">{% trans "Sent when a student is granted access to a course (free enroll, subscriber unlock, or purchase) -- reuses the most recent real enrollment as sample data." %}</p>
+      </div>
+      <form method="post" class="target-email-form">
+        {% csrf_token %}
+        <input type="hidden" name="which" value="enrollment_confirmation">
+        <input type="hidden" name="target_email" class="target-email-field">
+        <button type="submit" class="px-5 py-2 rounded-lg bg-brand-600 text-white font-semibold hover:bg-brand-700 transition text-sm">
+          {% trans "Send Test" %}
+        </button>
+      </form>
+    </div>
+
+    <div class="flex items-center justify-between bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5 gap-4 flex-wrap">
+      <div>
         <p class="font-semibold">{% trans "Certificate Email" %}</p>
         <p class="text-xs text-gray-400 mt-1">{% trans "Sent on course completion -- reuses the most recently issued real certificate, PDF attached." %}</p>
       </div>

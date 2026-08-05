@@ -508,6 +508,14 @@ def _reenter_review_if_published(request, course):
         course.status = Course.Status.PENDING_REVIEW
         course.rejection_reason = ''
         course.save()
+        # This is the same "needs admin review" event course_wizard_review/
+        # toggle_publish send on first submission -- called from here too
+        # (module/lecture/quiz/question/choice edits on a live course, via
+        # every caller of this helper) so a resubmission notifies admins
+        # the same way a first submission does. The pending_courses_count
+        # badge already picked this up for free (it's a live DB count), but
+        # nothing previously sent the actual email for this specific path.
+        emails.send_course_submission_notification(course)
         messages.info(request, _('%(title)s was live, so this change has been resubmitted for admin review.') % {'title': course.title})
 
 
@@ -570,13 +578,15 @@ def enroll_course(request, course_id):
         return redirect('course_detail', course_id=course.id)
 
     if course.is_free or course.price == 0:
-        Enrollment.objects.create(student=request.user, course=course)
+        enrollment = Enrollment.objects.create(student=request.user, course=course)
+        emails.send_enrollment_confirmation_email(enrollment)
         messages.success(request, _('You are now enrolled in %(title)s.') % {'title': course.title})
         return redirect('my_learning')
 
     if student_has_access(request.user, course):
         # Active subscriber -- no checkout needed, just unlock the course.
-        get_or_create_enrollment(request.user, course)
+        enrollment = get_or_create_enrollment(request.user, course)
+        emails.send_enrollment_confirmation_email(enrollment)
         messages.success(request, _('You are now enrolled in %(title)s.') % {'title': course.title})
         return redirect('my_learning')
 
@@ -732,9 +742,10 @@ def _handle_course_payment(transaction_id, obj, course_id, student_id):
                 wallet=wallet, type=WalletTransaction.Type.SALE_CREDIT,
                 amount=payment.instructor_amount, balance_after=wallet.available_balance,
                 payment=payment)
-            Enrollment.objects.get_or_create(
+            enrollment, _created = Enrollment.objects.get_or_create(
                 student=student, course=course, defaults={'payment': payment})
             emails.send_course_purchase_notification(payment)
+            emails.send_enrollment_confirmation_email(enrollment)
 
 
 def _handle_subscription_payment(transaction_id, obj, plan_id, student_id):
@@ -1865,7 +1876,8 @@ def send_test_emails(request):
         target = request.POST.get('target_email', '').strip()
         which = request.POST.get('which')
 
-        if which in ('welcome', 'instructor_application_received', 'instructor_application_notification',
+        if which in ('welcome', 'enrollment_confirmation', 'instructor_application_received',
+                     'instructor_application_notification',
                      'instructor_welcome', 'instructor_rejection', 'course_approved', 'course_rejected',
                      'track_request_notification', 'track_request_approved', 'track_request_rejected',
                      'certificate') and not target:
@@ -1876,6 +1888,20 @@ def send_test_emails(request):
             sent, error = emails.send_welcome_email(request.user, to_email=target)
             _report_test_email(
                 request, sent, error, _('Student welcome email sent to %(email)s.') % {'email': target})
+
+        elif which == 'enrollment_confirmation':
+            enrollment = Enrollment.objects.select_related('student', 'course__instructor').order_by(
+                '-enrolled_at').first()
+            if not enrollment:
+                messages.error(
+                    request,
+                    _('No enrollments exist yet -- enroll in a course, then retry this test.'))
+            else:
+                sent, error = emails.send_enrollment_confirmation_email(enrollment, to_email=target)
+                _report_test_email(
+                    request, sent, error,
+                    _('Enrollment-confirmation email sent to %(email)s (using real enrollment in '
+                      '"%(course)s" as sample data).') % {'email': target, 'course': enrollment.course.title})
 
         elif which == 'instructor_application_received':
             sent, error = emails.send_instructor_application_received_email(request.user, to_email=target)
