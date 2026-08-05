@@ -51,15 +51,19 @@
               <div class="divide-y divide-gray-100 dark:divide-gray-800">
                 {% for lecture in module.lectures.all %}
                   <div class="flex items-center justify-between gap-4 px-4 py-3">
-                    <div class="flex items-center gap-3">
-                      <i class="fa-solid fa-circle-play text-brand-600"></i>
-                      <span class="text-sm">{{ lecture.title }}</span>
-                    </div>
-                    {% if lecture.is_preview or can_preview_all %}
-                      <a href="{% url 'course_player' course.id lecture.id %}" class="text-xs font-semibold text-brand-600 hover:underline">
+                    {% if lecture.is_preview or can_preview_all or enrollment %}
+                      <a href="{% url 'course_player' course.id lecture.id %}" class="flex items-center gap-3 hover:text-brand-600 dark:hover:text-brand-400">
+                        <i class="fa-solid fa-circle-play text-brand-600"></i>
+                        <span class="text-sm">{{ lecture.title }}</span>
+                      </a>
+                      <a href="{% url 'course_player' course.id lecture.id %}" class="text-xs font-semibold text-brand-600 hover:underline whitespace-nowrap">
                         {% if lecture.is_preview %}{% trans "Preview" %}{% else %}{% trans "Watch" %}{% endif %}
                       </a>
-                    {% elif not enrollment %}
+                    {% else %}
+                      <div class="flex items-center gap-3">
+                        <i class="fa-solid fa-circle-play text-brand-600"></i>
+                        <span class="text-sm">{{ lecture.title }}</span>
+                      </div>
                       <i class="fa-solid fa-lock text-gray-300 dark:text-gray-600 text-xs"></i>
                     {% endif %}
                   </div>

@@ -1561,6 +1561,68 @@ class AdminCoursePreviewTests(TestCase):
         self.assertEqual(response.status_code, 200)
 
 
+class EnrolledStudentCourseContentTests(TestCase):
+    """Regression coverage for the "enrolled student has no way to actually
+    watch a course" bug: course_detail's Course Content list only linked a
+    lecture to course_player when it was marked is_preview or the viewer
+    could preview_all (owner/admin) -- an enrolled-but-not-owner student
+    fell through both branches and got neither a link nor a lock icon,
+    i.e. nothing clickable at all. course_player itself (the actual
+    Bunny-embed player) was already correctly gated and needed no changes;
+    only the missing link in detail.html did."""
+
+    def setUp(self):
+        self.instructor = User.objects.create_user(
+            username='enrolled_content_inst', password='pw', is_instructor=True)
+        self.student = User.objects.create_user(
+            username='enrolled_content_stud', password='pw', is_student=True)
+        self.outsider = User.objects.create_user(
+            username='enrolled_content_outsider', password='pw', is_student=True)
+        track = Track.objects.create(name='Enrolled Content Track')
+        self.course = Course.objects.create(
+            instructor=self.instructor, track=track, title='Enrolled Content Course',
+            description='...', production_type=Course.ProductionType.FULL,
+            price=Decimal('0.00'), is_free=True, status=Course.Status.PUBLISHED,
+        )
+        module = Module.objects.create(course=self.course, title='M1')
+        self.locked_lecture = Lecture.objects.create(module=module, title='Deep Dive', is_preview=False)
+        Enrollment.objects.create(student=self.student, course=self.course)
+
+    def test_enrolled_student_sees_watch_link_for_non_preview_lecture(self):
+        self.client.force_login(self.student)
+        response = self.client.get(reverse('course_detail', args=[self.course.id]))
+        self.assertContains(
+            response, reverse('course_player', args=[self.course.id, self.locked_lecture.id]))
+        self.assertContains(response, 'Watch')
+
+    def test_enrolled_student_lecture_title_itself_is_a_link(self):
+        self.client.force_login(self.student)
+        response = self.client.get(reverse('course_detail', args=[self.course.id]))
+        self.assertContains(
+            response,
+            f'href="{reverse("course_player", args=[self.course.id, self.locked_lecture.id])}"',
+            count=2)  # the title link and the "Watch" pill
+
+    def test_enrolled_student_can_actually_open_the_player(self):
+        self.client.force_login(self.student)
+        response = self.client.get(
+            reverse('course_player', args=[self.course.id, self.locked_lecture.id]))
+        self.assertEqual(response.status_code, 200)
+
+    def test_non_enrolled_student_sees_lock_not_a_link(self):
+        self.client.force_login(self.outsider)
+        response = self.client.get(reverse('course_detail', args=[self.course.id]))
+        self.assertNotContains(
+            response, reverse('course_player', args=[self.course.id, self.locked_lecture.id]))
+        self.assertContains(response, 'fa-lock')
+
+    def test_logged_out_visitor_sees_lock_not_a_link(self):
+        response = self.client.get(reverse('course_detail', args=[self.course.id]))
+        self.assertNotContains(
+            response, reverse('course_player', args=[self.course.id, self.locked_lecture.id]))
+        self.assertContains(response, 'fa-lock')
+
+
 class AdminPayoutLifecycleTests(TestCase):
     def setUp(self):
         self.admin = User.objects.create_superuser(username='payout_admin', password='pw')
