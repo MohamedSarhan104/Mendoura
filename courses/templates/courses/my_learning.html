@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% load i18n %}
+{% load i18n course_extras %}
 {% block title %}My Learning - Mendoura{% endblock %}
 
 {% block content %}
@@ -14,9 +14,17 @@
             <h3 class="font-bold text-lg">{{ enrollment.course.title }}</h3>
             <p class="text-xs text-gray-400 mt-1">{% blocktrans with date=enrollment.enrolled_at|date:"M d, Y" %}Enrolled {{ date }}{% endblocktrans %}</p>
           </div>
-          <a href="{% url 'course_detail' enrollment.course.id %}" class="text-sm font-semibold text-brand-600 hover:underline whitespace-nowrap">
-            {% trans "View Course" %}
-          </a>
+          {% with next_lecture=next_lecture_by_enrollment|get_item:enrollment.id %}
+            {% if next_lecture %}
+              <a href="{% url 'course_player' enrollment.course.id next_lecture.id %}" class="text-sm font-semibold text-brand-600 hover:underline whitespace-nowrap">
+                <i class="fa-solid fa-play mr-1"></i>{% trans "Continue Learning" %}
+              </a>
+            {% else %}
+              <a href="{% url 'course_detail' enrollment.course.id %}" class="text-sm font-semibold text-brand-600 hover:underline whitespace-nowrap">
+                {% trans "View Course" %}
+              </a>
+            {% endif %}
+          {% endwith %}
         </div>
         {% if enrollment.is_complete %}
           <div class="mt-4 flex items-center justify-between gap-4 flex-wrap">

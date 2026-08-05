@@ -2609,6 +2609,23 @@ class PWATests(TestCase):
         self.assertIn('res.cloudinary.com', content)
         self.assertIn('video.bunnycdn.com', content)
 
+    @override_settings(STATIC_ASSET_VERSION='deadbeef123')
+    def test_service_worker_cache_name_tracks_static_asset_version(self):
+        # Regression coverage: CACHE_NAME used to be a hardcoded literal that
+        # never changed across deploys, so the service worker's own
+        # stale-while-revalidate caching for /static/ (including
+        # tailwind.css, which STORAGES deliberately serves unversioned --
+        # see settings.py) could keep serving a pre-deploy CSS/asset
+        # indefinitely, since 'activate' only evicts caches whose name
+        # differs from the current CACHE_NAME.
+        response = self.client.get('/service-worker.js')
+        self.assertIn('deadbeef123', response.content.decode())
+
+    @override_settings(STATIC_ASSET_VERSION='deadbeef123')
+    def test_tailwind_css_link_is_cache_busted_with_static_asset_version(self):
+        response = self.client.get('/')
+        self.assertContains(response, 'tailwind.css?v=deadbeef123')
+
     def test_offline_page_renders(self):
         response = self.client.get('/offline/')
         self.assertEqual(response.status_code, 200)
@@ -3109,6 +3126,107 @@ class WatchThresholdAutoCompleteTests(TestCase):
         self.assertEqual(response.status_code, 302)
         progress = LectureProgress.objects.get(enrollment=self.enrollment, lecture=self.lecture)
         self.assertTrue(progress.completed)
+
+
+class ContinueLearningTests(TestCase):
+    """'Continue Learning' (homepage) and 'View Course' (My Learning) used to
+    both funnel an already-enrolled student through the marketing-style
+    course detail page before they could reach the player. Both now jump
+    straight into course_player at the next incomplete lecture."""
+
+    def setUp(self):
+        self.instructor = User.objects.create_user(
+            username='cl_inst', password='pw', is_instructor=True)
+        self.student = User.objects.create_user(username='cl_stud', password='pw', is_student=True)
+        track = Track.objects.create(name='CL Track')
+        self.course = Course.objects.create(
+            instructor=self.instructor, track=track, title='CL Course', description='...',
+            production_type=Course.ProductionType.FULL, price=Decimal('0.00'), is_free=True,
+            status=Course.Status.PUBLISHED)
+        module = Module.objects.create(course=self.course, title='M1')
+        self.lecture1 = Lecture.objects.create(module=module, title='L1', order=1)
+        self.lecture2 = Lecture.objects.create(module=module, title='L2', order=2)
+        self.lecture3 = Lecture.objects.create(module=module, title='L3', order=3)
+        self.client.force_login(self.student)
+
+    def test_anonymous_user_redirected_to_login(self):
+        self.client.logout()
+        response = self.client.get(reverse('continue_learning'))
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('/login/', response.url)
+
+    def test_non_student_redirected_to_home(self):
+        self.client.force_login(self.instructor)
+        response = self.client.get(reverse('continue_learning'))
+        self.assertRedirects(response, reverse('platform_home'))
+
+    def test_no_enrollments_redirects_to_browse_tracks(self):
+        response = self.client.get(reverse('continue_learning'))
+        self.assertRedirects(response, reverse('track_list'))
+
+    def test_never_started_course_jumps_to_first_lecture(self):
+        Enrollment.objects.create(student=self.student, course=self.course)
+        response = self.client.get(reverse('continue_learning'))
+        self.assertRedirects(response, reverse('course_player', args=[self.course.id, self.lecture1.id]))
+
+    def test_in_progress_course_jumps_to_next_incomplete_lecture(self):
+        enrollment = Enrollment.objects.create(student=self.student, course=self.course)
+        LectureProgress.objects.create(enrollment=enrollment, lecture=self.lecture1, completed=True)
+        response = self.client.get(reverse('continue_learning'))
+        self.assertRedirects(response, reverse('course_player', args=[self.course.id, self.lecture2.id]))
+
+    def test_fully_completed_course_reopens_from_the_start(self):
+        enrollment = Enrollment.objects.create(student=self.student, course=self.course)
+        for lecture in (self.lecture1, self.lecture2, self.lecture3):
+            LectureProgress.objects.create(enrollment=enrollment, lecture=lecture, completed=True)
+        response = self.client.get(reverse('continue_learning'))
+        self.assertRedirects(response, reverse('course_player', args=[self.course.id, self.lecture1.id]))
+
+    def test_picks_the_most_recently_watched_course_over_most_recently_enrolled(self):
+        track = self.course.track
+        older_course = self.course
+        newer_course = Course.objects.create(
+            instructor=self.instructor, track=track, title='Newer Course', description='...',
+            production_type=Course.ProductionType.FULL, price=Decimal('0.00'), is_free=True,
+            status=Course.Status.PUBLISHED)
+        newer_module = Module.objects.create(course=newer_course, title='M1')
+        Lecture.objects.create(module=newer_module, title='NL1', order=1)
+
+        Enrollment.objects.create(student=self.student, course=older_course)
+        # Enrolled in newer_course more recently, but actually watching older_course.
+        Enrollment.objects.create(student=self.student, course=newer_course)
+        WatchEvent.objects.create(
+            student=self.student, course=older_course, lecture=self.lecture1, seconds_watched=30)
+
+        response = self.client.get(reverse('continue_learning'))
+        self.assertRedirects(response, reverse('course_player', args=[older_course.id, self.lecture1.id]))
+
+    def test_course_with_no_lectures_falls_back_to_course_detail(self):
+        empty_course = Course.objects.create(
+            instructor=self.instructor, track=self.course.track, title='Empty Course', description='...',
+            production_type=Course.ProductionType.FULL, price=Decimal('0.00'), is_free=True,
+            status=Course.Status.PUBLISHED)
+        Enrollment.objects.create(student=self.student, course=empty_course)
+        response = self.client.get(reverse('continue_learning'))
+        self.assertRedirects(response, reverse('course_detail', args=[empty_course.id]))
+
+    def test_my_learning_view_course_link_targets_player_for_in_progress_enrollment(self):
+        Enrollment.objects.create(student=self.student, course=self.course)
+        response = self.client.get(reverse('my_learning'))
+        self.assertContains(response, reverse('course_player', args=[self.course.id, self.lecture1.id]))
+        self.assertContains(response, 'Continue Learning')
+
+    def test_my_learning_view_course_link_falls_back_to_detail_for_completed_enrollment(self):
+        enrollment = Enrollment.objects.create(student=self.student, course=self.course)
+        for lecture in (self.lecture1, self.lecture2, self.lecture3):
+            LectureProgress.objects.create(enrollment=enrollment, lecture=lecture, completed=True)
+        # Bypasses issue_certificate_if_complete()'s real PDF generation
+        # (Cloudinary isn't configured in tests) -- this test only cares
+        # that a *complete* enrollment with a certificate already issued
+        # links to course_detail, not about certificate generation itself.
+        Certificate.objects.create(enrollment=enrollment)
+        response = self.client.get(reverse('my_learning'))
+        self.assertContains(response, reverse('course_detail', args=[self.course.id]))
 
 
 class HomeworkSubmissionTests(TestCase):

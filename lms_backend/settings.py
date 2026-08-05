@@ -86,6 +86,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'django.template.context_processors.i18n',
+                'courses.context_processors.static_asset_version',
                 'courses.context_processors.tracks_menu',
                 'courses.context_processors.pending_instructor_requests',
                 'courses.context_processors.pending_course_approvals',
@@ -160,6 +161,17 @@ USE_TZ = True
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_DIRS = [BASE_DIR / 'static']
+
+# Cache-busting suffix for hand-written {% static %} references (currently
+# just tailwind.css in base.html) -- STORAGES below deliberately uses
+# whitenoise's *non*-manifest storage, so a static file's URL/filename never
+# changes across deploys on its own. Without this, a browser (or any CDN in
+# front of Render) that already cached an old tailwind.css keeps serving it
+# after a deploy that adds new Tailwind utility classes, silently leaving
+# newly-added markup completely unstyled. Render sets RENDER_GIT_COMMIT
+# automatically; falls back to a fixed dev value locally where there's no
+# real cache to bust.
+STATIC_ASSET_VERSION = config('RENDER_GIT_COMMIT', default='dev')
 
 
 AUTH_USER_MODEL = 'courses.User'

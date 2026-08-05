@@ -517,6 +517,23 @@ def _rating_breakdown(course):
     ]
 
 
+def _next_lecture_for_enrollment(enrollment):
+    """The lecture 'Continue Learning'/'View Course' should jump straight
+    into: the first lecture (in module/lecture order) this enrollment
+    hasn't completed yet, or the very first lecture if nothing's been
+    completed, or if the course has no lectures at all."""
+    lectures = list(Lecture.objects.filter(module__course=enrollment.course)
+                     .order_by('module__order', 'order'))
+    if not lectures:
+        return None
+    completed_ids = set(
+        enrollment.lecture_progress.filter(completed=True).values_list('lecture_id', flat=True))
+    for lecture in lectures:
+        if lecture.id not in completed_ids:
+            return lecture
+    return lectures[0]  # every lecture done -- reopen from the start rather than dead-end
+
+
 def _can_preview_unpublished(user, course):
     """The owning instructor and admins can always see their own course
     regardless of status (draft, pending review, archived, ...) -- everyone
@@ -872,7 +889,49 @@ def add_review(request, course_id):
 def my_learning(request):
     enrollments = (Enrollment.objects.filter(student=request.user)
                    .select_related('course').order_by('-enrolled_at'))
-    return render(request, 'courses/my_learning.html', {'enrollments': enrollments})
+    # "View Course" jumps straight into the player at the next incomplete
+    # lecture for in-progress courses -- no next lecture (nothing left, or
+    # no lectures at all) falls back to the course detail page instead of
+    # a broken link. Computed once here rather than as a template method
+    # call per row, since it needs a query per enrollment either way.
+    next_lecture_by_enrollment = {
+        enrollment.id: _next_lecture_for_enrollment(enrollment)
+        for enrollment in enrollments if not enrollment.is_complete()
+    }
+    return render(request, 'courses/my_learning.html', {
+        'enrollments': enrollments,
+        'next_lecture_by_enrollment': next_lecture_by_enrollment,
+    })
+
+
+# "Continue Learning" on the homepage -- for a student with at least one
+# enrollment, jumps directly into the player at their next incomplete
+# lecture instead of landing on My Learning's list or a course's marketing
+# detail page. Picks up where they actually left off: the course they most
+# recently logged watch-time on, falling back to the most recently enrolled
+# course if they haven't started watching anything yet.
+@login_required
+def continue_learning(request):
+    if not request.user.is_student:
+        return redirect('platform_home')
+
+    last_watch = WatchEvent.objects.filter(student=request.user).select_related('course').first()
+    if last_watch:
+        enrollment = Enrollment.objects.filter(student=request.user, course=last_watch.course).first()
+    else:
+        enrollment = None
+    if enrollment is None:
+        enrollment = (Enrollment.objects.filter(student=request.user)
+                      .select_related('course').order_by('-enrolled_at').first())
+
+    if enrollment is None:
+        return redirect('track_list')
+
+    lecture = _next_lecture_for_enrollment(enrollment)
+    if lecture is None:
+        return redirect('course_detail', course_id=enrollment.course_id)
+
+    return redirect('course_player', course_id=enrollment.course_id, lecture_id=lecture.id)
 
 
 # Course Player - watch a lecture. Preview lectures are open to anyone;

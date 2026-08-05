@@ -1,6 +1,14 @@
+from django.conf import settings
 from django.db.models import Prefetch
 
 from .models import Course, Track, TrackRequest, User
+
+
+def static_asset_version(request):
+    """See STATIC_ASSET_VERSION in settings.py -- lets base.html cache-bust
+    its hand-written {% static %} references without needing manifest
+    storage."""
+    return {'STATIC_ASSET_VERSION': settings.STATIC_ASSET_VERSION}
 
 
 def tracks_menu(request):

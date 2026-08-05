@@ -4,6 +4,14 @@ register = template.Library()
 
 
 @register.filter
+def get_item(mapping, key):
+    """dict[key] for a variable key -- Django's own template syntax only
+    supports a literal key (dict.key) or attribute lookup, not a
+    per-iteration variable like an enrollment's id."""
+    return mapping.get(key)
+
+
+@register.filter
 def duration_display(seconds):
     """Human-friendly duration -- "1h 4m", "4m 6s", "45s" -- from a count of
     seconds: a single lecture's duration_seconds, or a course's total across

@@ -119,6 +119,7 @@ urlpatterns = [
     path('courses/<int:course_id>/checkout/', views.checkout_course, name='checkout_course'),
     path('courses/<int:course_id>/review/', views.add_review, name='add_review'),
     path('learning/', views.my_learning, name='my_learning'),
+    path('continue-learning/', views.continue_learning, name='continue_learning'),
     path('learn/<int:course_id>/<int:lecture_id>/', views.course_player, name='course_player'),
     path('learn/<int:course_id>/<int:lecture_id>/complete/', views.mark_lecture_complete,
          name='mark_lecture_complete'),

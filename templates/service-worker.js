@@ -1,7 +1,15 @@
 // Served at the site root (not /static/) so its default scope is "/" --
 // a service worker's max scope is the directory it's served from, and
 // nothing under /static/ would ever see requests for the rest of the site.
-const CACHE_NAME = 'mendoura-shell-v1';
+//
+// CACHE_NAME is tied to STATIC_ASSET_VERSION (the deployed commit, via
+// Render's RENDER_GIT_COMMIT) rather than a hand-bumped literal: every
+// deploy therefore installs a brand-new service worker with a brand-new
+// cache name, so the activate handler below actually evicts the previous
+// deploy's cached /static/ assets instead of silently keeping them around
+// forever under an unchanged name -- exactly what let a stale cached
+// tailwind.css survive past deploys that added new utility classes.
+const CACHE_NAME = 'mendoura-shell-{{ STATIC_ASSET_VERSION }}';
 const SHELL_ASSETS = [
   '/static/img/logo.png',
   '/static/img/favicon-32.png',

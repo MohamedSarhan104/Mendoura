@@ -3108,10 +3108,8 @@ msgid "Go to Your Dashboard"
 msgstr "لوحة التحكم"
 
 #: templates/platform_home.html:20
-#, fuzzy
-#| msgid "My Learning"
 msgid "Continue Learning"
-msgstr "تعلّمي"
+msgstr "متابعة التعلّم"
 
 #: templates/platform_home.html:27
 msgid "Start Learning"
