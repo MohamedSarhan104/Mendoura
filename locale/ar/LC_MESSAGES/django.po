@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-17 16:27+0000\n"
+"POT-Creation-Date: 2026-08-05 16:02+0000\n"
 "PO-Revision-Date: 2026-07-14 19:49+0000\n"
 "Last-Translator: Mendoura\n"
 "Language-Team: Arabic\n"
@@ -15,294 +15,389 @@ msgstr ""
 "Plural-Forms: nplurals=6; plural=n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 "
 "&& n%100<=10 ? 3 : n%100>=11 && n%100<=99 ? 4 : 5;\n"
 
-#: courses/ai_coach.py:32
-msgid "The AI Coach is not configured yet."
-msgstr ""
-
-#: courses/forms.py:23
+#: courses/forms.py:29
 msgid "An account with this username already exists."
 msgstr ""
 
-#: courses/forms.py:29
+#: courses/forms.py:35
 msgid "An account with this email already exists."
 msgstr ""
 
-#: courses/forms.py:35
+#: courses/forms.py:41
 msgid "An account with this phone number already exists."
 msgstr ""
 
-#: courses/forms.py:43 courses/forms.py:67
+#: courses/forms.py:52 courses/forms.py:87
 msgid "Phone Number"
 msgstr ""
 
-#: courses/forms.py:103
+#: courses/forms.py:57 courses/forms.py:101
+msgid ""
+"You must accept the Terms & Conditions and Privacy Policy to create an "
+"account."
+msgstr ""
+
+#: courses/forms.py:91
+msgid "e.g. Egypt, Saudi Arabia, France..."
+msgstr ""
+
+#: courses/forms.py:92
+msgid ""
+"Instructors based outside Egypt must also provide a Payoneer account below."
+msgstr ""
+
+#: courses/forms.py:96
+msgid "Payoneer email or account ID"
+msgstr ""
+
+#: courses/forms.py:120
+msgid ""
+"A Payoneer account (email or account ID) is required for instructors based "
+"outside Egypt."
+msgstr ""
+
+#: courses/forms.py:144
+msgid "Your account is currently pending administrator approval."
+msgstr ""
+
+#: courses/forms.py:213
 msgid "English"
 msgstr ""
 
-#: courses/forms.py:104
+#: courses/forms.py:214
 msgid "Arabic"
 msgstr ""
 
-#: courses/forms.py:105
+#: courses/forms.py:215
 msgid "French"
 msgstr ""
 
-#: courses/forms.py:106
+#: courses/forms.py:216
 msgid "German"
 msgstr ""
 
-#: courses/forms.py:107
+#: courses/forms.py:217
 msgid "Spanish"
 msgstr ""
 
-#: courses/forms.py:108
+#: courses/forms.py:218
 msgid "Italian"
 msgstr ""
 
-#: courses/forms.py:109
+#: courses/forms.py:219
 msgid "Turkish"
 msgstr ""
 
-#: courses/forms.py:123
+#: courses/forms.py:233
 msgid "e.g. Introduction to Python"
 msgstr ""
 
-#: courses/forms.py:127
+#: courses/forms.py:237
 msgid "What is this course about?"
 msgstr ""
 
-#: courses/forms.py:142
+#: courses/forms.py:252
 msgid ""
-"Type the script here. Our AI will turn this text into a professional video "
+"Type the script here. Mendoura will turn this text into a professional video "
 "lecture."
 msgstr ""
 
-#: courses/forms.py:165
+#: courses/forms.py:275
 msgid "Share your experience with this course..."
 msgstr ""
 
-#: courses/forms.py:181
+#: courses/forms.py:291
 msgid "Optional: Google Drive / GitHub link"
 msgstr ""
 
-#: courses/forms.py:186
+#: courses/forms.py:296
 msgid "Any notes for your instructor?"
 msgstr ""
 
-#: courses/forms.py:199 courses/templates/dashboard/course_submissions.html:60
+#: courses/forms.py:309 courses/templates/dashboard/course_submissions.html:60
 msgid "e.g. 18/20 or A-"
 msgstr ""
 
-#: courses/forms.py:203
+#: courses/forms.py:313
 msgid "Feedback for the student..."
 msgstr ""
 
-#: courses/forms.py:216
+#: courses/forms.py:326
 msgid "e.g. Web Development"
 msgstr ""
 
-#: courses/forms.py:235
+#: courses/forms.py:346
+msgid "e.g. Robotics"
+msgstr ""
+
+#: courses/forms.py:349
+msgid "Why should this track exist? (optional)"
+msgstr ""
+
+#: courses/forms.py:356
+msgid "Select a category…"
+msgstr ""
+
+#: courses/forms.py:367
 msgid "e.g. Getting Started"
 msgstr ""
 
-#: courses/forms.py:251
+#: courses/forms.py:383
 msgid "e.g. Slides.pdf"
 msgstr ""
 
-#: courses/forms.py:271
+#: courses/forms.py:403
 msgid "e.g. Bank transfer, PayPal"
 msgstr ""
 
-#: courses/forms.py:287
+#: courses/forms.py:419
 msgid "e.g. Introduction to Variables"
 msgstr ""
 
-#: courses/forms.py:291
+#: courses/forms.py:423
 msgid "https://youtube.com/... (external embed, optional)"
 msgstr ""
 
-#: courses/models.py:54
+#: courses/forms.py:441
+msgid "Defaults to \"<Module title> Quiz\" if left blank"
+msgstr ""
+
+#: courses/forms.py:456
+msgid "e.g. What does CSS stand for?"
+msgstr ""
+
+#: courses/forms.py:472
+msgid "Answer choice"
+msgstr ""
+
+#: courses/models.py:33
+msgid ""
+"Enter a valid username. This value may contain only letters, numbers, "
+"spaces, and @/./+/-/_ characters."
+msgstr ""
+
+#: courses/models.py:46
+msgid "username"
+msgstr ""
+
+#: courses/models.py:49
+msgid ""
+"Required. 150 characters or fewer. Letters, digits, spaces and @/./+/-/_ "
+"only."
+msgstr ""
+
+#: courses/models.py:52
+msgid "A user with that username already exists."
+msgstr ""
+
+#: courses/models.py:73
+msgid ""
+"Payoneer email or account ID. Required for instructors based outside Egypt."
+msgstr ""
+
+#: courses/models.py:194
 msgid "e.g. a Font Awesome class name"
 msgstr ""
 
-#: courses/models.py:81
+#: courses/models.py:254
 msgid "Used until a course is linked, or if none ever is."
 msgstr ""
 
-#: courses/models.py:98
-msgid "Beginner"
-msgstr ""
-
-#: courses/models.py:99
-msgid "Intermediate"
-msgstr ""
-
-#: courses/models.py:100
-msgid "Advanced"
-msgstr ""
-
-#: courses/models.py:103
-msgid "Full production by instructor"
-msgstr ""
-
-#: courses/models.py:104
-msgid "Script only (platform produces)"
-msgstr ""
-
-#: courses/models.py:107 courses/templates/dashboard/instructor.html:57
-msgid "Draft"
-msgstr ""
-
-#: courses/models.py:108 courses/templates/dashboard/instructor.html:51
+#: courses/models.py:280 courses/models.py:327
+#: courses/templates/dashboard/instructor.html:56
+#: courses/templates/dashboard/request_track.html:38
 msgid "Pending Review"
 msgstr ""
 
-#: courses/models.py:109 courses/templates/dashboard/instructor.html:49
-msgid "Published"
+#: courses/models.py:281 courses/models.py:790
+#: courses/templates/dashboard/request_track.html:34
+msgid "Approved"
 msgstr ""
 
-#: courses/models.py:110 courses/models.py:444
-#: courses/templates/dashboard/instructor.html:53
+#: courses/models.py:282 courses/models.py:329 courses/models.py:792
+#: courses/templates/dashboard/instructor.html:58
+#: courses/templates/dashboard/request_track.html:36
 msgid "Rejected"
 msgstr ""
 
-#: courses/models.py:115 courses/templates/dashboard/instructor.html:55
+#: courses/models.py:294
+msgid "Why this track should exist."
+msgstr ""
+
+#: courses/models.py:317
+msgid "Beginner"
+msgstr ""
+
+#: courses/models.py:318
+msgid "Intermediate"
+msgstr ""
+
+#: courses/models.py:319
+msgid "Advanced"
+msgstr ""
+
+#: courses/models.py:322
+msgid "Full production by instructor"
+msgstr ""
+
+#: courses/models.py:323
+msgid "Script only (platform produces)"
+msgstr ""
+
+#: courses/models.py:326 courses/templates/dashboard/instructor.html:62
+msgid "Draft"
+msgstr ""
+
+#: courses/models.py:328 courses/templates/dashboard/instructor.html:54
+msgid "Published"
+msgstr ""
+
+#: courses/models.py:334 courses/templates/dashboard/instructor.html:60
 msgid "Archived"
 msgstr ""
 
-#: courses/models.py:146
-msgid "The script for AI video generation"
+#: courses/models.py:369
+msgid "The script for Mendoura-produced video generation"
 msgstr ""
 
-#: courses/models.py:176
+#: courses/models.py:399
 msgid ""
 "production_type is read-only once a course has its first successful sale."
 msgstr ""
 
-#: courses/models.py:195
+#: courses/models.py:435 courses/templates/courses/player.html:63
 msgid "Video"
-msgstr ""
+msgstr "فيديو"
 
-#: courses/models.py:196
+#: courses/models.py:436 courses/templates/courses/player.html:60
 msgid "Article"
-msgstr ""
+msgstr "مقالة"
 
-#: courses/models.py:197
+#: courses/models.py:437 courses/templates/courses/player.html:82
+#: courses/templates/dashboard/manage_modules.html:28
+#: courses/templates/dashboard/manage_quiz.html:12
+#: courses/templates/dashboard/wizard_module_content.html:106
 msgid "Quiz"
-msgstr ""
+msgstr "اختبار"
 
-#: courses/models.py:214
+#: courses/models.py:454
 msgid "Viewable for free without enrollment"
 msgstr ""
 
-#: courses/models.py:216
+#: courses/models.py:456
 msgid "Students can upload homework for this lecture"
 msgstr ""
 
-#: courses/models.py:241
+#: courses/models.py:481
 msgid "Any file: PDF, zip, image, audio, slides, etc."
 msgstr ""
 
-#: courses/models.py:243
+#: courses/models.py:483
 msgid "Size in bytes"
 msgstr ""
 
-#: courses/models.py:253
+#: courses/models.py:493
 msgid "Link to Google Drive, GitHub, etc."
 msgstr ""
 
-#: courses/models.py:278 courses/templates/dashboard/wallet.html:24
+#: courses/models.py:518 courses/templates/dashboard/wallet.html:24
 msgid "Pending"
 msgstr ""
 
-#: courses/models.py:279
+#: courses/models.py:519
 msgid "Succeeded"
 msgstr ""
 
-#: courses/models.py:280
+#: courses/models.py:520
 msgid "Failed"
 msgstr ""
 
-#: courses/models.py:281
+#: courses/models.py:521
 msgid "Refunded"
 msgstr ""
 
-#: courses/models.py:333
+#: courses/models.py:573
 #, python-format
 msgid "'%(field)s' is immutable after creation."
 msgstr ""
 
-#: courses/models.py:410
+#: courses/models.py:674
+#, fuzzy
+#| msgid "Single Course"
+msgid "Single choice"
+msgstr "دورة واحدة"
+
+#: courses/models.py:758
 msgid "Sale Credit"
 msgstr ""
 
-#: courses/models.py:411
+#: courses/models.py:759
 msgid "Withdrawal"
 msgstr ""
 
-#: courses/models.py:412
+#: courses/models.py:760
 msgid "Adjustment"
 msgstr ""
 
-#: courses/models.py:413
+#: courses/models.py:761
 msgid "Refund Debit"
 msgstr ""
 
-#: courses/models.py:432
+#: courses/models.py:780
 msgid "WalletTransaction rows are append-only and cannot be modified."
 msgstr ""
 
-#: courses/models.py:436
+#: courses/models.py:784
 msgid "WalletTransaction rows are append-only and cannot be deleted."
 msgstr ""
 
-#: courses/models.py:441 courses/templates/dashboard/admin_payouts.html:22
+#: courses/models.py:789 courses/templates/dashboard/admin_payouts.html:22
 #: courses/templates/dashboard/wallet.html:61
 msgid "Requested"
 msgstr ""
 
-#: courses/models.py:442
-msgid "Approved"
-msgstr ""
-
-#: courses/models.py:443 courses/templates/courses/search_results.html:53
+#: courses/models.py:791 courses/templates/courses/search_results.html:53
 msgid "Paid"
 msgstr ""
 
-#: courses/models.py:465
+#: courses/models.py:813
 msgid "Monthly"
 msgstr ""
 
-#: courses/models.py:466
+#: courses/models.py:814
 msgid "Annual"
 msgstr ""
 
-#: courses/models.py:484 courses/templates/dashboard/admin_tracks.html:26
+#: courses/models.py:832 courses/templates/dashboard/admin_tracks.html:26
 msgid "Active"
 msgstr ""
 
-#: courses/models.py:485
+#: courses/models.py:833
 msgid "Expired"
 msgstr ""
 
-#: courses/models.py:486 courses/models.py:540
+#: courses/models.py:834 courses/models.py:888
 msgid "Canceled"
 msgstr ""
 
-#: courses/models.py:538
+#: courses/models.py:886
 msgid "Open"
 msgstr ""
 
-#: courses/models.py:539
+#: courses/models.py:887
 msgid "Distributed"
 msgstr ""
 
-#: courses/models.py:635
+#: courses/models.py:992
 msgid "User"
 msgstr ""
 
-#: courses/models.py:636
+#: courses/models.py:993
 msgid "Assistant"
+msgstr ""
+
+#: courses/models.py:1055
+msgid "Markdown -- supports tables, bold, and lists."
 msgstr ""
 
 #: courses/templates/courses/_course_card.html:21
@@ -318,13 +413,14 @@ msgstr[4] ""
 msgstr[5] ""
 
 #: courses/templates/courses/_course_card.html:27
-#: courses/templates/courses/detail.html:100
+#: courses/templates/courses/detail.html:130
 #: courses/templates/courses/search_results.html:52
 #: courses/templates/dashboard/course_approval_queue.html:22
+#: courses/templates/dashboard/wizard_review.html:27
 msgid "Free"
 msgstr ""
 
-#: courses/templates/courses/catalog.html:9
+#: courses/templates/courses/catalog.html:9 templates/platform_home.html:23
 msgid "Browse Courses"
 msgstr ""
 
@@ -340,6 +436,72 @@ msgstr ""
 msgid "Check back soon, instructors are cooking up something great."
 msgstr ""
 
+#: courses/templates/courses/certificate.html:3
+#, fuzzy
+#| msgid "Verified Certificates"
+msgid "Certificate"
+msgstr "شهادات موثّقة"
+
+#: courses/templates/courses/certificate.html:10
+#, fuzzy
+#| msgid "Verified Certificates"
+msgid "Verified Certificate"
+msgstr "شهادات موثّقة"
+
+#: courses/templates/courses/certificate.html:12
+msgid "Statement of Accomplishment"
+msgstr ""
+
+#: courses/templates/courses/certificate.html:15
+msgid "Awarded to"
+msgstr ""
+
+#: courses/templates/courses/certificate.html:21
+#: courses/templates/courses/player.html:234
+#: courses/templates/dashboard/admin_payouts.html:18
+#: courses/templates/dashboard/admin_subscription_revenue.html:47
+#: courses/templates/dashboard/admin_test_emails.html:88
+#: courses/templates/dashboard/admin_users.html:39 courses/views.py:2029
+msgid "Instructor"
+msgstr "المدرّب"
+
+#: courses/templates/courses/certificate.html:24
+msgid "Issued"
+msgstr ""
+
+#: courses/templates/courses/certificate.html:28
+#: courses/templates/courses/my_learning.html:32
+#, fuzzy
+#| msgid "Verified Certificates"
+msgid "Download Certificate"
+msgstr "شهادات موثّقة"
+
+#: courses/templates/courses/certificate.html:34
+msgid "Share on LinkedIn"
+msgstr ""
+
+#: courses/templates/courses/certificate.html:39
+msgid "Copy Link"
+msgstr ""
+
+#: courses/templates/courses/certificate.html:43
+#, python-format
+msgid "My Mendoura Certificate: %(title)s"
+msgstr ""
+
+#: courses/templates/courses/certificate.html:45
+#: courses/templates/dashboard/admin_subscription_revenue.html:49
+msgid "Share"
+msgstr ""
+
+#: courses/templates/courses/certificate.html:49
+msgid "Verification ID"
+msgstr ""
+
+#: courses/templates/courses/certificate.html:73
+msgid "Copied!"
+msgstr ""
+
 #: courses/templates/courses/detail.html:9
 #, python-format
 msgid "Back to %(track)s"
@@ -350,55 +512,73 @@ msgid "What You'll Learn"
 msgstr ""
 
 #: courses/templates/courses/detail.html:39
+#: courses/templates/courses/player.html:18
 msgid "Course Content"
 msgstr ""
 
-#: courses/templates/courses/detail.html:59
+#: courses/templates/courses/detail.html:60
 msgid "Preview"
 msgstr ""
 
-#: courses/templates/courses/detail.html:69
-msgid "No lectures added yet for this course."
+#: courses/templates/courses/detail.html:60
+msgid "Watch"
 msgstr ""
 
-#: courses/templates/courses/detail.html:73
-msgid "Reviews"
+#: courses/templates/courses/detail.html:76
+#, python-format
+msgid "Quiz -- %(count)s question(s), pass at %(passing)s%%"
 msgstr ""
 
-#: courses/templates/courses/detail.html:79
-msgid "Submit Review"
+#: courses/templates/courses/detail.html:87
+msgid "No answer choices added yet."
 msgstr ""
 
 #: courses/templates/courses/detail.html:92
+msgid "No questions added yet."
+msgstr ""
+
+#: courses/templates/courses/detail.html:99
+msgid "No lectures added yet for this course."
+msgstr ""
+
+#: courses/templates/courses/detail.html:103
+msgid "Reviews"
+msgstr ""
+
+#: courses/templates/courses/detail.html:109
+msgid "Submit Review"
+msgstr ""
+
+#: courses/templates/courses/detail.html:122
 msgid "No reviews yet."
 msgstr ""
 
-#: courses/templates/courses/detail.html:107
+#: courses/templates/courses/detail.html:137
 #, fuzzy
 #| msgid "My Learning"
 msgid "Go to My Learning"
 msgstr "تعلّمي"
 
-#: courses/templates/courses/detail.html:113
+#: courses/templates/courses/detail.html:143
 msgid "Enroll Now"
 msgstr ""
 
-#: courses/templates/courses/detail.html:113
+#: courses/templates/courses/detail.html:143
 msgid "Buy Now"
 msgstr ""
 
-#: courses/templates/courses/detail.html:118
+#: courses/templates/courses/detail.html:148
 #, fuzzy, python-format
 #| msgid "Instructor Earnings"
 msgid "Instructor: %(instructor)s"
 msgstr "أرباح المدرّبين"
 
-#: courses/templates/courses/detail.html:120
+#: courses/templates/courses/detail.html:150
 #, python-format
 msgid "Level: %(level)s"
 msgstr ""
 
-#: courses/templates/courses/detail.html:123
+#: courses/templates/courses/detail.html:153
 #, python-format
 msgid "%(counter)s hour"
 msgid_plural "%(counter)s hours"
@@ -410,7 +590,7 @@ msgstr[4] ""
 msgstr[5] ""
 
 #: courses/templates/courses/my_learning.html:7 templates/base.html:76
-#: templates/base.html:131 templates/base.html:197
+#: templates/base.html:139 templates/base.html:216
 msgid "My Learning"
 msgstr "تعلّمي"
 
@@ -425,26 +605,172 @@ msgstr ""
 msgid "View Course"
 msgstr "دورة واحدة"
 
-#: courses/templates/courses/my_learning.html:23
-#: courses/templates/dashboard/course_students.html:21
-msgid "Progress"
+#: courses/templates/courses/my_learning.html:24
+msgid "Course Completed"
 msgstr ""
 
-#: courses/templates/courses/my_learning.html:32
+#: courses/templates/courses/my_learning.html:28
 #, fuzzy
 #| msgid "Verified Certificates"
 msgid "View Certificate"
 msgstr "شهادات موثّقة"
 
-#: courses/templates/courses/my_learning.html:38
+#: courses/templates/courses/my_learning.html:39
+#: courses/templates/dashboard/course_students.html:21
+msgid "Progress"
+msgstr ""
+
+#: courses/templates/courses/my_learning.html:50
 msgid "You haven't enrolled in any courses yet."
 msgstr ""
 
-#: courses/templates/courses/my_learning.html:39
+#: courses/templates/courses/my_learning.html:51
 #, fuzzy
 #| msgid "Browse by Track"
 msgid "Browse Tracks"
 msgstr "تصفّح حسب المسار"
+
+#: courses/templates/courses/player.html:19
+msgid "Hide course content"
+msgstr "إخفاء محتوى الدورة"
+
+#: courses/templates/courses/player.html:28
+msgid "complete"
+msgstr "مكتمل"
+
+#: courses/templates/courses/player.html:29
+#, python-format
+msgid "%(done)s of %(total)s lessons"
+msgstr "%(done)s من %(total)s دروس"
+
+#: courses/templates/courses/player.html:63
+msgid "video"
+msgstr "فيديو"
+
+#: courses/templates/courses/player.html:70
+msgid "No lectures in this module yet."
+msgstr "لا توجد دروس في هذه الوحدة بعد."
+
+#: courses/templates/courses/player.html:89
+msgid "No curriculum added yet."
+msgstr "لم تتم إضافة منهج بعد."
+
+#: courses/templates/courses/player.html:97
+msgid "Show Course Content"
+msgstr "إظهار محتوى الدورة"
+
+#: courses/templates/courses/player.html:127
+msgid "No video available for this lecture."
+msgstr "لا يوجد فيديو متاح لهذا الدرس."
+
+#: courses/templates/courses/player.html:168
+msgid "Playback protection triggered"
+msgstr "تم تفعيل حماية التشغيل"
+
+#: courses/templates/courses/player.html:169
+msgid "Reload the page to keep watching."
+msgstr "أعد تحميل الصفحة لمتابعة المشاهدة."
+
+#: courses/templates/courses/player.html:180
+msgid "Completed"
+msgstr "مكتمل"
+
+#: courses/templates/courses/player.html:184
+msgid "Mark as Complete"
+msgstr "وضع علامة مكتمل"
+
+#: courses/templates/courses/player.html:193
+msgid "Previous"
+msgstr "السابق"
+
+#: courses/templates/courses/player.html:198
+msgid "Next"
+msgstr "التالي"
+
+#: courses/templates/courses/player.html:207
+#: courses/templates/dashboard/manage_lectures.html:30
+msgid "Homework"
+msgstr "الواجب"
+
+#: courses/templates/courses/player.html:208
+msgid "This lecture has a homework submission."
+msgstr "يحتوي هذا الدرس على واجب للتسليم."
+
+#: courses/templates/courses/player.html:211
+msgid "Submit / View Homework"
+msgstr "إرسال / عرض الواجب"
+
+#: courses/templates/courses/player.html:219
+msgid "Overview"
+msgstr "نظرة عامة"
+
+#: courses/templates/courses/player.html:240
+msgid "Resources"
+msgstr "الموارد"
+
+#: courses/templates/courses/quiz.html:16
+#, python-format
+msgid ""
+"Pass with a score of %(score)s%% or higher. You can retake this quiz as many "
+"times as you need."
+msgstr ""
+
+#: courses/templates/courses/quiz.html:22
+#, python-format
+msgid "Your best score so far: %(score)s%%"
+msgstr ""
+
+#: courses/templates/courses/quiz.html:23
+msgid "Passed"
+msgstr ""
+
+#: courses/templates/courses/quiz.html:45
+msgid "Submit Quiz"
+msgstr ""
+
+#: courses/templates/courses/quiz_result.html:3
+msgid "Quiz Result"
+msgstr ""
+
+#: courses/templates/courses/quiz_result.html:15
+msgid "You passed!"
+msgstr ""
+
+#: courses/templates/courses/quiz_result.html:18
+msgid "Not quite yet"
+msgstr ""
+
+#: courses/templates/courses/quiz_result.html:26
+#, python-format
+msgid "Passing score: %(score)s%%"
+msgstr ""
+
+#: courses/templates/courses/quiz_result.html:27
+#, python-format
+msgid "Attempt #%(n)s"
+msgstr ""
+
+#: courses/templates/courses/quiz_result.html:33
+msgid "Retake Quiz"
+msgstr ""
+
+#: courses/templates/courses/quiz_result.html:38
+#, fuzzy
+#| msgid "Single Course"
+msgid "Continue Course"
+msgstr "دورة واحدة"
+
+#: courses/templates/courses/quiz_result.html:44
+msgid "Answer Review"
+msgstr ""
+
+#: courses/templates/courses/quiz_result.html:62
+msgid "your answer"
+msgstr ""
+
+#: courses/templates/courses/quiz_result.html:72
+msgid "Detailed answer review unlocks starting from your 3rd attempt."
+msgstr ""
 
 #: courses/templates/courses/search_results.html:9
 #, python-format
@@ -487,7 +813,7 @@ msgid "Type something in the search box above"
 msgstr ""
 
 #: courses/templates/courses/search_results.html:29
-#: courses/templates/dashboard/create_course.html:31
+#: courses/templates/dashboard/create_course.html:32
 #: courses/templates/dashboard/edit_course.html:37
 #, fuzzy
 #| msgid "Tracks"
@@ -501,7 +827,7 @@ msgid "All tracks"
 msgstr "المسارات"
 
 #: courses/templates/courses/search_results.html:39
-#: courses/templates/dashboard/create_course.html:42
+#: courses/templates/dashboard/create_course.html:43
 #: courses/templates/dashboard/edit_course.html:48
 msgid "Level"
 msgstr ""
@@ -519,7 +845,7 @@ msgid "Any price"
 msgstr ""
 
 #: courses/templates/courses/search_results.html:58
-#: courses/templates/dashboard/create_course.html:35
+#: courses/templates/dashboard/create_course.html:36
 #: courses/templates/dashboard/edit_course.html:41
 #: templates/partials/_language_switcher.html:5
 msgid "Language"
@@ -534,9 +860,9 @@ msgid "Apply Filters"
 msgstr ""
 
 #: courses/templates/courses/search_results.html:68
-#: courses/templates/dashboard/admin.html:17
+#: courses/templates/dashboard/admin.html:19
 #: courses/templates/dashboard/admin_tracks.html:12 templates/base.html:43
-#: templates/base.html:177
+#: templates/base.html:196
 msgid "Tracks"
 msgstr "المسارات"
 
@@ -582,7 +908,7 @@ msgstr ""
 msgid "Check back soon."
 msgstr ""
 
-#: courses/templates/courses/track_list.html:9 templates/platform_home.html:27
+#: courses/templates/courses/track_list.html:9 templates/platform_home.html:37
 msgid "Browse by Track"
 msgstr "تصفّح حسب المسار"
 
@@ -604,21 +930,33 @@ msgstr ""
 msgid "Approval Queue"
 msgstr ""
 
-#: courses/templates/dashboard/admin.html:14
-#: courses/templates/dashboard/admin_users.html:13
+#: courses/templates/dashboard/admin.html:15
+#: courses/templates/dashboard/admin_users.html:12
 msgid "Users"
 msgstr ""
 
-#: courses/templates/dashboard/admin.html:15
+#: courses/templates/dashboard/admin.html:17
 #: courses/templates/dashboard/admin_payments.html:12
 msgid "Payments"
 msgstr ""
 
-#: courses/templates/dashboard/admin.html:16
+#: courses/templates/dashboard/admin.html:18
 msgid "Payouts"
 msgstr ""
 
-#: courses/templates/dashboard/admin.html:25
+#: courses/templates/dashboard/admin.html:21
+#: courses/templates/dashboard/admin_test_emails.html:198
+#, fuzzy
+#| msgid "Tracks"
+msgid "Track Requests"
+msgstr "المسارات"
+
+#: courses/templates/dashboard/admin.html:23
+#: courses/templates/dashboard/admin_test_emails.html:12
+msgid "Test Emails"
+msgstr ""
+
+#: courses/templates/dashboard/admin.html:31
 #, python-format
 msgid "%(counter)s course won't appear on any student browse page"
 msgid_plural "%(counter)s courses won't appear on any student browse page"
@@ -629,82 +967,82 @@ msgstr[3] ""
 msgstr[4] ""
 msgstr[5] ""
 
-#: courses/templates/dashboard/admin.html:28
+#: courses/templates/dashboard/admin.html:34
 msgid ""
 "Each course below is filed under a parent category (or has no track at all) "
 "instead of a specific track -- fix each one's Track in"
 msgstr ""
 
-#: courses/templates/dashboard/admin.html:29
+#: courses/templates/dashboard/admin.html:35
 msgid "Django Admin"
 msgstr ""
 
-#: courses/templates/dashboard/admin.html:35
+#: courses/templates/dashboard/admin.html:41
 #, python-format
 msgid "by %(instructor)s --"
 msgstr ""
 
-#: courses/templates/dashboard/admin.html:36
+#: courses/templates/dashboard/admin.html:42
 #, python-format
 msgid "filed under \"%(track)s\" (a parent category)"
 msgstr ""
 
-#: courses/templates/dashboard/admin.html:36
+#: courses/templates/dashboard/admin.html:42
 msgid "no track assigned"
 msgstr ""
 
-#: courses/templates/dashboard/admin.html:46
+#: courses/templates/dashboard/admin.html:52
 msgid "Total Revenue"
 msgstr ""
 
-#: courses/templates/dashboard/admin.html:50
+#: courses/templates/dashboard/admin.html:56
 msgid "Platform Revenue"
 msgstr ""
 
-#: courses/templates/dashboard/admin.html:54
+#: courses/templates/dashboard/admin.html:60
 #, fuzzy
 #| msgid "Instructor Earnings"
 msgid "Instructor Payouts"
 msgstr "أرباح المدرّبين"
 
-#: courses/templates/dashboard/admin.html:58
+#: courses/templates/dashboard/admin.html:64
 msgid "Enrollments"
 msgstr ""
 
-#: courses/templates/dashboard/admin.html:65
-#: courses/templates/dashboard/admin_users.html:16
+#: courses/templates/dashboard/admin.html:71
+#: courses/templates/dashboard/admin_users.html:82
 #: courses/templates/dashboard/instructor.html:25
-#: courses/templates/dashboard/instructor.html:60
+#: courses/templates/dashboard/instructor.html:71
 msgid "Students"
 msgstr ""
 
-#: courses/templates/dashboard/admin.html:69
-#: courses/templates/dashboard/admin_users.html:17
+#: courses/templates/dashboard/admin.html:75
+#: courses/templates/dashboard/admin_users.html:116
 #, fuzzy
 #| msgid "Instructor Earnings"
 msgid "Instructors"
 msgstr "أرباح المدرّبين"
 
-#: courses/templates/dashboard/admin.html:73
+#: courses/templates/dashboard/admin.html:79
 #, fuzzy
 #| msgid "Single Course"
 msgid "Total Courses"
 msgstr "دورة واحدة"
 
-#: courses/templates/dashboard/admin.html:78
+#: courses/templates/dashboard/admin.html:84
 msgid "Revenue Over Time"
 msgstr ""
 
-#: courses/templates/dashboard/admin.html:89
+#: courses/templates/dashboard/admin.html:95
 msgid "No revenue yet."
 msgstr ""
 
-#: courses/templates/dashboard/admin.html:93
+#: courses/templates/dashboard/admin.html:99
 #: courses/templates/dashboard/admin_subscription_revenue.html:13
 msgid "Subscription Revenue Distribution"
 msgstr ""
 
-#: courses/templates/dashboard/admin.html:98
+#: courses/templates/dashboard/admin.html:104
 #, python-format
 msgid ""
 "<span class=\"font-semibold text-brand-600\">%(counter)s</span> subscription "
@@ -719,21 +1057,21 @@ msgstr[3] ""
 msgstr[4] ""
 msgstr[5] ""
 
-#: courses/templates/dashboard/admin.html:100
+#: courses/templates/dashboard/admin.html:106
 msgid "No subscription periods are due for distribution right now."
 msgstr ""
 
-#: courses/templates/dashboard/admin.html:104
+#: courses/templates/dashboard/admin.html:110
 msgid ""
 "No automatic scheduler is wired up on the free Render plan (no Cron Jobs) -- "
 "run this manually on a regular basis."
 msgstr ""
 
-#: courses/templates/dashboard/admin.html:109
+#: courses/templates/dashboard/admin.html:115
 msgid "View Breakdown"
 msgstr ""
 
-#: courses/templates/dashboard/admin.html:115
+#: courses/templates/dashboard/admin.html:121
 #: courses/templates/dashboard/admin_subscription_revenue.html:18
 msgid "Run Distribution Now"
 msgstr ""
@@ -741,22 +1079,25 @@ msgstr ""
 #: courses/templates/dashboard/admin_payments.html:9
 #: courses/templates/dashboard/admin_payouts.html:9
 #: courses/templates/dashboard/admin_subscription_revenue.html:9
+#: courses/templates/dashboard/admin_test_emails.html:9
 #: courses/templates/dashboard/admin_tracks.html:9
 #: courses/templates/dashboard/admin_users.html:9
 #: courses/templates/dashboard/course_approval_queue.html:9
+#: courses/templates/dashboard/track_approval_queue.html:9
 msgid "Back to Admin Overview"
 msgstr ""
 
 #: courses/templates/dashboard/admin_payments.html:18
+#: courses/templates/dashboard/admin_test_emails.html:26
 #: courses/templates/dashboard/admin_users.html:41
 #: courses/templates/dashboard/course_students.html:19
-#: courses/templates/dashboard/instructor.html:91
+#: courses/templates/dashboard/instructor.html:103 courses/views.py:2029
 msgid "Student"
 msgstr ""
 
 #: courses/templates/dashboard/admin_payments.html:19
 #: courses/templates/dashboard/admin_subscription_revenue.html:46
-#: courses/templates/dashboard/instructor.html:90
+#: courses/templates/dashboard/instructor.html:102
 #: courses/templates/dashboard/wallet.html:84
 #, fuzzy
 #| msgid "Single Course"
@@ -784,7 +1125,7 @@ msgid "Status"
 msgstr ""
 
 #: courses/templates/dashboard/admin_payments.html:24
-#: courses/templates/dashboard/instructor.html:93
+#: courses/templates/dashboard/instructor.html:105
 #: courses/templates/dashboard/wallet.html:88
 #: courses/templates/dashboard/wallet.html:115
 msgid "Date"
@@ -799,14 +1140,6 @@ msgstr ""
 msgid "Payout Requests"
 msgstr ""
 
-#: courses/templates/dashboard/admin_payouts.html:18
-#: courses/templates/dashboard/admin_subscription_revenue.html:47
-#: courses/templates/dashboard/admin_users.html:39
-#, fuzzy
-#| msgid "Instructor Earnings"
-msgid "Instructor"
-msgstr "أرباح المدرّبين"
-
 #: courses/templates/dashboard/admin_payouts.html:19
 #: courses/templates/dashboard/wallet.html:58
 #: courses/templates/dashboard/wallet.html:113
@@ -820,16 +1153,23 @@ msgid "Method"
 msgstr ""
 
 #: courses/templates/dashboard/admin_payouts.html:23
+#: courses/templates/dashboard/admin_users.html:29
+#: courses/templates/dashboard/admin_users.html:90
+#: courses/templates/dashboard/admin_users.html:124
 msgid "Actions"
 msgstr ""
 
 #: courses/templates/dashboard/admin_payouts.html:39
-#: courses/templates/dashboard/course_approval_queue.html:33
+#: courses/templates/dashboard/admin_users.html:62
+#: courses/templates/dashboard/course_approval_queue.html:37
+#: courses/templates/dashboard/track_approval_queue.html:33
 msgid "Approve"
 msgstr ""
 
 #: courses/templates/dashboard/admin_payouts.html:43
-#: courses/templates/dashboard/course_approval_queue.html:40
+#: courses/templates/dashboard/admin_users.html:69
+#: courses/templates/dashboard/course_approval_queue.html:44
+#: courses/templates/dashboard/track_approval_queue.html:40
 msgid "Reject"
 msgstr ""
 
@@ -854,10 +1194,6 @@ msgstr ""
 #: courses/templates/dashboard/admin_subscription_revenue.html:48
 #: courses/templates/dashboard/wallet.html:85
 msgid "Minutes Watched"
-msgstr ""
-
-#: courses/templates/dashboard/admin_subscription_revenue.html:49
-msgid "Share"
 msgstr ""
 
 #: courses/templates/dashboard/admin_subscription_revenue.html:50
@@ -887,6 +1223,179 @@ msgstr ""
 msgid "No subscription periods yet."
 msgstr ""
 
+#: courses/templates/dashboard/admin_test_emails.html:14
+msgid ""
+"Send a real copy of each transactional email so you can confirm formatting, "
+"links, and attachments before relying on them in production."
+msgstr ""
+
+#: courses/templates/dashboard/admin_test_emails.html:18
+msgid "Target email address"
+msgstr ""
+
+#: courses/templates/dashboard/admin_test_emails.html:22
+msgid ""
+"Used for the Welcome and Certificate tests below. The Password Reset tests "
+"always go to your own account's email instead, since they contain a real, "
+"working reset link."
+msgstr ""
+
+#: courses/templates/dashboard/admin_test_emails.html:30
+msgid "Welcome Email"
+msgstr ""
+
+#: courses/templates/dashboard/admin_test_emails.html:31
+msgid "Sent on registration -- uses your own name in the sample."
+msgstr ""
+
+#: courses/templates/dashboard/admin_test_emails.html:38
+#: courses/templates/dashboard/admin_test_emails.html:53
+#: courses/templates/dashboard/admin_test_emails.html:68
+#: courses/templates/dashboard/admin_test_emails.html:82
+#: courses/templates/dashboard/admin_test_emails.html:100
+#: courses/templates/dashboard/admin_test_emails.html:115
+#: courses/templates/dashboard/admin_test_emails.html:130
+#: courses/templates/dashboard/admin_test_emails.html:145
+#: courses/templates/dashboard/admin_test_emails.html:159
+#: courses/templates/dashboard/admin_test_emails.html:177
+#: courses/templates/dashboard/admin_test_emails.html:192
+#: courses/templates/dashboard/admin_test_emails.html:210
+#: courses/templates/dashboard/admin_test_emails.html:225
+#: courses/templates/dashboard/admin_test_emails.html:240
+msgid "Send Test"
+msgstr ""
+
+#: courses/templates/dashboard/admin_test_emails.html:45
+msgid "Enrollment Confirmation Email"
+msgstr ""
+
+#: courses/templates/dashboard/admin_test_emails.html:46
+msgid ""
+"Sent when a student is granted access to a course (free enroll, subscriber "
+"unlock, or purchase) -- reuses the most recent real enrollment as sample "
+"data."
+msgstr ""
+
+#: courses/templates/dashboard/admin_test_emails.html:60
+#, fuzzy
+#| msgid "Verified Certificates"
+msgid "Certificate Email"
+msgstr "شهادات موثّقة"
+
+#: courses/templates/dashboard/admin_test_emails.html:61
+msgid ""
+"Sent on course completion -- reuses the most recently issued real "
+"certificate, PDF attached."
+msgstr ""
+
+#: courses/templates/dashboard/admin_test_emails.html:75
+msgid "Password Reset Email (Student)"
+msgstr ""
+
+#: courses/templates/dashboard/admin_test_emails.html:76
+#: courses/templates/dashboard/admin_test_emails.html:153
+msgid "Real reset link, sent only to your own account's email."
+msgstr ""
+
+#: courses/templates/dashboard/admin_test_emails.html:92
+msgid "Application Received Email"
+msgstr ""
+
+#: courses/templates/dashboard/admin_test_emails.html:93
+msgid "Sent immediately on instructor registration, before approval."
+msgstr ""
+
+#: courses/templates/dashboard/admin_test_emails.html:107
+msgid "Internal Application Notification"
+msgstr ""
+
+#: courses/templates/dashboard/admin_test_emails.html:108
+msgid ""
+"Sent to the team (not the applicant) alongside the Application Received "
+"email -- uses your own account's details as sample data."
+msgstr ""
+
+#: courses/templates/dashboard/admin_test_emails.html:122
+#, fuzzy
+#| msgid "Instructor Earnings"
+msgid "Instructor Welcome Email"
+msgstr "أرباح المدرّبين"
+
+#: courses/templates/dashboard/admin_test_emails.html:123
+msgid ""
+"Sent when an admin approves an instructor account -- not at registration."
+msgstr ""
+
+#: courses/templates/dashboard/admin_test_emails.html:137
+#, fuzzy
+#| msgid "Instructor Earnings"
+msgid "Instructor Rejection Email"
+msgstr "أرباح المدرّبين"
+
+#: courses/templates/dashboard/admin_test_emails.html:138
+msgid "Sent when an admin rejects a pending instructor application."
+msgstr ""
+
+#: courses/templates/dashboard/admin_test_emails.html:152
+msgid "Password Reset Email (Instructor)"
+msgstr ""
+
+#: courses/templates/dashboard/admin_test_emails.html:165
+#, fuzzy
+#| msgid "Single Course"
+msgid "Course Review"
+msgstr "دورة واحدة"
+
+#: courses/templates/dashboard/admin_test_emails.html:169
+msgid "Course Approved Email"
+msgstr ""
+
+#: courses/templates/dashboard/admin_test_emails.html:170
+msgid ""
+"Sent when an admin approves a submitted course -- reuses the most recently "
+"created real course as sample data."
+msgstr ""
+
+#: courses/templates/dashboard/admin_test_emails.html:184
+msgid "Course Rejected Email"
+msgstr ""
+
+#: courses/templates/dashboard/admin_test_emails.html:185
+msgid ""
+"Sent when an admin rejects a submitted course -- reuses the most recently "
+"created real course's rejection_reason (or a generic fallback if it's blank)."
+msgstr ""
+
+#: courses/templates/dashboard/admin_test_emails.html:202
+msgid "Internal Track-Request Notification"
+msgstr ""
+
+#: courses/templates/dashboard/admin_test_emails.html:203
+msgid ""
+"Sent to the team when an instructor requests a new track -- reuses the most "
+"recently submitted real request as sample data."
+msgstr ""
+
+#: courses/templates/dashboard/admin_test_emails.html:217
+msgid "Track-Request Approved Email"
+msgstr ""
+
+#: courses/templates/dashboard/admin_test_emails.html:218
+msgid ""
+"Sent when an admin approves a track request -- reuses the most recently "
+"approved real request as sample data."
+msgstr ""
+
+#: courses/templates/dashboard/admin_test_emails.html:232
+msgid "Track-Request Rejected Email"
+msgstr ""
+
+#: courses/templates/dashboard/admin_test_emails.html:233
+msgid ""
+"Sent when an admin rejects a track request -- reuses the most recently "
+"rejected real request's rejection_reason as sample data."
+msgstr ""
+
 #: courses/templates/dashboard/admin_tracks.html:28
 msgid "Inactive"
 msgstr ""
@@ -899,7 +1408,7 @@ msgstr ""
 msgid "Activate"
 msgstr ""
 
-#: courses/templates/dashboard/admin_tracks.html:40
+#: courses/templates/dashboard/admin_tracks.html:40 templates/base.html:65
 msgid "No tracks yet."
 msgstr ""
 
@@ -916,7 +1425,7 @@ msgid "Name"
 msgstr ""
 
 #: courses/templates/dashboard/admin_tracks.html:57
-#: courses/templates/dashboard/create_course.html:25
+#: courses/templates/dashboard/create_course.html:26
 #: courses/templates/dashboard/edit_course.html:31
 msgid "Description"
 msgstr ""
@@ -927,7 +1436,11 @@ msgstr ""
 
 #: courses/templates/dashboard/admin_tracks.html:66
 #: courses/templates/dashboard/edit_module.html:21
-#: courses/templates/dashboard/manage_modules.html:50
+#: courses/templates/dashboard/edit_question.html:21
+#: courses/templates/dashboard/manage_modules.html:53
+#: courses/templates/dashboard/manage_quiz.html:80
+#: courses/templates/dashboard/wizard_module_content.html:214
+#: courses/templates/dashboard/wizard_modules.html:48
 msgid "Order"
 msgstr ""
 
@@ -938,52 +1451,74 @@ msgid "Add Track"
 msgstr "المسارات"
 
 #: courses/templates/dashboard/admin_users.html:15
-msgid "All"
+msgid "Pending Registrations"
 msgstr ""
 
-#: courses/templates/dashboard/admin_users.html:18
-msgid "Admins"
-msgstr ""
-
-#: courses/templates/dashboard/admin_users.html:26
+#: courses/templates/dashboard/admin_users.html:24
+#: courses/templates/dashboard/admin_users.html:87
+#: courses/templates/dashboard/admin_users.html:121
 msgid "Username"
 msgstr ""
 
-#: courses/templates/dashboard/admin_users.html:27
+#: courses/templates/dashboard/admin_users.html:25
+#: courses/templates/dashboard/admin_users.html:88
+#: courses/templates/dashboard/admin_users.html:122
 #: courses/templates/dashboard/course_students.html:20
 msgid "Email"
 msgstr ""
 
-#: courses/templates/dashboard/admin_users.html:28
+#: courses/templates/dashboard/admin_users.html:26
 msgid "Role"
 msgstr ""
 
-#: courses/templates/dashboard/admin_users.html:29
+#: courses/templates/dashboard/admin_users.html:27
+msgid "Country / Payoneer"
+msgstr ""
+
+#: courses/templates/dashboard/admin_users.html:28
+#: courses/templates/dashboard/admin_users.html:89
+#: courses/templates/dashboard/admin_users.html:123
 msgid "Joined"
 msgstr ""
 
-#: courses/templates/dashboard/admin_users.html:43
-#, fuzzy
-#| msgid "Admin Panel"
-msgid "Admin"
-msgstr "لوحة الإدارة"
-
-#: courses/templates/dashboard/admin_users.html:49
-msgid "No users found."
+#: courses/templates/dashboard/admin_users.html:66
+msgid "Reject and permanently delete this registration?"
 msgstr ""
 
-#: courses/templates/dashboard/ai_buddy.html:31
+#: courses/templates/dashboard/admin_users.html:76
+msgid "No pending registrations."
+msgstr ""
+
+#: courses/templates/dashboard/admin_users.html:101
+#: courses/templates/dashboard/admin_users.html:135
+msgid "Permanently delete this user? This cannot be undone."
+msgstr ""
+
+#: courses/templates/dashboard/admin_users.html:104
+#: courses/templates/dashboard/admin_users.html:138
+msgid "Delete User"
+msgstr ""
+
+#: courses/templates/dashboard/admin_users.html:110
+msgid "No students found."
+msgstr ""
+
+#: courses/templates/dashboard/admin_users.html:144
+#, fuzzy
+#| msgid "Instructor Earnings"
+msgid "No instructors found."
+msgstr "أرباح المدرّبين"
+
+#: courses/templates/dashboard/ai_buddy.html:32
 msgid "Mendoura AI Coach"
 msgstr ""
 
-#: courses/templates/dashboard/ai_buddy.html:32
+#: courses/templates/dashboard/ai_buddy.html:33
 msgid "Your 24/7 Study Partner"
 msgstr ""
 
-#: courses/templates/dashboard/ai_buddy.html:39
-msgid ""
-"AI Coach isn't configured yet -- an administrator needs to set "
-"<code>AI_API_KEY</code>."
+#: courses/templates/dashboard/ai_buddy.html:37
+msgid "Mendoura General AI Coach"
 msgstr ""
 
 #: courses/templates/dashboard/ai_buddy.html:50
@@ -1001,11 +1536,11 @@ msgstr ""
 msgid "Ask your AI Coach anything..."
 msgstr ""
 
-#: courses/templates/dashboard/ai_buddy.html:88
+#: courses/templates/dashboard/ai_buddy.html:87
 msgid "Something went wrong. Please try again."
 msgstr ""
 
-#: courses/templates/dashboard/ai_buddy.html:89
+#: courses/templates/dashboard/ai_buddy.html:88
 msgid "Network error -- please try again."
 msgstr ""
 
@@ -1019,15 +1554,21 @@ msgid "by %(instructor)s &middot; %(track)s &middot;"
 msgstr ""
 
 #: courses/templates/dashboard/course_approval_queue.html:26
+#: courses/templates/dashboard/track_approval_queue.html:24
 #, python-format
 msgid "Submitted %(date)s"
 msgstr ""
 
-#: courses/templates/dashboard/course_approval_queue.html:38
-msgid "Rejection reason"
+#: courses/templates/dashboard/course_approval_queue.html:31
+msgid "Preview full course content (modules, videos, quiz questions & answers)"
 msgstr ""
 
-#: courses/templates/dashboard/course_approval_queue.html:47
+#: courses/templates/dashboard/course_approval_queue.html:42
+#: courses/templates/dashboard/track_approval_queue.html:38
+msgid "Rejection reason (required, sent to the instructor)"
+msgstr ""
+
+#: courses/templates/dashboard/course_approval_queue.html:51
 msgid "No courses pending review."
 msgstr ""
 
@@ -1036,7 +1577,9 @@ msgstr ""
 #: courses/templates/dashboard/create_course.html:10
 #: courses/templates/dashboard/edit_course.html:10
 #: courses/templates/dashboard/manage_modules.html:9
+#: courses/templates/dashboard/request_track.html:9
 #: courses/templates/dashboard/wallet.html:9
+#: courses/templates/dashboard/wizard_review.html:9
 #, fuzzy
 #| msgid "Dashboard"
 msgid "Back to Dashboard"
@@ -1110,76 +1653,86 @@ msgstr ""
 msgid "Create a New Course"
 msgstr ""
 
-#: courses/templates/dashboard/create_course.html:13
+#: courses/templates/dashboard/create_course.html:14
 msgid ""
-"After saving, you'll add modules and lectures, then submit for admin review."
+"Step 1 of 4 -- start with the basics, then you'll add modules, videos, and "
+"quizzes."
 msgstr ""
 
-#: courses/templates/dashboard/create_course.html:20
+#: courses/templates/dashboard/create_course.html:21
 #: courses/templates/dashboard/edit_course.html:26
 msgid "Course Title"
 msgstr ""
 
-#: courses/templates/dashboard/create_course.html:46
+#: courses/templates/dashboard/create_course.html:47
 #: courses/templates/dashboard/edit_course.html:52
 msgid "Price ($)"
 msgstr ""
 
-#: courses/templates/dashboard/create_course.html:53
+#: courses/templates/dashboard/create_course.html:54
 #: courses/templates/dashboard/edit_course.html:59
 msgid "This course is free"
 msgstr ""
 
-#: courses/templates/dashboard/create_course.html:57
+#: courses/templates/dashboard/create_course.html:58
 #: courses/templates/dashboard/edit_course.html:63
-msgid "Thumbnail"
+msgid "Cover Photo"
 msgstr ""
 
-#: courses/templates/dashboard/create_course.html:62
-#: courses/templates/dashboard/edit_course.html:68
+#: courses/templates/dashboard/create_course.html:61
+#: courses/templates/dashboard/edit_course.html:66
+msgid ""
+"A plain photo -- your headshot or a relevant image works well. Shown on "
+"course cards, and used as the video player's cover, with the course title "
+"and your name automatically overlaid in Mendoura's style."
+msgstr ""
+
+#: courses/templates/dashboard/create_course.html:66
+#: courses/templates/dashboard/edit_course.html:71
 msgid "Production Type"
 msgstr ""
 
-#: courses/templates/dashboard/create_course.html:63
-#: courses/templates/dashboard/edit_course.html:76
+#: courses/templates/dashboard/create_course.html:67
+#: courses/templates/dashboard/edit_course.html:79
 msgid ""
 "This determines your revenue share and cannot be changed once the course has "
 "its first sale."
 msgstr ""
 
-#: courses/templates/dashboard/create_course.html:68
-#: courses/templates/dashboard/edit_course.html:81
+#: courses/templates/dashboard/create_course.html:72
+#: courses/templates/dashboard/edit_course.html:84
 msgid "Full production (I edit and produce it myself)"
 msgstr ""
 
-#: courses/templates/dashboard/create_course.html:69
-#: courses/templates/dashboard/edit_course.html:82
+#: courses/templates/dashboard/create_course.html:73
+#: courses/templates/dashboard/edit_course.html:85
 #, python-format
 msgid "You keep 70%%"
 msgstr ""
 
-#: courses/templates/dashboard/create_course.html:75
-#: courses/templates/dashboard/edit_course.html:88
+#: courses/templates/dashboard/create_course.html:79
+#: courses/templates/dashboard/edit_course.html:91
 msgid "Script only (Mendoura handles production/montage)"
 msgstr ""
 
-#: courses/templates/dashboard/create_course.html:76
-#: courses/templates/dashboard/edit_course.html:89
+#: courses/templates/dashboard/create_course.html:80
+#: courses/templates/dashboard/edit_course.html:92
 #, python-format
 msgid "You keep 50%%"
 msgstr ""
 
-#: courses/templates/dashboard/create_course.html:87
-#: courses/templates/dashboard/edit_course.html:101
-msgid "AI Video Script"
-msgstr ""
-
-#: courses/templates/dashboard/create_course.html:90
-msgid ""
-"Our AI will turn this text into a professional video lecture (coming soon)."
+#: courses/templates/dashboard/create_course.html:91
+#: courses/templates/dashboard/edit_course.html:104
+msgid "Video Script"
 msgstr ""
 
 #: courses/templates/dashboard/create_course.html:94
+msgid ""
+"Provide your lecture script here -- used for Mendoura-produced videos "
+"(coming soon)."
+msgstr ""
+
+#: courses/templates/dashboard/create_course.html:98
 msgid "Save Course & Continue"
 msgstr ""
 
@@ -1197,17 +1750,17 @@ msgstr ""
 msgid "Update your course details."
 msgstr ""
 
-#: courses/templates/dashboard/edit_course.html:70
+#: courses/templates/dashboard/edit_course.html:73
 msgid ""
 "Locked -- this course already has a sale, so its revenue split can't change."
 msgstr ""
 
-#: courses/templates/dashboard/edit_course.html:73
+#: courses/templates/dashboard/edit_course.html:76
 #, python-format
 msgid "You keep %(pct)s%%"
 msgstr ""
 
-#: courses/templates/dashboard/edit_course.html:107
+#: courses/templates/dashboard/edit_course.html:110
 #: courses/templates/dashboard/edit_lecture.html:43
 #: courses/templates/dashboard/edit_module.html:25
 msgid "Save Changes"
@@ -1245,6 +1798,7 @@ msgid "External Video URL"
 msgstr ""
 
 #: courses/templates/dashboard/edit_lecture.html:38
+#: courses/templates/dashboard/wizard_module_content.html:90
 msgid "only if not uploading to Bunny"
 msgstr ""
 
@@ -1253,6 +1807,7 @@ msgid "Course Video"
 msgstr ""
 
 #: courses/templates/dashboard/edit_lecture.html:51
+#: courses/templates/dashboard/wizard_module_content.html:43
 msgid ""
 "Uploads securely to Bunny Stream and streams to students through a protected "
 "player."
@@ -1260,22 +1815,27 @@ msgstr ""
 
 #: courses/templates/dashboard/edit_lecture.html:58
 #: courses/templates/dashboard/manage_lectures.html:43
+#: courses/templates/dashboard/wizard_module_content.html:50
 msgid "Video ready"
 msgstr ""
 
 #: courses/templates/dashboard/edit_lecture.html:62
+#: courses/templates/dashboard/wizard_module_content.html:54
 msgid "Video is still processing on Bunny — check back shortly."
 msgstr ""
 
 #: courses/templates/dashboard/edit_lecture.html:65
+#: courses/templates/dashboard/wizard_module_content.html:57
 msgid "Uploading a new file replaces the current video."
 msgstr ""
 
 #: courses/templates/dashboard/edit_lecture.html:67
+#: courses/templates/dashboard/wizard_module_content.html:59
 msgid "No video uploaded yet."
 msgstr ""
 
 #: courses/templates/dashboard/edit_lecture.html:79
+#: courses/templates/dashboard/wizard_module_content.html:71
 msgid "Upload Video"
 msgstr ""
 
@@ -1286,30 +1846,38 @@ msgid ""
 msgstr ""
 
 #: courses/templates/dashboard/edit_lecture.html:101
+#: courses/templates/dashboard/wizard_module_content.html:256
 msgid "Choose a video file first."
 msgstr ""
 
 #: courses/templates/dashboard/edit_lecture.html:102
+#: courses/templates/dashboard/wizard_module_content.html:257
 msgid "Preparing secure upload…"
 msgstr ""
 
-#: courses/templates/dashboard/edit_lecture.html:103 courses/views.py:1002
+#: courses/templates/dashboard/edit_lecture.html:103
+#: courses/templates/dashboard/wizard_module_content.html:258
+#: courses/views.py:1623
 msgid "Could not start the upload. Please try again."
 msgstr ""
 
 #: courses/templates/dashboard/edit_lecture.html:104
+#: courses/templates/dashboard/wizard_module_content.html:259
 msgid "Upload library failed to load. Please refresh the page and try again."
 msgstr ""
 
 #: courses/templates/dashboard/edit_lecture.html:105
+#: courses/templates/dashboard/wizard_module_content.html:260
 msgid "Upload failed. Please try again."
 msgstr ""
 
 #: courses/templates/dashboard/edit_lecture.html:106
+#: courses/templates/dashboard/wizard_module_content.html:261
 msgid "Uploading… "
 msgstr ""
 
 #: courses/templates/dashboard/edit_lecture.html:107
+#: courses/templates/dashboard/wizard_module_content.html:262
 msgid ""
 "Uploaded! Bunny is now processing the video — reload this page in a minute "
 "to confirm it's ready."
@@ -1317,6 +1885,7 @@ msgstr ""
 
 #: courses/templates/dashboard/edit_module.html:9
 #: courses/templates/dashboard/manage_lectures.html:9
+#: courses/templates/dashboard/manage_quiz.html:9
 #, python-format
 msgid "%(title)s Curriculum"
 msgstr ""
@@ -1326,8 +1895,64 @@ msgid "Edit Module"
 msgstr ""
 
 #: courses/templates/dashboard/edit_module.html:17
-#: courses/templates/dashboard/manage_modules.html:46
+#: courses/templates/dashboard/manage_modules.html:49
+#: courses/templates/dashboard/wizard_modules.html:44
 msgid "Module Title"
+msgstr ""
+
+#: courses/templates/dashboard/edit_question.html:9
+#, python-format
+msgid "%(title)s Quiz"
+msgstr ""
+
+#: courses/templates/dashboard/edit_question.html:12
+msgid "Edit Question"
+msgstr ""
+
+#: courses/templates/dashboard/edit_question.html:17
+#: courses/templates/dashboard/manage_quiz.html:76
+msgid "Question Text"
+msgstr ""
+
+#: courses/templates/dashboard/edit_question.html:25
+msgid "Save Question"
+msgstr ""
+
+#: courses/templates/dashboard/edit_question.html:29
+msgid "Answer Choices"
+msgstr ""
+
+#: courses/templates/dashboard/edit_question.html:30
+msgid ""
+"Mark exactly one choice correct -- marking a new one automatically unmarks "
+"the rest."
+msgstr ""
+
+#: courses/templates/dashboard/edit_question.html:43
+#: courses/templates/dashboard/wizard_module_content.html:167
+msgid "Mark as correct answer"
+msgstr ""
+
+#: courses/templates/dashboard/edit_question.html:51
+msgid "Remove this choice?"
+msgstr ""
+
+#: courses/templates/dashboard/edit_question.html:53
+msgid "Remove"
+msgstr ""
+
+#: courses/templates/dashboard/edit_question.html:58
+msgid "No choices yet. Add at least two below, and mark one correct."
+msgstr ""
+
+#: courses/templates/dashboard/edit_question.html:67
+#: courses/templates/dashboard/wizard_module_content.html:196
+msgid "Correct"
+msgstr ""
+
+#: courses/templates/dashboard/edit_question.html:70
+#: courses/templates/dashboard/wizard_module_content.html:199
+msgid "Add Choice"
 msgstr ""
 
 #: courses/templates/dashboard/instructor.html:9
@@ -1355,60 +1980,78 @@ msgstr ""
 msgid "Your Courses"
 msgstr ""
 
-#: courses/templates/dashboard/instructor.html:37
+#: courses/templates/dashboard/instructor.html:38
+#: courses/templates/dashboard/request_track.html:12
+msgid "Request a Track"
+msgstr ""
+
+#: courses/templates/dashboard/instructor.html:41
 msgid "View Wallet"
 msgstr ""
 
-#: courses/templates/dashboard/instructor.html:45
+#: courses/templates/dashboard/instructor.html:50
 #, python-format
 msgid "Created %(created)s"
 msgstr ""
 
-#: courses/templates/dashboard/instructor.html:59
+#: courses/templates/dashboard/instructor.html:66
+msgid "Continue Setup"
+msgstr ""
+
+#: courses/templates/dashboard/instructor.html:68
+msgid "Edit Details"
+msgstr ""
+
+#: courses/templates/dashboard/instructor.html:70
 msgid "Curriculum"
 msgstr ""
 
-#: courses/templates/dashboard/instructor.html:61
+#: courses/templates/dashboard/instructor.html:72
 msgid "Submissions"
 msgstr ""
 
-#: courses/templates/dashboard/instructor.html:62
+#: courses/templates/dashboard/instructor.html:73
 #: courses/templates/dashboard/manage_lectures.html:32
-#: courses/templates/dashboard/manage_modules.html:27
+#: courses/templates/dashboard/manage_modules.html:30
+#: courses/templates/dashboard/wizard_review.html:40
 msgid "Edit"
 msgstr ""
 
-#: courses/templates/dashboard/instructor.html:66
+#: courses/templates/dashboard/instructor.html:78
+#: courses/templates/dashboard/wizard_review.html:69
 msgid "Submit for Review"
 msgstr ""
 
-#: courses/templates/dashboard/instructor.html:71
+#: courses/templates/dashboard/instructor.html:83
 #, python-format
 msgid ""
 "Delete %(title)s? If it has any enrollment or payment history, it will be "
 "archived instead."
 msgstr ""
 
-#: courses/templates/dashboard/instructor.html:73
+#: courses/templates/dashboard/instructor.html:85
 #: courses/templates/dashboard/manage_lectures.html:36
-#: courses/templates/dashboard/manage_modules.html:31
+#: courses/templates/dashboard/manage_modules.html:34
+#: courses/templates/dashboard/manage_quiz.html:48
+#: courses/templates/dashboard/wizard_module_content.html:149
+#: courses/templates/dashboard/wizard_modules.html:29
 msgid "Delete"
 msgstr ""
 
-#: courses/templates/dashboard/instructor.html:80
+#: courses/templates/dashboard/instructor.html:92
 msgid "No courses created yet. Click \"Create New Course\" to get started."
 msgstr ""
 
-#: courses/templates/dashboard/instructor.html:85
-msgid "Recent Sales"
+#: courses/templates/dashboard/instructor.html:97
+msgid "Recent Compensation"
 msgstr ""
 
-#: courses/templates/dashboard/instructor.html:92
-msgid "Your Share"
+#: courses/templates/dashboard/instructor.html:104
+msgid "Your Compensation"
 msgstr ""
 
-#: courses/templates/dashboard/instructor.html:105
-msgid "No sales yet."
+#: courses/templates/dashboard/instructor.html:117
+msgid "No compensation recorded yet."
 msgstr ""
 
 #: courses/templates/dashboard/manage_lectures.html:13
@@ -1424,13 +2067,8 @@ msgstr ""
 msgid "Free Preview"
 msgstr ""
 
-#: courses/templates/dashboard/manage_lectures.html:30
-#, fuzzy
-#| msgid "Home"
-msgid "Homework"
-msgstr "الرئيسية"
-
 #: courses/templates/dashboard/manage_lectures.html:34
+#: courses/templates/dashboard/wizard_modules.html:25
 #, python-format
 msgid "Delete %(title)s?"
 msgstr ""
@@ -1472,6 +2110,10 @@ msgid "Add New Lecture"
 msgstr ""
 
 #: courses/templates/dashboard/manage_lectures.html:98
+#: courses/templates/dashboard/manage_quiz.html:21
+#: courses/templates/dashboard/request_track.html:66
+#: courses/templates/dashboard/wizard_module_content.html:106
+#: courses/templates/dashboard/wizard_module_content.html:126
 msgid "optional"
 msgstr ""
 
@@ -1506,25 +2148,103 @@ msgstr[3] ""
 msgstr[4] ""
 msgstr[5] ""
 
-#: courses/templates/dashboard/manage_modules.html:29
+#: courses/templates/dashboard/manage_modules.html:28
+msgid "Add Quiz"
+msgstr ""
+
+#: courses/templates/dashboard/manage_modules.html:32
 #, python-format
 msgid "Delete %(title)s and all its lectures?"
 msgstr ""
 
-#: courses/templates/dashboard/manage_modules.html:37
+#: courses/templates/dashboard/manage_modules.html:40
+#: courses/templates/dashboard/wizard_modules.html:34
 msgid "No modules yet. Add your first one below."
 msgstr ""
 
-#: courses/templates/dashboard/manage_modules.html:42
+#: courses/templates/dashboard/manage_modules.html:45
 msgid "Add New Module"
 msgstr ""
 
-#: courses/templates/dashboard/manage_modules.html:54
+#: courses/templates/dashboard/manage_modules.html:57
+#: courses/templates/dashboard/wizard_modules.html:39
+#: courses/templates/dashboard/wizard_modules.html:52
 msgid "Add Module"
 msgstr ""
 
-#: courses/templates/dashboard/profile.html:8 templates/base.html:127
-#: templates/base.html:196
+#: courses/templates/dashboard/manage_quiz.html:14
+msgid ""
+"Students must pass this quiz to mark this module complete. Leave it with "
+"zero questions and it won't gate anything yet."
+msgstr ""
+
+#: courses/templates/dashboard/manage_quiz.html:17
+msgid "Quiz Settings"
+msgstr ""
+
+#: courses/templates/dashboard/manage_quiz.html:21
+#: courses/templates/dashboard/wizard_module_content.html:126
+msgid "Quiz Title"
+msgstr ""
+
+#: courses/templates/dashboard/manage_quiz.html:25
+#: courses/templates/dashboard/wizard_module_content.html:130
+#, python-format
+msgid "Passing Score (%%)"
+msgstr ""
+
+#: courses/templates/dashboard/manage_quiz.html:29
+msgid "Save Settings"
+msgstr ""
+
+#: courses/templates/dashboard/manage_quiz.html:29
+msgid "Create Quiz"
+msgstr ""
+
+#: courses/templates/dashboard/manage_quiz.html:34
+#, python-format
+msgid "Questions (%(count)s)"
+msgstr ""
+
+#: courses/templates/dashboard/manage_quiz.html:44
+#, fuzzy
+#| msgid "Single Course"
+msgid "Edit / Choices"
+msgstr "دورة واحدة"
+
+#: courses/templates/dashboard/manage_quiz.html:46
+msgid "Delete this question?"
+msgstr ""
+
+#: courses/templates/dashboard/manage_quiz.html:60
+msgid "No answer choices yet -- add at least two"
+msgstr ""
+
+#: courses/templates/dashboard/manage_quiz.html:67
+#: courses/templates/dashboard/wizard_module_content.html:204
+msgid "No questions yet. Add your first one below."
+msgstr ""
+
+#: courses/templates/dashboard/manage_quiz.html:72
+#: courses/templates/dashboard/manage_quiz.html:84
+#: courses/templates/dashboard/wizard_module_content.html:211
+#: courses/templates/dashboard/wizard_module_content.html:217
+msgid "Add Question"
+msgstr ""
+
+#: courses/templates/dashboard/manage_quiz.html:89
+msgid ""
+"Delete this quiz and all its questions? Students will no longer need to pass "
+"anything to complete this module."
+msgstr ""
+
+#: courses/templates/dashboard/manage_quiz.html:92
+#: courses/templates/dashboard/wizard_module_content.html:226
+msgid "Delete Quiz"
+msgstr ""
+
+#: courses/templates/dashboard/profile.html:8 templates/base.html:135
+#: templates/base.html:215
 msgid "Profile"
 msgstr "الملف الشخصي"
 
@@ -1536,6 +2256,60 @@ msgstr "الملف الشخصي"
 
 #: courses/templates/dashboard/profile.html:35
 msgid "Save"
+msgstr ""
+
+#: courses/templates/dashboard/request_track.html:14
+msgid ""
+"Don't see a track that fits your course? Request a new one -- an admin will "
+"review it before it's available to select."
+msgstr ""
+
+#: courses/templates/dashboard/request_track.html:30
+#, python-format
+msgid "Under %(parent)s &middot; Requested %(date)s"
+msgstr ""
+
+#: courses/templates/dashboard/request_track.html:43
+msgid "Reason:"
+msgstr ""
+
+#: courses/templates/dashboard/request_track.html:49
+msgid "You haven't requested any tracks yet."
+msgstr ""
+
+#: courses/templates/dashboard/request_track.html:54
+msgid "New Track Request"
+msgstr ""
+
+#: courses/templates/dashboard/request_track.html:58
+msgid "Category"
+msgstr ""
+
+#: courses/templates/dashboard/request_track.html:62
+#, fuzzy
+#| msgid "Tracks"
+msgid "Track Name"
+msgstr "المسارات"
+
+#: courses/templates/dashboard/request_track.html:66
+msgid "Reason"
+msgstr ""
+
+#: courses/templates/dashboard/request_track.html:70
+msgid "Submit Request"
+msgstr ""
+
+#: courses/templates/dashboard/track_approval_queue.html:12
+msgid "Track Approval Queue"
+msgstr ""
+
+#: courses/templates/dashboard/track_approval_queue.html:21
+#, python-format
+msgid "by %(instructor)s &middot; under %(parent)s"
+msgstr ""
+
+#: courses/templates/dashboard/track_approval_queue.html:47
+msgid "No track requests pending review."
 msgstr ""
 
 #: courses/templates/dashboard/wallet.html:12
@@ -1610,164 +2384,616 @@ msgstr ""
 msgid "No transactions yet."
 msgstr ""
 
-#: courses/views.py:64
+#: courses/templates/dashboard/wizard_module_content.html:9
+#, fuzzy
+#| msgid "Dashboard"
+msgid "Back to Modules"
+msgstr "لوحة التحكم"
+
+#: courses/templates/dashboard/wizard_module_content.html:14
+#, python-format
+msgid "Module %(n)s of %(total)s: %(title)s"
+msgstr ""
+
+#: courses/templates/dashboard/wizard_module_content.html:27
+msgid "Lecture Script"
+msgstr ""
+
+#: courses/templates/dashboard/wizard_module_content.html:29
+msgid "Mendoura will produce the video for this module from your script."
+msgstr ""
+
+#: courses/templates/dashboard/wizard_module_content.html:34
+msgid "Write or paste this module's lecture script here…"
+msgstr ""
+
+#: courses/templates/dashboard/wizard_module_content.html:37
+msgid "Save Script"
+msgstr ""
+
+#: courses/templates/dashboard/wizard_module_content.html:41
+msgid "Lecture Video"
+msgstr ""
+
+#: courses/templates/dashboard/wizard_module_content.html:81
+msgid "Video hosting isn't configured yet (missing Bunny credentials)."
+msgstr ""
+
+#: courses/templates/dashboard/wizard_module_content.html:90
+msgid "…or an external video link"
+msgstr ""
+
+#: courses/templates/dashboard/wizard_module_content.html:96
+msgid "Save Link"
+msgstr ""
+
+#: courses/templates/dashboard/wizard_module_content.html:112
+msgid "Skip Quiz"
+msgstr ""
+
+#: courses/templates/dashboard/wizard_module_content.html:118
+msgid ""
+"Students must pass this quiz to mark the module complete. Leave it out "
+"entirely and it won't gate anything."
+msgstr ""
+
+#: courses/templates/dashboard/wizard_module_content.html:135
+msgid "Save Quiz Settings"
+msgstr ""
+
+#: courses/templates/dashboard/wizard_module_content.html:135
+msgid "Add a Quiz to This Module"
+msgstr ""
+
+#: courses/templates/dashboard/wizard_module_content.html:185
+msgid "No answer choices yet -- add at least two below."
+msgstr ""
+
+#: courses/templates/dashboard/wizard_module_content.html:222
+msgid "Delete this quiz and all its questions?"
+msgstr ""
+
+#: courses/templates/dashboard/wizard_module_content.html:237
+msgid "Finish"
+msgstr ""
+
+#: courses/templates/dashboard/wizard_module_content.html:237
+msgid "Next Module"
+msgstr ""
+
+#: courses/templates/dashboard/wizard_module_content.html:242
+msgid "Add your script above before continuing."
+msgstr ""
+
+#: courses/templates/dashboard/wizard_module_content.html:244
+msgid "Upload a video (or add an external link) above before continuing."
+msgstr ""
+
+#: courses/templates/dashboard/wizard_modules.html:9
+#, fuzzy
+#| msgid "Dashboard"
+msgid "Save & Exit to Dashboard"
+msgstr "لوحة التحكم"
+
+#: courses/templates/dashboard/wizard_modules.html:15
+msgid ""
+"Add at least one module. You'll add the video/script and an optional quiz "
+"for each one in the next step."
+msgstr ""
+
+#: courses/templates/dashboard/wizard_modules.html:59
+msgid "Next: Add Video & Quiz"
+msgstr ""
+
+#: courses/templates/dashboard/wizard_modules.html:64
+msgid "Add a module to continue"
+msgstr ""
+
+#: courses/templates/dashboard/wizard_review.html:15
+msgid ""
+"Review everything below, then submit for admin review. You can still make "
+"changes from your dashboard after submitting."
+msgstr ""
+
+#: courses/templates/dashboard/wizard_review.html:34
+#, python-format
+msgid "%(count)s Module"
+msgid_plural "%(count)s Modules"
+msgstr[0] ""
+msgstr[1] ""
+msgstr[2] ""
+msgstr[3] ""
+msgstr[4] ""
+msgstr[5] ""
+
+#: courses/templates/dashboard/wizard_review.html:45
+msgid "Script added"
+msgstr ""
+
+#: courses/templates/dashboard/wizard_review.html:45
+msgid "Video added"
+msgstr ""
+
+#: courses/templates/dashboard/wizard_review.html:49
+msgid "Script missing"
+msgstr ""
+
+#: courses/templates/dashboard/wizard_review.html:49
+msgid "Video missing"
+msgstr ""
+
+#: courses/templates/dashboard/wizard_review.html:55
+#, python-format
+msgid "%(count)s quiz question"
+msgid_plural "%(count)s quiz questions"
+msgstr[0] ""
+msgstr[1] ""
+msgstr[2] ""
+msgstr[3] ""
+msgstr[4] ""
+msgstr[5] ""
+
+#: courses/templates/dashboard/wizard_review.html:58
+msgid "No quiz"
+msgstr ""
+
+#: courses/templates/dashboard/wizard_review.html:66
+msgid "Submit this course for admin review?"
+msgstr ""
+
+#: courses/templates/dashboard/wizard_review.html:75
+msgid ""
+"Every module needs its video or script before you can submit -- click Edit "
+"above on any module missing one."
+msgstr ""
+
+#: courses/views.py:109
 #, fuzzy
 #| msgid "Profile"
 msgid "Profile updated."
 msgstr "الملف الشخصي"
 
-#: courses/views.py:154
+#: courses/views.py:131 courses/views.py:156
+msgid "That username was just taken by someone else. Please try again."
+msgstr ""
+
+#: courses/views.py:140
+msgid "Welcome to Mendoura! Your account is ready."
+msgstr ""
+
+#: courses/views.py:166
+msgid ""
+"Your account has been created and is pending administrator approval. You'll "
+"be able to log in once it's approved."
+msgstr ""
+
+#: courses/views.py:432
+msgid "Add your script for this module before continuing."
+msgstr ""
+
+#: courses/views.py:434
+msgid ""
+"Upload a video (or add an external video link) for this module before "
+"continuing."
+msgstr ""
+
+#: courses/views.py:471
+#, python-format
+msgid "%(title)s submitted for review. We'll email you once it's approved."
+msgstr ""
+
+#: courses/views.py:519
 #, python-format
 msgid ""
 "%(title)s was live, so this change has been resubmitted for admin review."
 msgstr ""
 
-#: courses/views.py:208 courses/views.py:214
+#: courses/views.py:583 courses/views.py:590
 #, python-format
 msgid "You are now enrolled in %(title)s."
 msgstr ""
 
-#: courses/views.py:260
+#: courses/views.py:636
 msgid "Unable to start checkout right now. Please try again shortly."
 msgstr ""
 
-#: courses/views.py:481
+#: courses/views.py:876
 msgid "Enroll in this course to watch this lecture."
 msgstr ""
 
-#: courses/views.py:607
+#: courses/views.py:1082
 msgid "Homework submitted."
 msgstr ""
 
-#: courses/views.py:656
+#: courses/views.py:1131
 msgid "Malformed request."
 msgstr ""
 
-#: courses/views.py:659
+#: courses/views.py:1134
 msgid "Message cannot be empty."
 msgstr ""
 
-#: courses/views.py:661
+#: courses/views.py:1136
 msgid "That message is too long -- please shorten it."
 msgstr ""
 
-#: courses/views.py:831
+#: courses/views.py:1314
 #, python-format
 msgid "%(title)s updated."
 msgstr ""
 
-#: courses/views.py:857
+#: courses/views.py:1340
 #, python-format
 msgid ""
 "%(title)s has enrollment or payment history, so it has been archived instead "
 "of deleted."
 msgstr ""
 
-#: courses/views.py:862
+#: courses/views.py:1345
 #, python-format
 msgid "%(title)s has been deleted."
 msgstr ""
 
-#: courses/views.py:868
+#: courses/views.py:1351
 #, python-format
 msgid ""
 "%(title)s has watch-time or revenue history, so it has been archived instead "
 "of deleted."
 msgstr ""
 
-#: courses/views.py:921
+#: courses/views.py:1404
 #, python-format
 msgid ""
 "\"%(title)s\" has watch-time history on one of its lectures and cannot be "
 "deleted."
 msgstr ""
 
-#: courses/views.py:982
+#: courses/views.py:1467
 #, python-format
 msgid "\"%(title)s\" has watch-time history and cannot be deleted."
 msgstr ""
 
-#: courses/views.py:997
+#: courses/views.py:1611
 msgid "Video hosting is not configured."
 msgstr ""
 
-#: courses/views.py:1069
+#: courses/views.py:1690
 msgid "This submission has already been graded."
 msgstr ""
 
-#: courses/views.py:1077
+#: courses/views.py:1698
 #, python-format
 msgid "Graded %(username)s's submission."
 msgstr ""
 
-#: courses/views.py:1127
+#: courses/views.py:1748
 #, python-format
 msgid "You can request a payout once a week. Next available: %(date)s."
 msgstr ""
 
-#: courses/views.py:1143
+#: courses/views.py:1764
 msgid "Payout request submitted."
 msgstr ""
 
-#: courses/views.py:1145
+#: courses/views.py:1766
 msgid "Payout amount cannot exceed your available balance."
 msgstr ""
 
-#: courses/views.py:1147
+#: courses/views.py:1768
 msgid "Please enter a valid payout amount."
 msgstr ""
 
-#: courses/views.py:1206
+#: courses/views.py:1792
+#, python-format
+msgid "Your request for \"%(name)s\" has been submitted for review."
+msgstr ""
+
+#: courses/views.py:1870
+#, python-format
+msgid "Send failed: %(reason)s"
+msgstr ""
+
+#: courses/views.py:1870
+msgid "unknown error"
+msgstr ""
+
+#: courses/views.py:1884
+msgid "Enter a target email address first."
+msgstr ""
+
+#: courses/views.py:1890
+#, python-format
+msgid "Student welcome email sent to %(email)s."
+msgstr ""
+
+#: courses/views.py:1898
+msgid "No enrollments exist yet -- enroll in a course, then retry this test."
+msgstr ""
+
+#: courses/views.py:1903
+#, python-format
+msgid ""
+"Enrollment-confirmation email sent to %(email)s (using real enrollment in "
+"\"%(course)s\" as sample data)."
+msgstr ""
+
+#: courses/views.py:1910
+#, python-format
+msgid "Instructor application-received email sent to %(email)s."
+msgstr ""
+
+#: courses/views.py:1916
+#, python-format
+msgid ""
+"Internal application-notification email sent to %(email)s (using your own "
+"account's details as sample applicant data)."
+msgstr ""
+
+#: courses/views.py:1922
+#, python-format
+msgid "Instructor welcome email sent to %(email)s."
+msgstr ""
+
+#: courses/views.py:1927
+#, python-format
+msgid "Instructor rejection email sent to %(email)s."
+msgstr ""
+
+#: courses/views.py:1934
+msgid "No courses exist yet -- create one, then retry this test."
+msgstr ""
+
+#: courses/views.py:1939
+#, python-format
+msgid ""
+"Course-approved email sent to %(email)s (using real course \"%(course)s\" as "
+"sample data)."
+msgstr ""
+
+#: courses/views.py:1945
+#, python-format
+msgid ""
+"Course-rejected email sent to %(email)s (using real course \"%(course)s\" as "
+"sample data)."
+msgstr ""
+
+#: courses/views.py:1954
+msgid "No track requests exist yet -- submit one, then retry this test."
+msgstr ""
+
+#: courses/views.py:1959
+#, python-format
+msgid ""
+"Internal track-request notification sent to %(email)s (using real request "
+"\"%(track)s\" as sample data)."
+msgstr ""
+
+#: courses/views.py:1970
+msgid ""
+"No track requests have been approved yet -- approve one, then retry this "
+"test."
+msgstr ""
+
+#: courses/views.py:1975
+#, python-format
+msgid ""
+"Track-approved email sent to %(email)s (using real request \"%(track)s\" as "
+"sample data)."
+msgstr ""
+
+#: courses/views.py:1986
+msgid ""
+"No track requests have been rejected yet -- reject one, then retry this test."
+msgstr ""
+
+#: courses/views.py:1991
+#, python-format
+msgid ""
+"Track-rejected email sent to %(email)s (using real request \"%(track)s\" as "
+"sample data)."
+msgstr ""
+
+#: courses/views.py:2003
+msgid ""
+"No certificates have been issued yet -- complete a course to generate one, "
+"then retry this test."
+msgstr ""
+
+#: courses/views.py:2009
+#, python-format
+msgid ""
+"Certificate email sent to %(email)s (using real certificate data for "
+"\"%(course)s\")."
+msgstr ""
+
+#: courses/views.py:2021
+msgid "Your admin account has no email address on file."
+msgstr ""
+
+#: courses/views.py:2027
+#, python-format
+msgid ""
+"Password reset email (%(role)s template) sent to your own address "
+"(%(email)s) -- this is a real, working reset link."
+msgstr ""
+
+#: courses/views.py:2046
 msgid "Subscription revenue distribution ran successfully."
 msgstr ""
 
-#: courses/views.py:1243
+#: courses/views.py:2084
 #, python-format
 msgid "%(title)s approved and published."
 msgstr ""
 
-#: courses/views.py:1254
+#: courses/views.py:2098
+#, python-format
+msgid "Please enter a rejection reason before rejecting %(title)s."
+msgstr ""
+
+#: courses/views.py:2105
 #, python-format
 msgid "%(title)s rejected."
 msgstr ""
 
-#: templates/base.html:38 templates/base.html:173
+#: courses/views.py:2130
+#, python-format
+msgid ""
+"%(username)s can't be approved yet -- a Payoneer account is required for "
+"instructors based outside Egypt."
+msgstr ""
+
+#: courses/views.py:2137
+#, python-format
+msgid "%(username)s has been approved."
+msgstr ""
+
+#: courses/views.py:2152
+#, python-format
+msgid ""
+"%(username)s has existing activity on the platform and can't be rejected."
+msgstr ""
+
+#: courses/views.py:2161
+#, python-format
+msgid "%(username)s's registration was rejected and removed."
+msgstr ""
+
+#: courses/views.py:2170
+msgid "You can't delete your own account."
+msgstr ""
+
+#: courses/views.py:2172
+msgid "Admin accounts can't be deleted from here."
+msgstr ""
+
+#: courses/views.py:2177
+#, python-format
+msgid "%(username)s was permanently deleted."
+msgstr ""
+
+#: courses/views.py:2181
+#, python-format
+msgid "%(username)s has payment or revenue history and can't be deleted."
+msgstr ""
+
+#: courses/views.py:2304
+#, python-format
+msgid ""
+"A track named \"%(name)s\" already exists. Reject this request or rename it "
+"first."
+msgstr ""
+
+#: courses/views.py:2312
+#, python-format
+msgid "\"%(name)s\" approved and is now live."
+msgstr ""
+
+#: courses/views.py:2326
+#, python-format
+msgid "Please enter a rejection reason before rejecting \"%(name)s\"."
+msgstr ""
+
+#: courses/views.py:2333
+#, python-format
+msgid "\"%(name)s\" rejected."
+msgstr ""
+
+#: templates/base.html:38 templates/base.html:192
 msgid "Home"
 msgstr "الرئيسية"
 
-#: templates/base.html:77 templates/base.html:134 templates/base.html:198
+#: templates/base.html:77 templates/base.html:142 templates/base.html:217
 msgid "AI Coach"
 msgstr ""
 
-#: templates/base.html:80 templates/base.html:139 templates/base.html:199
+#: templates/base.html:80 templates/base.html:147 templates/base.html:218
 msgid "Dashboard"
 msgstr "لوحة التحكم"
 
-#: templates/base.html:83 templates/base.html:144 templates/base.html:200
+#: templates/base.html:84 templates/base.html:152 templates/base.html:221
 msgid "Admin Panel"
 msgstr "لوحة الإدارة"
 
-#: templates/base.html:96 templates/base.html:169
+#: templates/base.html:101 templates/base.html:188
 msgid "Search tracks & courses..."
 msgstr "ابحث عن مسارات ودورات..."
 
-#: templates/base.html:150 templates/base.html:203
+#: templates/base.html:125 templates/base.html:155
+#, python-format
+msgid "%(counter)s pending instructor request"
+msgid_plural "%(counter)s pending instructor requests"
+msgstr[0] ""
+msgstr[1] ""
+msgstr[2] ""
+msgstr[3] ""
+msgstr[4] ""
+msgstr[5] ""
+
+#: templates/base.html:125 templates/base.html:158
+#, python-format
+msgid "%(counter)s pending course approval"
+msgid_plural "%(counter)s pending course approvals"
+msgstr[0] ""
+msgstr[1] ""
+msgstr[2] ""
+msgstr[3] ""
+msgstr[4] ""
+msgstr[5] ""
+
+#: templates/base.html:125 templates/base.html:161
+#, python-format
+msgid "%(counter)s pending track request"
+msgid_plural "%(counter)s pending track requests"
+msgstr[0] ""
+msgstr[1] ""
+msgstr[2] ""
+msgstr[3] ""
+msgstr[4] ""
+msgstr[5] ""
+
+#: templates/base.html:169 templates/base.html:237
 msgid "Logout"
 msgstr "تسجيل الخروج"
 
-#: templates/base.html:156 templates/base.html:206
+#: templates/base.html:175 templates/base.html:240
 msgid "Login"
 msgstr "تسجيل الدخول"
 
-#: templates/base.html:157 templates/base.html:207
+#: templates/base.html:176 templates/base.html:241
 msgid "Sign Up"
 msgstr "إنشاء حساب"
 
-#: templates/platform_home.html:8
-msgid "AI-Powered Learning Platform"
-msgstr "منصة تعليمية مدعومة بالذكاء الاصطناعي"
+#: templates/base.html:304
+msgid "Terms & Conditions"
+msgstr "الشروط والأحكام"
 
-#: templates/platform_home.html:11
+#: templates/base.html:305
+msgid "Privacy Policy"
+msgstr "سياسة الخصوصية"
+
+#: templates/base.html:308 templates/legal/document.html:25
+msgid "Cairo, Egypt"
+msgstr "القاهرة، مصر"
+
+#: templates/legal/document.html:7
+msgid "Legal"
+msgstr "قانوني"
+
+#: templates/legal/document.html:25
+msgid "Company location:"
+msgstr "موقع الشركة:"
+
+#: templates/legal/document.html:26
+msgid "Contact:"
+msgstr "التواصل:"
+
+#: templates/legal/document.html:27
+#, python-format
+msgid "Last updated: %(date)s"
+msgstr "آخر تحديث: %(date)s"
+
+#: templates/platform_home.html:8
 msgid ""
 "Where your mind explores <span class=\"text-brand-600 dark:text-"
 "brand-400\">the new aura.</span>"
@@ -1775,107 +3001,101 @@ msgstr ""
 "حيث يستكشف عقلك <span class=\"text-brand-600 dark:text-brand-400\">هالة "
 "جديدة.</span>"
 
-#: templates/platform_home.html:14
+#: templates/platform_home.html:11
+#, fuzzy
+#| msgid ""
+#| "Courses built by real instructors, enhanced with AI. Track your progress, "
+#| "earn certificates, and grow your career."
 msgid ""
-"Courses built by real instructors, enhanced with AI. Track your progress, "
-"earn certificates, and grow your career."
+"Courses built by real, expert instructors. Track your progress, earn "
+"certificates, and grow your career."
 msgstr ""
 "دورات صمّمها مدرّبون حقيقيون، ودعّمها الذكاء الاصطناعي. تابع تقدّمك، واحصل على "
 "شهاداتك، وطوّر مسارك المهني."
 
-#: templates/platform_home.html:18
+#: templates/platform_home.html:16
+#, fuzzy
+#| msgid "Dashboard"
+msgid "Go to Your Dashboard"
+msgstr "لوحة التحكم"
+
+#: templates/platform_home.html:20
+#, fuzzy
+#| msgid "My Learning"
+msgid "Continue Learning"
+msgstr "تعلّمي"
+
+#: templates/platform_home.html:27
 msgid "Start Learning"
 msgstr "ابدأ التعلّم"
 
-#: templates/platform_home.html:21
+#: templates/platform_home.html:30
 msgid "Become an Instructor"
 msgstr "كن مدرّبًا"
 
-#: templates/platform_home.html:45
-msgid "AI-Enhanced Lectures"
-msgstr "محاضرات مدعومة بالذكاء الاصطناعي"
+#: templates/platform_home.html:55
+#, fuzzy
+#| msgid "Single Course"
+msgid "Expert-Led Courses"
+msgstr "دورة واحدة"
 
-#: templates/platform_home.html:46
-msgid "Instructors write scripts, AI polishes them into engaging lectures."
-msgstr "يكتب المدرّبون النص، ويحوّله الذكاء الاصطناعي إلى محاضرة احترافية."
+#: templates/platform_home.html:56
+msgid ""
+"Structured lessons and hands-on projects designed by experienced instructors."
+msgstr ""
 
-#: templates/platform_home.html:52
+#: templates/platform_home.html:62
 msgid "Verified Certificates"
 msgstr "شهادات موثّقة"
 
-#: templates/platform_home.html:53
+#: templates/platform_home.html:63
 msgid "Complete courses and earn certificates to showcase your skills."
 msgstr "أكمل الدورات واحصل على شهادات تُبرز مهاراتك."
 
-#: templates/platform_home.html:59
-msgid "Instructor Earnings"
+#: templates/platform_home.html:69
+#, fuzzy
+#| msgid "Instructor Earnings"
+msgid "Instructor Compensation"
 msgstr "أرباح المدرّبين"
 
-#: templates/platform_home.html:60
-msgid "Track your sales and withdraw earnings straight from your dashboard."
-msgstr "تابع مبيعاتك واسحب أرباحك مباشرة من لوحة التحكم."
+#: templates/platform_home.html:70
+msgid ""
+"Instructors are compensated for their content based on platform performance, "
+"managed directly by Mendoura."
+msgstr ""
 
-#: templates/platform_home.html:65
+#: templates/platform_home.html:75
 msgid "Simple, transparent pricing"
 msgstr "أسعار بسيطة وواضحة"
 
-#: templates/platform_home.html:66
+#: templates/platform_home.html:76
 msgid "Buy a single course, or unlock everything with a subscription."
 msgstr "اشترِ دورة واحدة، أو افتح كل شيء عبر الاشتراك."
 
-#: templates/platform_home.html:69
+#: templates/platform_home.html:79
 msgid "Single Course"
 msgstr "دورة واحدة"
 
-#: templates/platform_home.html:70
+#: templates/platform_home.html:80
 msgid "Pay per course"
 msgstr "ادفع لكل دورة"
 
-#: templates/platform_home.html:71
+#: templates/platform_home.html:81
 msgid "Lifetime access to just the course you need."
 msgstr "وصول دائم للدورة التي تحتاجها فقط."
 
-#: templates/platform_home.html:77
+#: templates/platform_home.html:87
 msgid "Best Value"
 msgstr "الأفضل قيمةً"
 
-#: templates/platform_home.html:81 templates/platform_home.html:83
+#: templates/platform_home.html:91 templates/platform_home.html:93
 msgid "mo"
 msgstr "شهر"
 
-#: templates/platform_home.html:81 templates/platform_home.html:83
+#: templates/platform_home.html:91 templates/platform_home.html:93
 msgid "yr"
 msgstr "سنة"
 
-#: templates/platform_home.html:84
+#: templates/platform_home.html:94
 msgid "Unlimited access to every track and course."
 msgstr "وصول غير محدود لكل المسارات والدورات."
-
-#: templates/base.html templates/legal/document.html
-msgid "Terms & Conditions"
-msgstr "الشروط والأحكام"
-
-#: templates/base.html
-msgid "Privacy Policy"
-msgstr "سياسة الخصوصية"
-
-#: templates/base.html templates/legal/document.html
-msgid "Cairo, Egypt"
-msgstr "القاهرة، مصر"
-
-#: templates/legal/document.html
-msgid "Legal"
-msgstr "قانوني"
-
-#: templates/legal/document.html
-msgid "Company location:"
-msgstr "موقع الشركة:"
-
-#: templates/legal/document.html
-msgid "Contact:"
-msgstr "التواصل:"
-
-#: templates/legal/document.html
-#, python-format
-msgid "Last updated: %(date)s"
-msgstr "آخر تحديث: %(date)s"

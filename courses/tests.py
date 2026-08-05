@@ -22,9 +22,9 @@ from django.utils.translation import override as translation_override
 from . import ai_coach, auto_translate, emails, paymob
 from .models import (
     AIConversation, AIMessage, Certificate, Choice, Course, Enrollment, InstructorWallet, Lecture,
-    LegalDocument, LegalSection, Module, Payment, Payout, Plan, Question, Quiz, QuizAttempt,
-    Resource, RevenueDistribution, Review, Subscription, SubscriptionPeriod, Submission, Track,
-    TrackRequest, User, WalletTransaction, WatchEvent,
+    LectureProgress, LegalDocument, LegalSection, Module, Payment, Payout, Plan, Question, Quiz,
+    QuizAttempt, Resource, RevenueDistribution, Review, Subscription, SubscriptionPeriod, Submission,
+    Track, TrackRequest, User, WalletTransaction, WatchEvent,
 )
 from .money import calculate_split
 
@@ -2882,6 +2882,131 @@ class BunnyPlayerEmbedTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'iframe.mediadelivery.net/embed/705216/guid-abc')
         self.assertContains(response, 'token=')
+
+
+class DurationDisplayFilterTests(TestCase):
+    """The `duration_display` template filter (courses/templatetags/
+    course_extras.py) used by the lesson player's Contents sidebar."""
+
+    def test_minutes_and_seconds(self):
+        from courses.templatetags.course_extras import duration_display
+        self.assertEqual(duration_display(246), '4m 6s')
+
+    def test_whole_minutes_only(self):
+        from courses.templatetags.course_extras import duration_display
+        self.assertEqual(duration_display(120), '2m')
+
+    def test_seconds_only(self):
+        from courses.templatetags.course_extras import duration_display
+        self.assertEqual(duration_display(45), '45s')
+
+    def test_zero_or_falsy_returns_empty_string(self):
+        # duration_seconds isn't populated by any upload path yet, so most
+        # real lectures are 0 -- showing nothing beats a misleading "0m 0s".
+        from courses.templatetags.course_extras import duration_display
+        self.assertEqual(duration_display(0), '')
+        self.assertEqual(duration_display(None), '')
+
+
+class LessonPlayerLayoutTests(TestCase):
+    """The redesigned lesson-viewing page (Contents sidebar + video +
+    Overview tab), structured after LinkedIn Learning's course player.
+    course_player's access-control logic and the Bunny embed itself are
+    unchanged -- these tests cover only the new layout."""
+
+    def setUp(self):
+        self.instructor = User.objects.create_user(
+            username='layout_inst', password='pw', is_instructor=True,
+            first_name='Jane', last_name='Teacher')
+        self.student = User.objects.create_user(
+            username='layout_stud', password='pw', is_student=True)
+        track = Track.objects.create(name='Layout Track')
+        self.course = Course.objects.create(
+            instructor=self.instructor, track=track, title='Layout Course',
+            description='A course about layouts.',
+            production_type=Course.ProductionType.FULL, price=Decimal('0.00'), is_free=True,
+            status=Course.Status.PUBLISHED)
+        self.module1 = Module.objects.create(course=self.course, title='Intro', order=1)
+        self.lecture1 = Lecture.objects.create(
+            module=self.module1, title='Welcome', duration_seconds=246, order=1)
+        self.module2 = Module.objects.create(course=self.course, title='Deep Dive', order=2)
+        self.lecture2 = Lecture.objects.create(
+            module=self.module2, title='Details', duration_seconds=0, order=1)
+        self.article_lecture = Lecture.objects.create(
+            module=self.module2, title='Reading', content_type=Lecture.ContentType.ARTICLE, order=2)
+        self.enrollment = Enrollment.objects.create(student=self.student, course=self.course)
+
+    def test_progress_summary_shown_for_enrolled_student(self):
+        LectureProgress.objects.create(enrollment=self.enrollment, lecture=self.lecture1, completed=True)
+        self.client.force_login(self.student)
+        response = self.client.get(reverse('course_player', args=[self.course.id, self.lecture2.id]))
+        self.assertContains(response, '33% ')  # 1 of 3 lectures complete, rounded
+        self.assertContains(response, '1 of 3 lessons')
+
+    def test_progress_summary_hidden_without_an_enrollment(self):
+        # An admin/owner previewing the course has no Enrollment, so there's
+        # no per-student progress to show.
+        self.client.force_login(self.instructor)
+        response = self.client.get(reverse('course_player', args=[self.course.id, self.lecture2.id]))
+        self.assertNotContains(response, 'lessons')
+
+    def test_current_lecture_module_is_expanded_others_collapsed(self):
+        self.client.force_login(self.student)
+        response = self.client.get(reverse('course_player', args=[self.course.id, self.lecture2.id]))
+        content = response.content.decode()
+        # module2 (containing the current lecture) renders visible -- search
+        # for the div's own id="..." (not the toggle button's data-target=
+        # "...", which names the same string but appears earlier in the DOM).
+        module2_start = content.index(f'id="module-content-{self.module2.id}"')
+        module2_div = content[module2_start:module2_start + 200]
+        self.assertNotIn('hidden', module2_div.split('>')[0])
+        # ...module1 renders with the hidden class.
+        module1_start = content.index(f'id="module-content-{self.module1.id}"')
+        module1_div = content[module1_start:module1_start + 200]
+        self.assertIn('hidden', module1_div.split('>')[0])
+
+    def test_completed_lecture_shows_checkmark_not_started_shows_empty_circle(self):
+        LectureProgress.objects.create(enrollment=self.enrollment, lecture=self.lecture1, completed=True)
+        self.client.force_login(self.student)
+        response = self.client.get(reverse('course_player', args=[self.course.id, self.lecture1.id]))
+        self.assertContains(response, 'fa-circle-check')
+        self.assertContains(response, 'fa-regular fa-circle')
+
+    def test_video_lecture_with_duration_shows_humanized_duration(self):
+        self.client.force_login(self.student)
+        response = self.client.get(reverse('course_player', args=[self.course.id, self.lecture1.id]))
+        self.assertContains(response, '4m 6s video')
+
+    def test_video_lecture_without_duration_just_says_video(self):
+        self.client.force_login(self.student)
+        response = self.client.get(reverse('course_player', args=[self.course.id, self.lecture2.id]))
+        self.assertContains(response, 'Video')
+
+    def test_article_lecture_shows_article_label(self):
+        self.client.force_login(self.student)
+        response = self.client.get(reverse('course_player', args=[self.course.id, self.lecture1.id]))
+        self.assertContains(response, 'Article')
+
+    def test_module_quiz_shown_as_quiz_type(self):
+        quiz = Quiz.objects.create(module=self.module2, passing_score_percent=70)
+        question = Question.objects.create(quiz=quiz, text='2+2=?', order=1)
+        Choice.objects.create(question=question, text='4', is_correct=True)
+        self.client.force_login(self.student)
+        response = self.client.get(reverse('course_player', args=[self.course.id, self.lecture1.id]))
+        self.assertContains(response, reverse('take_quiz', args=[self.course.id, self.module2.id]))
+        self.assertContains(response, 'Quiz')
+
+    def test_overview_tab_shows_course_description_and_instructor(self):
+        self.client.force_login(self.student)
+        response = self.client.get(reverse('course_player', args=[self.course.id, self.lecture1.id]))
+        self.assertContains(response, 'A course about layouts.')
+        self.assertContains(response, 'Jane Teacher')
+
+    def test_sidebar_collapse_and_expand_controls_present(self):
+        self.client.force_login(self.student)
+        response = self.client.get(reverse('course_player', args=[self.course.id, self.lecture1.id]))
+        self.assertContains(response, 'id="sidebar-collapse-btn"')
+        self.assertContains(response, 'id="sidebar-expand-btn"')
 
 
 class HomeworkSubmissionTests(TestCase):

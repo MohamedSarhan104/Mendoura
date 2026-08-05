@@ -1,170 +1,253 @@
 {% extends 'base.html' %}
+{% load i18n course_extras %}
 {% block title %}{{ lecture.title }} - {{ course.title }}{% endblock %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto px-6 py-10 grid grid-cols-1 lg:grid-cols-3 gap-8 animate-fade-in">
+<div class="max-w-[1600px] mx-auto px-4 sm:px-6 py-8 animate-fade-in">
 
-  <div class="lg:col-span-2">
-    <a href="{% url 'course_detail' course.id %}" class="text-sm text-brand-600 hover:underline">
-      <i class="fa-solid fa-arrow-left"></i> {{ course.title }}
-    </a>
+  <a href="{% url 'course_detail' course.id %}" class="text-sm text-brand-600 hover:underline">
+    <i class="fa-solid fa-arrow-left rtl:rotate-180"></i> {{ course.title }}
+  </a>
 
-    <div id="video-container" class="relative mt-4 aspect-video bg-black rounded-2xl overflow-hidden flex items-center justify-center">
-      {% if bunny_embed_url %}
-        <div id="video-skeleton" class="absolute inset-0 bg-gray-800 overflow-hidden hidden">
-          <div class="absolute inset-0 -translate-x-full animate-shimmer bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
-        </div>
-        <iframe id="lecture-video" class="relative w-full h-full hidden" data-src="{{ bunny_embed_url }}"
-                allow="accelerometer;gyroscope;autoplay;encrypted-media;picture-in-picture;"
-                allowfullscreen
-                onload="document.getElementById('video-skeleton')?.remove()"></iframe>
-      {% elif lecture.video_file %}
-        <div id="video-skeleton" class="absolute inset-0 bg-gray-800 overflow-hidden hidden">
-          <div class="absolute inset-0 -translate-x-full animate-shimmer bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
-        </div>
-        <video id="lecture-video" controls class="relative w-full h-full hidden" data-src="{{ lecture.video_file.url }}"
-               onloadeddata="document.getElementById('video-skeleton')?.remove()"
-               onerror="document.getElementById('video-skeleton')?.remove()"></video>
-      {% elif lecture.video_url %}
-        <div id="video-skeleton" class="absolute inset-0 bg-gray-800 overflow-hidden hidden">
-          <div class="absolute inset-0 -translate-x-full animate-shimmer bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
-        </div>
-        <iframe id="lecture-video" class="relative w-full h-full hidden" data-src="{{ lecture.video_url }}" allowfullscreen
-                onload="document.getElementById('video-skeleton')?.remove()"></iframe>
-      {% else %}
-        <p class="text-gray-500 text-sm">No video available for this lecture.</p>
-      {% endif %}
+  <div class="flex flex-col lg:flex-row gap-6 mt-4 items-start">
 
-      {% if course.poster_image %}
-        {% if bunny_embed_url or lecture.video_file or lecture.video_url %}
-          {% comment %}
-            Cover screen shown before playback -- the poster already has the
-            course title and instructor's name composited in server-side, so
-            it works identically whether the underlying video is a Bunny
-            iframe, a native <video>, or an external iframe (none of which
-            the native poster="" attribute can reach into). Clicking it
-            lazily sets the real src, so the video/iframe never loads at all
-            until the student actually wants to watch.
-          {% endcomment %}
-          <button type="button" id="poster-cover" aria-label="Play video"
-                  class="absolute inset-0 z-[45] w-full h-full group cursor-pointer">
-            <img src="{{ course.poster_image.url }}" alt="" class="absolute inset-0 w-full h-full object-cover">
-            <div class="absolute inset-0 flex items-center justify-center bg-black/10 group-hover:bg-black/25 transition">
-              <div class="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-white/95 flex items-center justify-center shadow-xl group-hover:scale-105 transition">
-                <i class="fa-solid fa-play text-brand-600 text-2xl sm:text-3xl ml-1"></i>
+    <!-- ═══ Contents sidebar ═══ -->
+    <aside id="lesson-sidebar" class="w-full lg:w-80 shrink-0 order-2 lg:order-1">
+      <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] flex flex-col overflow-hidden">
+        <div class="flex items-center justify-between p-4 border-b border-gray-100 dark:border-gray-800 shrink-0">
+          <h2 class="font-bold">{% trans "Course Content" %}</h2>
+          <button type="button" id="sidebar-collapse-btn" aria-label="{% trans 'Hide course content' %}"
+                  class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+
+        {% if enrollment %}
+          <div class="p-4 border-b border-gray-100 dark:border-gray-800 shrink-0">
+            <div class="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-1.5">
+              <span class="font-semibold text-gray-700 dark:text-gray-300">{{ enrollment.progress_percent }}% {% trans "complete" %}</span>
+              <span>{% blocktrans with done=enrollment.completed_lecture_count total=enrollment.total_lecture_count %}{{ done }} of {{ total }} lessons{% endblocktrans %}</span>
+            </div>
+            <div class="w-full h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+              <div class="h-full bg-brand-600" style="width: {{ enrollment.progress_percent }}%"></div>
+            </div>
+          </div>
+        {% endif %}
+
+        <div class="overflow-y-auto flex-1">
+          {% for module in modules %}
+            <div class="border-b border-gray-100 dark:border-gray-800 last:border-0">
+              <button type="button"
+                      class="module-toggle w-full flex items-center justify-between gap-2 px-4 py-3 text-left text-sm font-semibold hover:bg-gray-50 dark:hover:bg-gray-800/60"
+                      data-target="module-content-{{ module.id }}"
+                      aria-expanded="{% if module.id == lecture.module_id %}true{% else %}false{% endif %}">
+                <span>{{ forloop.counter }}. {{ module.title }}</span>
+                <i class="fa-solid fa-chevron-down text-xs text-gray-400 transition-transform {% if module.id == lecture.module_id %}rotate-180{% endif %}"></i>
+              </button>
+              <div id="module-content-{{ module.id }}" class="{% if module.id != lecture.module_id %}hidden{% endif %}">
+                {% for l in module.lectures.all %}
+                  <a href="{% url 'course_player' course.id l.id %}"
+                     class="flex items-start gap-3 px-4 py-2.5 text-sm transition {% if l.id == lecture.id %}bg-brand-50 dark:bg-brand-600/10{% else %}hover:bg-gray-50 dark:hover:bg-gray-800/60{% endif %}">
+                    {% if l.id in completed_lecture_ids %}
+                      <i class="fa-solid fa-circle-check text-green-500 mt-0.5 shrink-0"></i>
+                    {% else %}
+                      <i class="fa-regular fa-circle text-gray-300 dark:text-gray-600 mt-0.5 shrink-0"></i>
+                    {% endif %}
+                    <span class="min-w-0">
+                      <span class="block {% if l.id == lecture.id %}text-brand-600 font-semibold{% endif %}">{{ l.title }}</span>
+                      <span class="block text-xs text-gray-400 mt-0.5">
+                        {% if l.content_type == 'article' %}
+                          {% trans "Article" %}
+                        {% else %}
+                          {% with d=l.duration_seconds|duration_display %}
+                            {% if d %}{{ d }} {% trans "video" %}{% else %}{% trans "Video" %}{% endif %}
+                          {% endwith %}
+                        {% endif %}
+                      </span>
+                    </span>
+                  </a>
+                {% empty %}
+                  <p class="text-xs text-gray-400 px-4 py-2.5">{% trans "No lectures in this module yet." %}</p>
+                {% endfor %}
+                {% if module.quiz.questions.all %}
+                  <a href="{% url 'take_quiz' course.id module.id %}"
+                     class="flex items-start gap-3 px-4 py-2.5 text-sm transition hover:bg-gray-50 dark:hover:bg-gray-800/60">
+                    {% if module.quiz.id in passed_quiz_ids %}
+                      <i class="fa-solid fa-circle-check text-green-500 mt-0.5 shrink-0"></i>
+                    {% else %}
+                      <i class="fa-solid fa-clipboard-question text-purple-500 mt-0.5 shrink-0"></i>
+                    {% endif %}
+                    <span class="min-w-0">
+                      <span class="block">{{ module.quiz.display_title }}</span>
+                      <span class="block text-xs text-gray-400 mt-0.5">{% trans "Quiz" %}</span>
+                    </span>
+                  </a>
+                {% endif %}
               </div>
             </div>
-          </button>
-        {% endif %}
-      {% endif %}
-
-      {% if enrollment and request.user.is_authenticated %}
-        {% comment %}
-          Forensic watermark: identifies whoever is watching, deters screen
-          recording/filming. Drifts + fades so it can't be framed out or
-          permanently covered, and a MutationObserver below re-asserts it
-          if tampered with.
-        {% endcomment %}
-        <div id="watermark" class="absolute select-none pointer-events-none whitespace-nowrap font-semibold text-sm sm:text-base z-40"
-             style="opacity:0.18; color:#ffffff; text-shadow:0 1px 4px rgba(0,0,0,0.85), 0 0 2px rgba(0,0,0,0.6); transition:opacity 0.6s ease, top 0.6s ease, left 0.6s ease; top:10%; left:10%;">
-          {{ request.user.get_full_name|default:request.user.username }}{% if request.user.email %} &middot; {{ request.user.email }}{% endif %}{% if request.user.phone_number %} &middot; {{ request.user.phone_number }}{% endif %}
+          {% empty %}
+            <p class="text-sm text-gray-400 p-4">{% trans "No curriculum added yet." %}</p>
+          {% endfor %}
         </div>
-        <div id="watermark-blackout" class="absolute inset-0 z-50 bg-black hidden flex-col items-center justify-center text-center text-white text-sm p-6">
-          <i class="fa-solid fa-shield-halved text-2xl mb-3"></i>
-          <p class="font-semibold mb-1">Playback protection triggered</p>
-          <p class="text-white/70">Reload the page to keep watching.</p>
-        </div>
-      {% endif %}
-    </div>
+      </div>
+    </aside>
 
-    <h1 class="text-2xl font-extrabold mt-6">{{ lecture.title }}</h1>
+    <button type="button" id="sidebar-expand-btn"
+            class="hidden order-1 lg:order-1 items-center gap-2 text-sm font-semibold text-brand-600 hover:underline mb-2">
+      <i class="fa-solid fa-list"></i> {% trans "Show Course Content" %}
+    </button>
 
-    {% if enrollment %}
-      <form method="post" action="{% url 'mark_lecture_complete' course.id lecture.id %}" class="mt-4">
-        {% csrf_token %}
-        {% if progress.completed %}
-          <span class="inline-flex items-center gap-2 px-5 py-2 rounded-lg bg-green-50 dark:bg-green-600/10 text-green-600 font-semibold">
-            <i class="fa-solid fa-circle-check"></i> Completed
-          </span>
+    <!-- ═══ Video + tabs ═══ -->
+    <main class="flex-1 min-w-0 order-1 lg:order-2 w-full">
+      <h1 class="text-2xl font-extrabold mb-4">{{ lecture.title }}</h1>
+
+      <div id="video-container" class="relative aspect-video bg-black rounded-2xl overflow-hidden flex items-center justify-center">
+        {% if bunny_embed_url %}
+          <div id="video-skeleton" class="absolute inset-0 bg-gray-800 overflow-hidden hidden">
+            <div class="absolute inset-0 -translate-x-full animate-shimmer bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
+          </div>
+          <iframe id="lecture-video" class="relative w-full h-full hidden" data-src="{{ bunny_embed_url }}"
+                  allow="accelerometer;gyroscope;autoplay;encrypted-media;picture-in-picture;"
+                  allowfullscreen
+                  onload="document.getElementById('video-skeleton')?.remove()"></iframe>
+        {% elif lecture.video_file %}
+          <div id="video-skeleton" class="absolute inset-0 bg-gray-800 overflow-hidden hidden">
+            <div class="absolute inset-0 -translate-x-full animate-shimmer bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
+          </div>
+          <video id="lecture-video" controls class="relative w-full h-full hidden" data-src="{{ lecture.video_file.url }}"
+                 onloadeddata="document.getElementById('video-skeleton')?.remove()"
+                 onerror="document.getElementById('video-skeleton')?.remove()"></video>
+        {% elif lecture.video_url %}
+          <div id="video-skeleton" class="absolute inset-0 bg-gray-800 overflow-hidden hidden">
+            <div class="absolute inset-0 -translate-x-full animate-shimmer bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
+          </div>
+          <iframe id="lecture-video" class="relative w-full h-full hidden" data-src="{{ lecture.video_url }}" allowfullscreen
+                  onload="document.getElementById('video-skeleton')?.remove()"></iframe>
         {% else %}
-          <button type="submit" class="px-5 py-2 rounded-lg bg-brand-600 text-white font-semibold hover:bg-brand-700 transition">
-            Mark as Complete
-          </button>
+          <p class="text-gray-500 text-sm">{% trans "No video available for this lecture." %}</p>
         {% endif %}
-      </form>
-    {% endif %}
 
-    {% if lecture.accepts_submission and enrollment %}
-      <div class="mt-8 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-5 flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <p class="font-semibold">Homework</p>
-          <p class="text-xs text-gray-400 mt-1">This lecture has a homework submission.</p>
+        {% if course.poster_image %}
+          {% if bunny_embed_url or lecture.video_file or lecture.video_url %}
+            {% comment %}
+              Cover screen shown before playback -- the poster already has the
+              course title and instructor's name composited in server-side, so
+              it works identically whether the underlying video is a Bunny
+              iframe, a native <video>, or an external iframe (none of which
+              the native poster="" attribute can reach into). Clicking it
+              lazily sets the real src, so the video/iframe never loads at all
+              until the student actually wants to watch.
+            {% endcomment %}
+            <button type="button" id="poster-cover" aria-label="Play video"
+                    class="absolute inset-0 z-[45] w-full h-full group cursor-pointer">
+              <img src="{{ course.poster_image.url }}" alt="" class="absolute inset-0 w-full h-full object-cover">
+              <div class="absolute inset-0 flex items-center justify-center bg-black/10 group-hover:bg-black/25 transition">
+                <div class="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-white/95 flex items-center justify-center shadow-xl group-hover:scale-105 transition">
+                  <i class="fa-solid fa-play text-brand-600 text-2xl sm:text-3xl ml-1"></i>
+                </div>
+              </div>
+            </button>
+          {% endif %}
+        {% endif %}
+
+        {% if enrollment and request.user.is_authenticated %}
+          {% comment %}
+            Forensic watermark: identifies whoever is watching, deters screen
+            recording/filming. Drifts + fades so it can't be framed out or
+            permanently covered, and a MutationObserver below re-asserts it
+            if tampered with.
+          {% endcomment %}
+          <div id="watermark" class="absolute select-none pointer-events-none whitespace-nowrap font-semibold text-sm sm:text-base z-40"
+               style="opacity:0.18; color:#ffffff; text-shadow:0 1px 4px rgba(0,0,0,0.85), 0 0 2px rgba(0,0,0,0.6); transition:opacity 0.6s ease, top 0.6s ease, left 0.6s ease; top:10%; left:10%;">
+            {{ request.user.get_full_name|default:request.user.username }}{% if request.user.email %} &middot; {{ request.user.email }}{% endif %}{% if request.user.phone_number %} &middot; {{ request.user.phone_number }}{% endif %}
+          </div>
+          <div id="watermark-blackout" class="absolute inset-0 z-50 bg-black hidden flex-col items-center justify-center text-center text-white text-sm p-6">
+            <i class="fa-solid fa-shield-halved text-2xl mb-3"></i>
+            <p class="font-semibold mb-1">{% trans "Playback protection triggered" %}</p>
+            <p class="text-white/70">{% trans "Reload the page to keep watching." %}</p>
+          </div>
+        {% endif %}
+      </div>
+
+      <div class="flex items-center justify-between flex-wrap gap-3 mt-4">
+        {% if enrollment %}
+          <form method="post" action="{% url 'mark_lecture_complete' course.id lecture.id %}">
+            {% csrf_token %}
+            {% if progress.completed %}
+              <span class="inline-flex items-center gap-2 px-5 py-2 rounded-lg bg-green-50 dark:bg-green-600/10 text-green-600 font-semibold">
+                <i class="fa-solid fa-circle-check"></i> {% trans "Completed" %}
+              </span>
+            {% else %}
+              <button type="submit" class="px-5 py-2 rounded-lg bg-brand-600 text-white font-semibold hover:bg-brand-700 transition">
+                {% trans "Mark as Complete" %}
+              </button>
+            {% endif %}
+          </form>
+        {% else %}<span></span>{% endif %}
+
+        <div class="flex items-center gap-4">
+          {% if prev_lecture %}
+            <a href="{% url 'course_player' course.id prev_lecture.id %}" class="text-sm font-semibold text-brand-600 hover:underline">
+              <i class="fa-solid fa-arrow-left rtl:rotate-180"></i> {% trans "Previous" %}
+            </a>
+          {% endif %}
+          {% if next_lecture %}
+            <a href="{% url 'course_player' course.id next_lecture.id %}" class="text-sm font-semibold text-brand-600 hover:underline">
+              {% trans "Next" %} <i class="fa-solid fa-arrow-right rtl:rotate-180"></i>
+            </a>
+          {% endif %}
         </div>
-        <a href="{% url 'submit_homework' course.id lecture.id %}" class="px-5 py-2 rounded-lg bg-brand-600 text-white font-semibold hover:bg-brand-700 transition text-sm">
-          <i class="fa-solid fa-file-arrow-up mr-1"></i> Submit / View Homework
-        </a>
       </div>
-    {% endif %}
 
-    {% if lecture.resources.all %}
-      <h2 class="text-lg font-bold mt-8 mb-3">Resources</h2>
-      <div class="space-y-2">
-        {% for resource in lecture.resources.all %}
-          <a href="{{ resource.file.url }}" target="_blank" class="flex items-center gap-3 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-3 hover:shadow-sm transition">
-            <i class="fa-solid fa-paperclip text-brand-600"></i>
-            <span class="text-sm">{{ resource.title|default:"Download" }}</span>
+      {% if lecture.accepts_submission and enrollment %}
+        <div class="mt-6 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-5 flex items-center justify-between flex-wrap gap-3">
+          <div>
+            <p class="font-semibold">{% trans "Homework" %}</p>
+            <p class="text-xs text-gray-400 mt-1">{% trans "This lecture has a homework submission." %}</p>
+          </div>
+          <a href="{% url 'submit_homework' course.id lecture.id %}" class="px-5 py-2 rounded-lg bg-brand-600 text-white font-semibold hover:bg-brand-700 transition text-sm">
+            <i class="fa-solid fa-file-arrow-up mr-1"></i> {% trans "Submit / View Homework" %}
           </a>
-        {% endfor %}
-      </div>
-    {% endif %}
-
-    <div class="flex items-center justify-between mt-8">
-      {% if prev_lecture %}
-        <a href="{% url 'course_player' course.id prev_lecture.id %}" class="text-sm font-semibold text-brand-600 hover:underline">
-          <i class="fa-solid fa-arrow-left"></i> Previous
-        </a>
-      {% else %}<span></span>{% endif %}
-      {% if next_lecture %}
-        <a href="{% url 'course_player' course.id next_lecture.id %}" class="text-sm font-semibold text-brand-600 hover:underline">
-          Next <i class="fa-solid fa-arrow-right"></i>
-        </a>
+        </div>
       {% endif %}
-    </div>
-  </div>
 
-  <div>
-    <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-4 sticky top-24 max-h-[80vh] overflow-y-auto">
-      <h2 class="font-bold mb-3">Curriculum</h2>
-      {% for module in modules %}
-        <p class="text-xs font-semibold text-gray-400 uppercase mt-4 mb-2">{{ module.title }}</p>
-        {% for l in module.lectures.all %}
-          <a href="{% url 'course_player' course.id l.id %}" class="flex items-center gap-2 py-2 px-2 rounded-lg text-sm transition {% if l.id == lecture.id %}bg-brand-50 dark:bg-brand-600/10 text-brand-600 font-semibold{% else %}hover:bg-gray-50 dark:hover:bg-gray-800{% endif %}">
-            {% if l.id in completed_lecture_ids %}
-              <i class="fa-solid fa-circle-check text-xs text-green-500"></i>
+      <!-- ═══ Tabs ═══ -->
+      <div class="mt-8 border-b border-gray-200 dark:border-gray-800">
+        <span class="inline-block px-1 pb-3 text-sm font-semibold text-brand-600 border-b-2 border-brand-600">
+          {% trans "Overview" %}
+        </span>
+      </div>
+      <div class="py-6">
+        <p class="text-sm text-gray-600 dark:text-gray-300 whitespace-pre-line">{{ course.description }}</p>
+
+        <div class="flex items-center gap-3 mt-6 pt-6 border-t border-gray-100 dark:border-gray-800">
+          <div class="w-12 h-12 rounded-full overflow-hidden shrink-0 flex items-center justify-center bg-brand-600 text-white font-bold">
+            {% if course.instructor.avatar %}
+              <img src="{{ course.instructor.avatar.url }}" class="w-full h-full object-cover" alt="{{ course.instructor.username }}">
             {% else %}
-              <i class="fa-solid fa-circle-play text-xs"></i>
+              {{ course.instructor.initials }}
             {% endif %}
-            {{ l.title }}
-          </a>
-        {% empty %}
-          <p class="text-xs text-gray-400 px-2">No lectures in this module yet.</p>
-        {% endfor %}
-        {% if module.quiz.questions.all %}
-          <a href="{% url 'take_quiz' course.id module.id %}" class="flex items-center gap-2 py-2 px-2 rounded-lg text-sm transition hover:bg-gray-50 dark:hover:bg-gray-800">
-            {% if module.quiz.id in passed_quiz_ids %}
-              <i class="fa-solid fa-circle-check text-xs text-green-500"></i>
-            {% else %}
-              <i class="fa-solid fa-clipboard-question text-xs text-purple-500"></i>
-            {% endif %}
-            {{ module.quiz.display_title }}
-          </a>
+          </div>
+          <div>
+            <p class="text-xs text-gray-400">{% trans "Instructor" %}</p>
+            <p class="font-semibold">{{ course.instructor.get_full_name|default:course.instructor.username }}</p>
+          </div>
+        </div>
+
+        {% if lecture.resources.all %}
+          <h2 class="text-sm font-bold mt-6 mb-3">{% trans "Resources" %}</h2>
+          <div class="space-y-2">
+            {% for resource in lecture.resources.all %}
+              <a href="{{ resource.file.url }}" target="_blank" class="flex items-center gap-3 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-3 hover:shadow-sm transition">
+                <i class="fa-solid fa-paperclip text-brand-600"></i>
+                <span class="text-sm">{{ resource.title|default:"Download" }}</span>
+              </a>
+            {% endfor %}
+          </div>
         {% endif %}
-      {% empty %}
-        <p class="text-sm text-gray-400">No curriculum added yet.</p>
-      {% endfor %}
-    </div>
+      </div>
+    </main>
   </div>
-
 </div>
 {% endblock %}
 
@@ -184,6 +267,42 @@
       document.getElementById('video-skeleton')?.classList.remove('hidden');
       cover.remove();
       if (videoEl.tagName === 'VIDEO') videoEl.play().catch(() => {});
+    });
+  })();
+
+  // Per-module collapse/expand in the Contents sidebar -- the module
+  // containing the lecture being watched starts open, everything else
+  // starts closed (server-rendered via aria-expanded/hidden above).
+  (function () {
+    document.querySelectorAll('.module-toggle').forEach((btn) => {
+      const target = document.getElementById(btn.dataset.target);
+      const chevron = btn.querySelector('i');
+      if (!target) return;
+      btn.addEventListener('click', () => {
+        const nowHidden = target.classList.toggle('hidden');
+        btn.setAttribute('aria-expanded', String(!nowHidden));
+        chevron.classList.toggle('rotate-180', !nowHidden);
+      });
+    });
+  })();
+
+  // Whole-sidebar collapse -- gives the video more width. Purely visual,
+  // no state persisted.
+  (function () {
+    const sidebar = document.getElementById('lesson-sidebar');
+    const collapseBtn = document.getElementById('sidebar-collapse-btn');
+    const expandBtn = document.getElementById('sidebar-expand-btn');
+    if (!sidebar || !collapseBtn || !expandBtn) return;
+
+    collapseBtn.addEventListener('click', () => {
+      sidebar.classList.add('hidden');
+      expandBtn.classList.remove('hidden');
+      expandBtn.classList.add('flex');
+    });
+    expandBtn.addEventListener('click', () => {
+      sidebar.classList.remove('hidden');
+      expandBtn.classList.add('hidden');
+      expandBtn.classList.remove('flex');
     });
   })();
 </script>
