@@ -1763,29 +1763,29 @@ msgid "Request a Track"
 msgstr "Demander un titre"
 
 msgid "View Wallet"
-msgstr ""
+msgstr "Voir le portefeuille"
 
 #, python-format
 msgid "Created %(created)s"
 msgstr ""
 
 msgid "Continue Setup"
-msgstr ""
+msgstr "Continuer la configuration"
 
 msgid "Edit Details"
-msgstr ""
+msgstr "Modifier les détails"
 
 msgid "Curriculum"
-msgstr ""
+msgstr "Programme d'études"
 
 msgid "Submissions"
-msgstr ""
+msgstr "Soumissions"
 
 msgid "Edit"
-msgstr ""
+msgstr "Modifier"
 
 msgid "Submit for Review"
-msgstr ""
+msgstr "Soumettre pour examen"
 
 #, python-format
 msgid ""
@@ -1795,63 +1795,69 @@ msgstr ""
 
 msgid "No courses created yet. Click \"Create New Course\" to get started."
 msgstr ""
+"Aucun cours n'a encore été créé. Cliquez sur \"Créer un nouveau cours\" pour"
+" commencer."
 
 msgid "Recent Compensation"
-msgstr ""
+msgstr "Rémunération récente"
 
 msgid "Your Compensation"
-msgstr ""
+msgstr "Votre rémunération"
 
 msgid "No compensation recorded yet."
-msgstr ""
+msgstr "Aucune indemnité enregistrée pour le moment."
 
 msgid "Add lectures, videos, and resources for this module."
-msgstr ""
+msgstr "Ajoutez des cours, des vidéos et des ressources pour ce module."
 
 #, python-format
 msgid "Lectures (%(count)s)"
 msgstr ""
 
 msgid "Free Preview"
-msgstr ""
+msgstr "Aperçu gratuit"
 
 msgid "External Video"
-msgstr ""
+msgstr "Vidéo externe"
 
 msgid "Video File"
-msgstr ""
+msgstr "Fichier vidéo"
 
 msgid "Add video"
-msgstr ""
+msgstr "Ajouter une vidéo"
 
 msgid "Resource"
-msgstr ""
+msgstr "Ressource"
 
 msgid "Remove this resource?"
-msgstr ""
+msgstr "Supprimer cette ressource ?"
 
 msgid "Add Resource"
-msgstr ""
+msgstr "Ajouter une ressource"
 
 msgid "No lectures added yet. Add your first one below."
 msgstr ""
+"Aucun cours ajouté pour le moment. Ajoutez votre premier cours ci-dessous."
 
 msgid "Add New Lecture"
-msgstr ""
+msgstr "Ajouter un nouveau cours"
 
 msgid ""
 "To upload a video to Bunny Stream, save the lecture first, then click "
 "\"Edit\" on it."
 msgstr ""
+"Pour télécharger une vidéo sur Bunny Stream, enregistrez d'abord le cours, "
+"puis cliquez sur \"Modifier\" dessus."
 
 msgid "Add Lecture"
-msgstr ""
+msgstr "Ajouter un cours"
 
 msgid "Organize your course into modules, then add lectures to each one."
 msgstr ""
+"Organisez votre cours en modules, puis ajoutez des cours à chacun d'eux."
 
 msgid "Modules"
-msgstr ""
+msgstr "Modules"
 
 #, python-format
 msgid "%(counter)s lecture"
@@ -1860,118 +1866,128 @@ msgstr[0] ""
 msgstr[1] ""
 
 msgid "Add Quiz"
-msgstr ""
+msgstr "Ajouter un quiz"
 
 #, python-format
 msgid "Delete %(title)s and all its lectures?"
 msgstr ""
 
 msgid "No modules yet. Add your first one below."
-msgstr ""
+msgstr "Aucun module pour le moment. Ajoutez votre premier module ci-dessous."
 
 msgid "Add New Module"
-msgstr ""
+msgstr "Ajouter un nouveau module"
 
 msgid "Add Module"
-msgstr ""
+msgstr "Ajouter un module"
 
 msgid ""
 "Students must pass this quiz to mark this module complete. Leave it with "
 "zero questions and it won't gate anything yet."
 msgstr ""
+"Les étudiants doivent réussir ce quiz pour marquer ce module comme terminé. "
+"Laissez-le sans aucune question et il ne bloquera encore rien."
 
 msgid "Quiz Settings"
-msgstr ""
+msgstr "Paramètres du quiz"
 
 msgid "Quiz Title"
-msgstr ""
+msgstr "Titre du quiz"
 
 #, python-format
 msgid "Passing Score (%%)"
-msgstr ""
+msgstr "Score de passage (%%)"
 
 msgid "Save Settings"
-msgstr ""
+msgstr "Enregistrer les paramètres"
 
 msgid "Create Quiz"
-msgstr ""
+msgstr "Créer un quiz"
 
 #, python-format
 msgid "Questions (%(count)s)"
 msgstr ""
 
 msgid "Edit / Choices"
-msgstr ""
+msgstr "Modifier / Choix"
 
 msgid "Delete this question?"
-msgstr ""
+msgstr "Supprimer cette question ?"
 
 msgid "No answer choices yet -- add at least two"
-msgstr ""
+msgstr "Aucun choix de réponse pour le moment -- ajoutez-en au moins deux"
 
 msgid "No questions yet. Add your first one below."
-msgstr ""
+msgstr "Aucune question pour le moment. Ajoutez la première ci-dessous."
 
 msgid "Add Question"
-msgstr ""
+msgstr "Ajouter une question"
 
 msgid ""
 "Delete this quiz and all its questions? Students will no longer need to pass"
 " anything to complete this module."
 msgstr ""
+"Supprimer ce quiz et toutes ses questions ? Les étudiants n'auront plus rien"
+" à réussir pour terminer ce module."
 
 msgid "Delete Quiz"
-msgstr ""
+msgstr "Supprimer le quiz"
 
 msgid "Profile"
 msgstr "Profil"
 
 msgid "Profile Picture"
-msgstr ""
+msgstr "Photo de profil"
 
 msgid "Save"
-msgstr ""
+msgstr "Enregistrer"
 
 msgid ""
 "Don't see a track that fits your course? Request a new one -- an admin will "
 "review it before it's available to select."
 msgstr ""
+"Vous ne trouvez pas de parcours adapté à votre cours ? Demandez-en un "
+"nouveau ; un administrateur l'examinera avant qu'il ne soit disponible à la "
+"sélection."
 
 msgid "New category"
-msgstr ""
+msgstr "Nouvelle catégorie"
 
 #, python-format
 msgid "Under %(category)s &middot; Requested %(date)s"
 msgstr ""
 
 msgid "Reason:"
-msgstr ""
+msgstr "Raison :"
 
 msgid "You haven't requested any tracks yet."
-msgstr ""
+msgstr "Vous n'avez encore demandé aucun morceau."
 
 msgid "New Track Request"
-msgstr ""
+msgstr "Nouvelle demande de piste"
 
 msgid "New Category Name"
-msgstr ""
+msgstr "Nouveau nom de catégorie"
 
 msgid ""
 "Since this doesn't fit any existing category, propose a new one -- an admin "
 "will create it alongside your track if approved."
 msgstr ""
+"Comme cela ne correspond à aucune catégorie existante, proposez-en une "
+"nouvelle ; un administrateur la créera en même temps que votre piste si elle"
+" est approuvée."
 
 msgid "Track Name"
-msgstr ""
+msgstr "Nom de la piste"
 
 msgid "Reason"
-msgstr ""
+msgstr "Raison"
 
 msgid "Submit Request"
-msgstr ""
+msgstr "Soumettre la demande"
 
 msgid "Track Approval Queue"
-msgstr ""
+msgstr "File d'attente d'approbation des pistes"
 
 #, python-format
 msgid "by %(instructor)s &middot; proposing new category \"%(category)s\""
@@ -1982,19 +1998,19 @@ msgid "by %(instructor)s &middot; under %(category)s"
 msgstr ""
 
 msgid "No track requests pending review."
-msgstr ""
+msgstr "Aucune demande de piste en attente de révision."
 
 msgid "Wallet"
-msgstr ""
+msgstr "Portefeuille"
 
 msgid "Available"
-msgstr ""
+msgstr "Disponible"
 
 msgid "Withdrawn"
-msgstr ""
+msgstr "Retiré"
 
 msgid "Request Payout"
-msgstr ""
+msgstr "Demander un paiement"
 
 msgid "You can request a payout once a week."
 msgstr ""
