@@ -284,12 +284,21 @@ class TrackRequest(models.Model):
     instructor = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='track_requests',
         limit_choices_to={'is_instructor': True})
-    # The top-level category this new track would nest under -- required,
-    # since only a child track (parent__isnull=False) is ever selectable in
-    # CourseCreationForm; a request can't become one without a parent.
+    # The top-level category this new track would nest under. Exactly one
+    # of `parent` (an existing category) or `new_category_name` (a
+    # brand-new one proposed alongside the track itself) is set -- never
+    # both, never neither. There's no separate Category model: a "category"
+    # is just a Track with parent=None (see Track's docstring), so
+    # proposing a new one is proposing a new top-level Track, created at
+    # the same moment as the child track it's for (see
+    # approve_track_request in views.py). Enforced by TrackRequestForm's
+    # clean(), and backstopped by the CheckConstraint below so a bad
+    # combination can't reach the database even from a future code path
+    # that bypasses the form.
     parent = models.ForeignKey(
         Track, on_delete=models.CASCADE, related_name='track_requests',
-        limit_choices_to={'parent__isnull': True})
+        limit_choices_to={'parent__isnull': True}, null=True, blank=True)
+    new_category_name = models.CharField(max_length=100, blank=True, default='')
     name = models.CharField(max_length=100)
     reason = models.TextField(blank=True, default='', help_text=_('Why this track should exist.'))
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
@@ -303,6 +312,15 @@ class TrackRequest(models.Model):
 
     class Meta:
         ordering = ['-created_at']
+        constraints = [
+            models.CheckConstraint(
+                condition=(
+                    (models.Q(parent__isnull=False) & models.Q(new_category_name=''))
+                    | (models.Q(parent__isnull=True) & ~models.Q(new_category_name=''))
+                ),
+                name='trackrequest_exactly_one_of_parent_or_new_category',
+            ),
+        ]
 
     def __str__(self):
         return f'{self.name} ({self.get_status_display()})'
@@ -310,6 +328,16 @@ class TrackRequest(models.Model):
     @property
     def display_title(self):
         return self.course.title if self.course else self.title
+
+    @property
+    def category_display(self):
+        """The category name for templates/emails, whichever of
+        parent/new_category_name is actually set."""
+        return self.parent.name if self.parent_id else self.new_category_name
+
+    @property
+    def proposes_new_category(self):
+        return not self.parent_id
 
 
 class Course(models.Model):

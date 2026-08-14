@@ -25,9 +25,14 @@
       <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5">
         <div class="flex items-center justify-between flex-wrap gap-3">
           <div>
-            <p class="font-semibold">{{ track_request.name }}</p>
+            <p class="font-semibold">
+              {{ track_request.name }}
+              {% if track_request.proposes_new_category %}
+                <span class="ml-1 bg-purple-50 dark:bg-purple-600/10 text-purple-600 px-2 py-0.5 rounded-full text-xs font-semibold align-middle">{% trans "New category" %}</span>
+              {% endif %}
+            </p>
             <p class="text-xs text-gray-400 mt-1">
-              {% blocktrans with parent=track_request.parent.name date=track_request.created_at|date:"M d, Y" %}Under {{ parent }} &middot; Requested {{ date }}{% endblocktrans %}
+              {% blocktrans with category=track_request.category_display date=track_request.created_at|date:"M d, Y" %}Under {{ category }} &middot; Requested {{ date }}{% endblocktrans %}
             </p>
           </div>
           {% if track_request.status == 'approved' %}
@@ -56,7 +61,17 @@
     {% csrf_token %}
     <div>
       <label class="block text-sm font-semibold mb-2">{% trans "Category" %}</label>
-      {{ form.parent }}
+      {{ form.category }}
+      <span id="new-category-sentinel" class="hidden">{{ form.NEW_CATEGORY_VALUE }}</span>
+      {% if form.category.errors %}<p class="text-sm text-red-600 mt-1">{{ form.category.errors.0 }}</p>{% endif %}
+    </div>
+    <div id="new-category-wrap" class="hidden">
+      <label class="block text-sm font-semibold mb-2">{% trans "New Category Name" %}</label>
+      {{ form.new_category_name }}
+      <p class="text-xs text-gray-400 mt-2">
+        {% trans "Since this doesn't fit any existing category, propose a new one -- an admin will create it alongside your track if approved." %}
+      </p>
+      {% if form.new_category_name.errors %}<p class="text-sm text-red-600 mt-1">{{ form.new_category_name.errors.0 }}</p>{% endif %}
     </div>
     <div>
       <label class="block text-sm font-semibold mb-2">{% trans "Track Name" %}</label>
@@ -72,4 +87,23 @@
   </form>
 
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  (function () {
+    const categorySelect = document.getElementById('id_category');
+    const newCategoryWrap = document.getElementById('new-category-wrap');
+    const sentinelEl = document.getElementById('new-category-sentinel');
+    if (!categorySelect || !newCategoryWrap || !sentinelEl) return;
+    const newCategoryValue = sentinelEl.textContent;
+
+    function syncNewCategoryVisibility() {
+      newCategoryWrap.classList.toggle('hidden', categorySelect.value !== newCategoryValue);
+    }
+
+    categorySelect.addEventListener('change', syncNewCategoryVisibility);
+    syncNewCategoryVisibility();
+  })();
+</script>
 {% endblock %}

@@ -338,23 +338,71 @@ class TrackForm(forms.ModelForm):
 # Track Request Form (instructor-facing -- see TrackRequest for why this is
 # a separate model/form from Track's own admin-only TrackForm above)
 class TrackRequestForm(forms.ModelForm):
+    # Sentinel POSTed in the `category` field instead of a real Track id
+    # when the instructor is proposing a brand-new category rather than
+    # picking an existing one -- there's no Category model to point a
+    # ModelChoiceField at (see TrackRequest's docstring), so `category` is
+    # a plain ChoiceField and clean() resolves it into either
+    # self.instance.parent (existing category) or new_category_name (new
+    # one), never both.
+    NEW_CATEGORY_VALUE = '__new__'
+
+    category = forms.ChoiceField(
+        label=_('Category'), widget=forms.Select(attrs={'class': INPUT_CLASSES, 'id': 'id_category'}))
+
     class Meta:
         model = TrackRequest
-        fields = ['parent', 'name', 'reason']
+        fields = ['name', 'reason', 'new_category_name']
         widgets = {
-            'parent': forms.Select(attrs={'class': INPUT_CLASSES}),
             'name': forms.TextInput(attrs={'class': INPUT_CLASSES, 'placeholder': _('e.g. Robotics')}),
             'reason': forms.Textarea(attrs={
                 'class': INPUT_CLASSES, 'rows': 3,
                 'placeholder': _('Why should this track exist? (optional)'),
             }),
+            'new_category_name': forms.TextInput(attrs={
+                'class': INPUT_CLASSES, 'placeholder': _('e.g. Robotics & Automation'),
+                'id': 'id_new_category_name',
+            }),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['parent'].queryset = Track.objects.filter(parent__isnull=True, is_active=True)
-        self.fields['parent'].empty_label = _('Select a category…')
+        self._categories = list(Track.objects.filter(parent__isnull=True, is_active=True).order_by('order', 'name'))
+        self.fields['category'].choices = (
+            [('', _('Select a category…'))]
+            + [(str(category.id), category.name) for category in self._categories]
+            + [(self.NEW_CATEGORY_VALUE, _('+ Other / New category…'))]
+        )
         self.fields['reason'].required = False
+        self.fields['new_category_name'].required = False
+
+    def clean(self):
+        cleaned = super().clean()
+        choice = cleaned.get('category')
+        new_name = (cleaned.get('new_category_name') or '').strip()
+
+        if choice == self.NEW_CATEGORY_VALUE:
+            if not new_name:
+                self.add_error('new_category_name', _('Enter a name for the new category.'))
+            elif Track.objects.filter(name__iexact=new_name).exists():
+                self.add_error(
+                    'new_category_name',
+                    _('"%(name)s" already exists -- select it from the Category dropdown instead.')
+                    % {'name': new_name})
+            self.instance.parent = None
+            cleaned['new_category_name'] = new_name
+        elif choice:
+            category = next((c for c in self._categories if str(c.id) == choice), None)
+            if category is None:
+                self.add_error('category', _('Select a valid category.'))
+            self.instance.parent = category
+            cleaned['new_category_name'] = ''
+        else:
+            self.add_error('category', _('Select a category, or choose "+ Other / New category…" to propose one.'))
+            self.instance.parent = None
+            cleaned['new_category_name'] = ''
+
+        return cleaned
 
 
 # Module Form (Instructor organizes course into sections)

@@ -1392,21 +1392,67 @@ class TrackRequestTests(TestCase):
     def test_instructor_can_submit_a_track_request(self):
         self.client.force_login(self.instructor)
         response = self.client.post(reverse('request_track'), {
-            'parent': self.category.id, 'name': 'Robotics', 'reason': 'Growing demand.',
+            'category': self.category.id, 'name': 'Robotics', 'reason': 'Growing demand.',
         })
         self.assertRedirects(response, reverse('request_track'))
         track_request = TrackRequest.objects.get(name='Robotics')
         self.assertEqual(track_request.instructor, self.instructor)
         self.assertEqual(track_request.parent, self.category)
+        self.assertEqual(track_request.new_category_name, '')
         self.assertEqual(track_request.status, TrackRequest.Status.PENDING)
         self.assertIsNone(track_request.track)
         # Not yet a real Track -- the whole point of the separate model.
         self.assertFalse(Track.objects.filter(name='Robotics').exists())
 
+    def test_instructor_can_propose_a_brand_new_category(self):
+        # The bug this whole feature was fixing: previously "Category" only
+        # let an instructor pick from existing top-level tracks, so a
+        # genuinely new category had nowhere to go.
+        self.client.force_login(self.instructor)
+        response = self.client.post(reverse('request_track'), {
+            'category': '__new__', 'new_category_name': 'Robotics & Automation',
+            'name': 'Intro to Robotics', 'reason': 'No fitting category exists yet.',
+        })
+        self.assertRedirects(response, reverse('request_track'))
+        track_request = TrackRequest.objects.get(name='Intro to Robotics')
+        self.assertIsNone(track_request.parent)
+        self.assertEqual(track_request.new_category_name, 'Robotics & Automation')
+        self.assertTrue(track_request.proposes_new_category)
+        self.assertEqual(track_request.category_display, 'Robotics & Automation')
+        # Not yet a real Track/category -- same "not live until approved"
+        # guarantee as the existing-category path.
+        self.assertFalse(Track.objects.filter(name='Robotics & Automation').exists())
+
+    def test_new_category_requires_a_name(self):
+        self.client.force_login(self.instructor)
+        response = self.client.post(reverse('request_track'), {
+            'category': '__new__', 'new_category_name': '', 'name': 'Intro to Robotics',
+        })
+        self.assertContains(response, 'Enter a name for the new category')
+        self.assertFalse(TrackRequest.objects.filter(name='Intro to Robotics').exists())
+
+    def test_new_category_name_matching_existing_category_is_rejected(self):
+        # Guides the instructor to the dropdown instead of creating a
+        # confusing near-duplicate category.
+        self.client.force_login(self.instructor)
+        response = self.client.post(reverse('request_track'), {
+            'category': '__new__', 'new_category_name': 'tech', 'name': 'Intro to Robotics',
+        })
+        self.assertContains(response, 'already exists')
+        self.assertFalse(TrackRequest.objects.filter(name='Intro to Robotics').exists())
+
+    def test_no_category_selected_is_rejected(self):
+        self.client.force_login(self.instructor)
+        response = self.client.post(reverse('request_track'), {
+            'category': '', 'name': 'Intro to Robotics',
+        })
+        self.assertContains(response, 'Select a category')
+        self.assertFalse(TrackRequest.objects.filter(name='Intro to Robotics').exists())
+
     def test_submission_sends_admin_notification(self):
         self.client.force_login(self.instructor)
         self.client.post(reverse('request_track'), {
-            'parent': self.category.id, 'name': 'Robotics', 'reason': 'Growing demand.',
+            'category': self.category.id, 'name': 'Robotics', 'reason': 'Growing demand.',
         })
         notification = next(
             m for m in mail.outbox
@@ -1416,6 +1462,17 @@ class TrackRequestTests(TestCase):
         self.assertIn('Tech', notification.body)
         self.assertIn('track_req_inst', notification.body)
         self.assertIn(reverse('track_approval_queue'), notification.body)
+
+    def test_submission_with_new_category_mentions_it_in_admin_notification(self):
+        self.client.force_login(self.instructor)
+        self.client.post(reverse('request_track'), {
+            'category': '__new__', 'new_category_name': 'Robotics & Automation',
+            'name': 'Intro to Robotics',
+        })
+        notification = next(
+            m for m in mail.outbox
+            if m.to == [settings.INSTRUCTOR_APPLICATION_NOTIFICATION_EMAIL])
+        self.assertIn('Robotics & Automation (new category)', notification.body)
 
     def test_instructor_sees_own_requests_with_status(self):
         TrackRequest.objects.create(
@@ -1429,7 +1486,7 @@ class TrackRequestTests(TestCase):
         student = User.objects.create_user(username='track_req_stud', password='pw', is_student=True)
         self.client.force_login(student)
         response = self.client.post(reverse('request_track'), {
-            'parent': self.category.id, 'name': 'Robotics',
+            'category': self.category.id, 'name': 'Robotics',
         })
         self.assertRedirects(response, reverse('platform_home'))
         self.assertFalse(TrackRequest.objects.filter(name='Robotics').exists())
@@ -1461,6 +1518,52 @@ class TrackRequestTests(TestCase):
 
         form = CourseCreationForm()
         self.assertIn(Track.objects.get(name='Robotics'), form.fields['track'].queryset)
+
+    def test_admin_approve_with_new_category_creates_both_category_and_track(self):
+        track_request = TrackRequest.objects.create(
+            instructor=self.instructor, new_category_name='Robotics & Automation', name='Intro to Robotics')
+        self.client.force_login(self.admin)
+        response = self.client.post(reverse('approve_track_request', args=[track_request.id]))
+        self.assertRedirects(response, reverse('track_approval_queue'))
+
+        category = Track.objects.get(name='Robotics & Automation')
+        self.assertIsNone(category.parent)
+        self.assertTrue(category.is_active)
+
+        track_request.refresh_from_db()
+        self.assertEqual(track_request.status, TrackRequest.Status.APPROVED)
+        self.assertEqual(track_request.track.name, 'Intro to Robotics')
+        self.assertEqual(track_request.track.parent, category)
+
+    def test_approving_new_category_reuses_existing_matching_category_case_insensitively(self):
+        # Another approval (or a manual admin_tracks entry) may have
+        # already created a same-named top-level track since this request
+        # was submitted -- approving should reuse it, not try (and fail)
+        # to create a second one with the same name.
+        existing = Track.objects.create(name='Robotics & Automation')
+        track_request = TrackRequest.objects.create(
+            instructor=self.instructor, new_category_name='robotics & automation', name='Intro to Robotics')
+        self.client.force_login(self.admin)
+        self.client.post(reverse('approve_track_request', args=[track_request.id]))
+
+        self.assertEqual(Track.objects.filter(name__iexact='Robotics & Automation', parent__isnull=True).count(), 1)
+        track_request.refresh_from_db()
+        self.assertEqual(track_request.track.parent, existing)
+
+    def test_approving_new_category_name_colliding_with_existing_track_shows_error(self):
+        # The proposed *category* name collides with an existing (child)
+        # track's name -- distinct from the existing leaf-name collision
+        # case, and needs its own message pointing at the category name.
+        Track.objects.create(parent=self.category, name='Existing Leaf')
+        track_request = TrackRequest.objects.create(
+            instructor=self.instructor, new_category_name='Existing Leaf', name='Intro to Robotics')
+        self.client.force_login(self.admin)
+        response = self.client.post(
+            reverse('approve_track_request', args=[track_request.id]), follow=True)
+        self.assertContains(response, 'already exists')
+        track_request.refresh_from_db()
+        self.assertEqual(track_request.status, TrackRequest.Status.PENDING)
+        self.assertIsNone(track_request.track)
 
     def test_admin_reject_requires_reason_and_sends_no_track(self):
         track_request = TrackRequest.objects.create(
@@ -1502,6 +1605,20 @@ class TrackRequestTests(TestCase):
         self.assertContains(response, 'already exists')
         track_request.refresh_from_db()
         self.assertEqual(track_request.status, TrackRequest.Status.PENDING)
+
+    def test_approval_queue_shows_new_category_badge_and_proposed_name(self):
+        TrackRequest.objects.create(
+            instructor=self.instructor, new_category_name='Robotics Automation', name='Intro to Robotics')
+        self.client.force_login(self.admin)
+        response = self.client.get(reverse('track_approval_queue'))
+        self.assertContains(response, 'New category')
+        self.assertContains(response, 'Robotics Automation')
+
+    def test_approval_queue_hides_new_category_badge_for_existing_category(self):
+        TrackRequest.objects.create(instructor=self.instructor, parent=self.category, name='Robotics')
+        self.client.force_login(self.admin)
+        response = self.client.get(reverse('track_approval_queue'))
+        self.assertNotContains(response, 'New category')
 
     def test_instructor_cannot_access_track_approval_queue(self):
         self.client.force_login(self.instructor)

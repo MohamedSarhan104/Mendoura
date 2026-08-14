@@ -2655,13 +2655,33 @@ def approve_track_request(request, request_id):
     track_request = get_object_or_404(
         TrackRequest, id=request_id, status=TrackRequest.Status.PENDING)
     if request.method == 'POST':
+        parent = track_request.parent
+        if parent is None:
+            # The instructor proposed a brand-new category alongside the
+            # track itself. Resolve to a same-named top-level Track if one
+            # already exists (e.g. created by an earlier approval, or a
+            # manual admin_tracks entry, since this request was submitted)
+            # rather than trying to create a duplicate -- and check for a
+            # name collision with any track (top-level or not) up front,
+            # since that needs its own message pointing at the category
+            # name rather than the leaf track name the IntegrityError catch
+            # below is written for.
+            parent = Track.objects.filter(
+                parent__isnull=True, name__iexact=track_request.new_category_name).first()
+            if parent is None and Track.objects.filter(name__iexact=track_request.new_category_name).exists():
+                messages.error(
+                    request,
+                    _('A track already exists named "%(name)s". Reject this request or rename the '
+                      'proposed category first.') % {'name': track_request.new_category_name})
+                return redirect('track_approval_queue')
         try:
             # Wrapped in its own atomic block so the IntegrityError below
             # only rolls back this one INSERT (via a savepoint) instead of
             # poisoning any transaction the caller is already inside.
             with transaction.atomic():
-                track = Track.objects.create(
-                    parent=track_request.parent, name=track_request.name)
+                if parent is None:
+                    parent = Track.objects.create(name=track_request.new_category_name)
+                track = Track.objects.create(parent=parent, name=track_request.name)
         except IntegrityError:
             # Track.name is globally unique -- someone else (another
             # approved request, or a manual admin_tracks entry) already

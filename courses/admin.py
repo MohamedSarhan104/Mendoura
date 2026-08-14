@@ -46,9 +46,9 @@ class TrackAdmin(admin.ModelAdmin):
 
 @admin.register(TrackRequest)
 class TrackRequestAdmin(admin.ModelAdmin):
-    list_display = ('name', 'instructor', 'parent', 'status', 'created_at')
+    list_display = ('name', 'instructor', 'parent', 'new_category_name', 'status', 'created_at')
     list_filter = ('status', 'parent')
-    search_fields = ('name', 'instructor__username')
+    search_fields = ('name', 'instructor__username', 'new_category_name')
 
 
 @admin.register(Course)

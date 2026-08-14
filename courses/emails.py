@@ -323,9 +323,12 @@ def send_track_request_notification(track_request, *, to_email=None) -> EmailRes
     test-email tool."""
     instructor = track_request.instructor
     instructor_name = instructor.get_full_name() or instructor.username
+    category_label = track_request.category_display
+    if track_request.proposes_new_category:
+        category_label = f'{category_label} (new category)'
     context = {
         'track_name': track_request.name,
-        'parent_name': track_request.parent.name,
+        'parent_name': category_label,
         'instructor_name': instructor_name,
         'reason': track_request.reason or '—',
         'admin_review_link': f'{SITE_DOMAIN}{reverse("track_approval_queue")}',

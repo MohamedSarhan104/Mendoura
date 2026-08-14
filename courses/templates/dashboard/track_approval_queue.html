@@ -16,9 +16,20 @@
       <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-6">
         <div class="flex items-center justify-between flex-wrap gap-2">
           <div>
-            <h3 class="font-bold text-lg">{{ track_request.name }}</h3>
+            <h3 class="font-bold text-lg">
+              {{ track_request.name }}
+              {% if track_request.proposes_new_category %}
+                <span class="ml-1 bg-purple-50 dark:bg-purple-600/10 text-purple-600 px-2 py-0.5 rounded-full text-xs font-semibold align-middle">
+                  <i class="fa-solid fa-star mr-1"></i>{% trans "New category" %}
+                </span>
+              {% endif %}
+            </h3>
             <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              {% blocktrans with instructor=track_request.instructor.username parent=track_request.parent.name %}by {{ instructor }} &middot; under {{ parent }}{% endblocktrans %}
+              {% if track_request.proposes_new_category %}
+                {% blocktrans with instructor=track_request.instructor.username category=track_request.category_display %}by {{ instructor }} &middot; proposing new category "{{ category }}"{% endblocktrans %}
+              {% else %}
+                {% blocktrans with instructor=track_request.instructor.username category=track_request.category_display %}by {{ instructor }} &middot; under {{ category }}{% endblocktrans %}
+              {% endif %}
             </p>
           </div>
           <span class="text-xs text-gray-400">{% blocktrans with date=track_request.created_at|date:"M d, Y" %}Submitted {{ date }}{% endblocktrans %}</span>
