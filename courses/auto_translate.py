@@ -35,6 +35,23 @@ logger = logging.getLogger(__name__)
 # and fixed -- it's noisy by design, not something to ship long-term.
 _DEBUG_TAG = '[TRANSLATION_DEBUG]'
 
+# settings.LANGUAGES uses Django's own canonical locale codes (matching
+# django.conf.locale.LANG_INFO, so LANGUAGE_BIDI/get_available_languages/
+# the locale/<code>/ directory convention all agree), which occasionally
+# differ from deep-translator's GoogleTranslator target codes -- confirmed
+# by direct testing against the installed library. Simplified Chinese is
+# the one case in this project's language list: Django's code is
+# 'zh-hans', GoogleTranslator only accepts 'zh-CN'. Passing 'zh-hans'
+# straight through raises LanguageNotSupportedException on every single
+# call. Add an entry here for any future language where the two diverge.
+_GOOGLETRANSLATOR_TARGET_OVERRIDES = {
+    'zh-hans': 'zh-CN',
+}
+
+
+def _google_translator_target(django_language_code: str) -> str:
+    return _GOOGLETRANSLATOR_TARGET_OVERRIDES.get(django_language_code, django_language_code)
+
 
 def _truncate(text: str, limit: int = 200) -> str:
     text = text or ''
@@ -63,19 +80,20 @@ def _translate_text(text: str, target_language: str) -> str:
         return text
     leading_ws = text[:len(text) - len(text.lstrip())]
     trailing_ws = text[len(text.rstrip()):]
+    api_target = _google_translator_target(target_language)
 
     logger.info(
-        '%s calling GoogleTranslator: source=en target=%s text=%r',
-        _DEBUG_TAG, target_language, _truncate(stripped))
+        '%s calling GoogleTranslator: source=en target=%s (api_target=%s) text=%r',
+        _DEBUG_TAG, target_language, api_target, _truncate(stripped))
     started = time.monotonic()
     try:
-        translated = GoogleTranslator(source='en', target=target_language).translate(stripped)
+        translated = GoogleTranslator(source='en', target=api_target).translate(stripped)
     except Exception as exc:
         elapsed = time.monotonic() - started
         logger.exception(
-            '%s GoogleTranslator FAILED after %.2fs: source=en target=%s text=%r '
+            '%s GoogleTranslator FAILED after %.2fs: source=en target=%s (api_target=%s) text=%r '
             'exception_type=%s exception_message=%s',
-            _DEBUG_TAG, elapsed, target_language, _truncate(stripped),
+            _DEBUG_TAG, elapsed, target_language, api_target, _truncate(stripped),
             type(exc).__name__, str(exc))
         # deep-translator only wraps its *own* known failure modes (rate
         # limiting, bad language code, ...) in deep_translator.exceptions;
@@ -84,17 +102,29 @@ def _translate_text(text: str, target_language: str) -> str:
         # AutoTranslatedFieldsMixin catches TranslationError around this
         # call: translation is best-effort and must never crash a save.
         raise TranslationError(str(exc)) from exc
+    finally:
+        # Throttle between consecutive real network calls -- multiplies
+        # with every additional configured language and every line/cell of
+        # Markdown content, and the free/unofficial GoogleTranslator
+        # endpoint is known to rate-limit under burst volume. Zero during
+        # tests (see settings.AUTO_TRANSLATE_REQUEST_DELAY_SECONDS) so the
+        # suite never pays this cost. In the `finally` so a failed call is
+        # also spaced out from whatever's attempted next, not just a
+        # successful one.
+        delay = getattr(settings, 'AUTO_TRANSLATE_REQUEST_DELAY_SECONDS', 0)
+        if delay:
+            time.sleep(delay)
 
     elapsed = time.monotonic() - started
     if translated is None:
         logger.warning(
-            '%s GoogleTranslator returned None after %.2fs: source=en target=%s text=%r',
-            _DEBUG_TAG, elapsed, target_language, _truncate(stripped))
+            '%s GoogleTranslator returned None after %.2fs: source=en target=%s (api_target=%s) text=%r',
+            _DEBUG_TAG, elapsed, target_language, api_target, _truncate(stripped))
         raise TranslationError(f'GoogleTranslator returned nothing for target language {target_language!r}.')
 
     logger.info(
-        '%s GoogleTranslator SUCCEEDED after %.2fs: source=en target=%s output=%r',
-        _DEBUG_TAG, elapsed, target_language, _truncate(translated))
+        '%s GoogleTranslator SUCCEEDED after %.2fs: source=en target=%s (api_target=%s) output=%r',
+        _DEBUG_TAG, elapsed, target_language, api_target, _truncate(translated))
     return f'{leading_ws}{translated}{trailing_ws}'
 
 
@@ -154,13 +184,24 @@ def translate_markdown(text: str, target_language: str) -> str:
 def translate_fields(fields: dict[str, str], target_languages: list[str]) -> dict[str, dict[str, str]]:
     """fields: {'name': 'Web Development', 'description': '...'} in English.
     target_languages: ISO 639-1 codes to translate into, e.g. ['ar', 'fr', 'es'].
-    Returns {'name': {'ar': '...', 'fr': '...', 'es': '...'}, 'description': {...}}.
+    Returns {'name': {'ar': '...', 'fr': '...', 'es': '...'}, 'description': {...}}
+    -- only the (field, language) pairs that actually succeeded.
 
-    Unlike the old AI-based version this doesn't make one combined network
-    call -- each line/cell is its own GoogleTranslator request. A failure
-    anywhere raises TranslationError for the whole batch (matching the old
-    contract) so a caller never ends up caching a half-translated field;
-    AutoTranslatedFieldsMixin will simply retry on the next save."""
+    Each line/cell is its own GoogleTranslator request, and each (field,
+    language) pair is attempted independently: a failure translating one
+    field into one language (rate limiting, a timeout, a bad response, ...)
+    is logged and simply left out of the result, rather than raising and
+    discarding every other field/language that already succeeded in this
+    same call. This used to be all-or-nothing -- one flaky call anywhere
+    in the whole batch discarded EVERY language's progress, including ones
+    already done. That was silently starving whichever language happened
+    to be attempted last (see settings.LANGUAGES' ordering) of ever
+    catching up: AutoTranslatedFieldsMixin only retries languages still
+    missing from the cached translations on the next save, and a batch
+    that always fails part-way through can never leave a missing language
+    fully translated even after many retries. A field's OWN single-language
+    translation still either fully succeeds or is left out entirely --
+    never half-translated, half-English within one language."""
     if not fields or not target_languages:
         return {}
 
@@ -168,5 +209,12 @@ def translate_fields(fields: dict[str, str], target_languages: list[str]) -> dic
     for field, text in fields.items():
         result[field] = {}
         for lang in target_languages:
-            result[field][lang] = translate_markdown(text, lang)
+            try:
+                result[field][lang] = translate_markdown(text, lang)
+            except TranslationError:
+                logger.warning(
+                    "%s translate_fields: field=%r target=%s failed -- leaving it out of this "
+                    "save's result so it stays incomplete and gets retried on the next save "
+                    "(other languages/fields in this same batch are unaffected).",
+                    _DEBUG_TAG, field, lang)
     return result

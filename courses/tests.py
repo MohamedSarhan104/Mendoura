@@ -13,6 +13,7 @@ from django.core import mail
 from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.core.management import call_command
+from django.core.management.base import CommandError
 from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
@@ -1848,7 +1849,12 @@ class TrackTranslationTests(TestCase):
         self.assertEqual(track.translated_name, 'Robotics')
         self.assertEqual(track.translated_description, 'Build robots.')
 
-    @override_settings(AUTO_TRANSLATE_ENABLED=True)
+    # Pinned to a fixed 3-language LANGUAGES here (rather than relying on
+    # the real, larger configured list) so this test keeps asserting an
+    # exact target_languages set/call_count without needing an update
+    # every time a language is added to/removed from settings.LANGUAGES.
+    @override_settings(AUTO_TRANSLATE_ENABLED=True,
+                        LANGUAGES=[('en', 'English'), ('ar', 'ar'), ('fr', 'fr'), ('es', 'es')])
     @patch('courses.models.auto_translate.translate_fields')
     def test_save_populates_translations_for_every_active_language(self, mock_translate):
         mock_translate.return_value = {
@@ -1886,7 +1892,8 @@ class TrackTranslationTests(TestCase):
         with translation_override('de'):
             self.assertEqual(track.translated_name, 'Robotics')
 
-    @override_settings(AUTO_TRANSLATE_ENABLED=True)
+    @override_settings(AUTO_TRANSLATE_ENABLED=True,
+                        LANGUAGES=[('en', 'English'), ('ar', 'ar'), ('fr', 'fr'), ('es', 'es')])
     @patch('courses.models.auto_translate.translate_fields')
     def test_unchanged_name_does_not_retrigger_translation_on_next_save(self, mock_translate):
         mock_translate.return_value = {'name': {'ar': 'أ', 'fr': 'f', 'es': 'e'}, 'description': {}}
@@ -4630,20 +4637,46 @@ class AutoTranslateClientTests(TestCase):
         self.assertEqual(result, {'name': {'ar': 'الروبوتات'}})
 
     @patch('courses.auto_translate.GoogleTranslator.translate')
-    def test_translate_fields_raises_translation_error_on_failure(self, mock_translate):
+    def test_translate_fields_skips_a_failed_language_without_raising(self, mock_translate):
         mock_translate.side_effect = Exception('rate limited')
-        with self.assertRaises(auto_translate.TranslationError):
-            auto_translate.translate_fields({'name': 'Robotics'}, ['ar'])
+        result = auto_translate.translate_fields({'name': 'Robotics'}, ['ar'])
+        self.assertEqual(result, {'name': {}})
 
     @patch('courses.auto_translate.GoogleTranslator.translate')
-    def test_translate_fields_wraps_a_raw_network_error_from_requests(self, mock_translate):
+    def test_translate_fields_survives_a_raw_network_error_from_requests(self, mock_translate):
         """deep-translator only wraps its own known failure modes -- a raw
         connection/proxy error from the underlying HTTP library must still
-        come out as TranslationError, not crash the caller."""
+        be handled, not crash the caller."""
         import requests
         mock_translate.side_effect = requests.exceptions.ProxyError('tunnel failed')
-        with self.assertRaises(auto_translate.TranslationError):
-            auto_translate.translate_fields({'name': 'Robotics'}, ['ar'])
+        result = auto_translate.translate_fields({'name': 'Robotics'}, ['ar'])
+        self.assertEqual(result, {'name': {}})
+
+    @patch('courses.auto_translate.GoogleTranslator.translate')
+    def test_translate_fields_one_language_failing_does_not_block_others_in_the_same_batch(self, mock_translate):
+        # Regression test for the real bug behind French/Spanish silently
+        # never catching up on the Privacy Policy: the old contract raised
+        # (and discarded EVERY language's progress, including ones already
+        # succeeded) the moment any single (field, language) call failed.
+        # 'ar' succeeds, 'fr' fails, 'es' (attempted after the failure)
+        # must still succeed and 'ar' must still be in the result.
+        mock_translate.side_effect = ['الروبوتات', Exception('rate limited'), 'Robótica']
+        result = auto_translate.translate_fields({'name': 'Robotics'}, ['ar', 'fr', 'es'])
+        self.assertEqual(result, {'name': {'ar': 'الروبوتات', 'es': 'Robótica'}})
+
+    def test_simplified_chinese_uses_googletranslators_own_code(self):
+        # settings.LANGUAGES uses Django's canonical 'zh-hans'; GoogleTranslator
+        # only recognizes 'zh-CN'. Passing 'zh-hans' straight through raises
+        # LanguageNotSupportedException on every call -- confirmed by direct
+        # testing against the installed deep-translator library.
+        self.assertEqual(auto_translate._google_translator_target('zh-hans'), 'zh-CN')
+        self.assertEqual(auto_translate._google_translator_target('fr'), 'fr')
+
+    @patch('courses.auto_translate.GoogleTranslator')
+    def test_translate_text_passes_the_mapped_code_to_googletranslator(self, mock_cls):
+        mock_cls.return_value.translate.return_value = '简体'
+        auto_translate._translate_text('Simplified', 'zh-hans')
+        mock_cls.assert_called_once_with(source='en', target='zh-CN')
 
     @patch('courses.auto_translate.GoogleTranslator.translate')
     def test_markdown_table_structure_survives_translation(self, mock_translate):
@@ -4671,6 +4704,145 @@ class AutoTranslateClientTests(TestCase):
         body = '- First point\n- Second point'
         translated = auto_translate.translate_markdown(body, 'ar')
         self.assertEqual(translated, '- [AR] First point\n- [AR] Second point')
+
+
+class ExpandedLanguageListTests(TestCase):
+    """settings.LANGUAGES drives three things at once: the language
+    switcher dropdown (get_available_languages), RTL detection
+    (LANGUAGE_BIDI, both Django's built-in and this project's own
+    Tailwind rtl:/ltr: usage keyed off <html dir=...>), and the
+    auto-translate target list (AutoTranslatedFieldsMixin). These tests
+    confirm the expanded list works correctly through all three without
+    any per-language special-casing beyond the documented GoogleTranslator
+    code mapping."""
+
+    def test_all_configured_languages_are_valid_django_locale_codes(self):
+        from django.utils.translation import get_language_info
+        for code, _label in settings.LANGUAGES:
+            info = get_language_info(code)  # raises KeyError for an unknown code
+            self.assertTrue(info['name_local'])
+
+    def test_urdu_and_arabic_are_rtl_chinese_and_others_are_not(self):
+        from django.utils.translation import get_language_info
+        rtl_codes = {code for code, _label in settings.LANGUAGES if get_language_info(code)['bidi']}
+        self.assertEqual(rtl_codes, {'ar', 'ur'})
+
+    def test_language_switcher_lists_every_configured_language(self):
+        response = self.client.get(reverse('platform_home'))
+        for code, name in settings.LANGUAGES:
+            self.assertContains(response, f'value="{code}"')
+            self.assertContains(response, name)
+
+    def test_switching_to_urdu_sets_rtl_direction(self):
+        response = self.client.get(reverse('platform_home'), HTTP_ACCEPT_LANGUAGE='ur')
+        self.assertEqual(response.wsgi_request.LANGUAGE_CODE, 'ur')
+        self.assertContains(response, 'dir="rtl"')
+
+    def test_switching_to_german_sets_ltr_direction(self):
+        response = self.client.get(reverse('platform_home'), HTTP_ACCEPT_LANGUAGE='de')
+        self.assertEqual(response.wsgi_request.LANGUAGE_CODE, 'de')
+        self.assertContains(response, 'dir="ltr"')
+
+    @override_settings(AUTO_TRANSLATE_ENABLED=True)
+    @patch('courses.models.auto_translate.translate_fields')
+    def test_track_save_requests_every_configured_non_english_language(self, mock_translate):
+        mock_translate.return_value = {}
+        Track.objects.create(name='Quantum Computing')
+        _fields_arg, target_languages_arg = mock_translate.call_args.args
+        expected = {code for code, _label in settings.LANGUAGES if code != 'en'}
+        self.assertEqual(set(target_languages_arg), expected)
+        self.assertIn('de', target_languages_arg)
+        self.assertIn('zh-hans', target_languages_arg)
+        self.assertIn('ur', target_languages_arg)
+
+
+@override_settings(AUTO_TRANSLATE_ENABLED=True)
+class RetranslateContentCommandTests(TestCase):
+    """python manage.py retranslate_content -- the explicit "try again
+    right now" escape hatch for a language stuck missing from a record's
+    cached translations, without needing to touch the English source
+    text (see auto_translate.translate_fields' new per-language-resilient
+    contract for why a language can get stuck in the first place)."""
+
+    def setUp(self):
+        # description left blank so only the 'name' field has any source
+        # text to (re)translate -- keeps call-count assertions below exact
+        # and about the one field these tests actually care about.
+        with override_settings(AUTO_TRANSLATE_ENABLED=False):
+            self.track = Track.objects.create(name='Robotics', description='')
+            # Simulates the exact bug this command exists to fix: 'ar'
+            # cached successfully at some point in the past, 'fr'/'es'
+            # never did. Stays inside AUTO_TRANSLATE_ENABLED=False too --
+            # Track.save() unconditionally calls _autotranslate() before
+            # anything else, and this dict is otherwise "incomplete" for
+            # every other configured language, which would trigger a real
+            # (unmocked, at setUp time) translation attempt otherwise.
+            self.track.name_translations = {'ar': 'الروبوتات', '__source__': 'Robotics'}
+            self.track.save(update_fields=['name_translations'])
+
+    @patch('courses.auto_translate.GoogleTranslator.translate')
+    def test_fills_in_missing_language_without_touching_existing_one(self, mock_translate):
+        mock_translate.side_effect = lambda text: f'[FR] {text}'
+        call_command('retranslate_content', '--language', 'fr', '--model', 'track')
+        self.track.refresh_from_db()
+        self.assertEqual(self.track.name_translations['fr'], '[FR] Robotics')
+        # 'ar' -- already fine -- must be left exactly as it was.
+        self.assertEqual(self.track.name_translations['ar'], 'الروبوتات')
+
+    @patch('courses.auto_translate.GoogleTranslator.translate')
+    def test_does_not_retranslate_language_that_already_has_a_value(self, mock_translate):
+        mock_translate.side_effect = lambda text: f'[AR] {text}'
+        call_command('retranslate_content', '--language', 'ar', '--model', 'track')
+        mock_translate.assert_not_called()
+        self.track.refresh_from_db()
+        self.assertEqual(self.track.name_translations['ar'], 'الروبوتات')
+
+    @patch('courses.auto_translate.GoogleTranslator.translate')
+    def test_force_retranslates_even_an_already_present_language(self, mock_translate):
+        mock_translate.side_effect = lambda text: f'[AR-NEW] {text}'
+        call_command('retranslate_content', '--language', 'ar', '--model', 'track', '--force')
+        mock_translate.assert_called()
+        self.track.refresh_from_db()
+        self.assertEqual(self.track.name_translations['ar'], '[AR-NEW] Robotics')
+
+    @patch('courses.auto_translate.GoogleTranslator.translate')
+    def test_does_not_reset_other_still_incomplete_languages(self, mock_translate):
+        # The whole reason this bypasses instance.save(): filling in just
+        # 'fr' must not trigger AutoTranslatedFieldsMixin re-attempting
+        # (and potentially failing/leaving untouched) 'es' as a side effect.
+        mock_translate.side_effect = lambda text: f'[FR] {text}'
+        call_command('retranslate_content', '--language', 'fr', '--model', 'track')
+        self.assertEqual(mock_translate.call_count, 1)
+        self.track.refresh_from_db()
+        self.assertNotIn('es', self.track.name_translations)
+
+    @patch('courses.auto_translate.GoogleTranslator.translate')
+    def test_scopes_to_requested_model_only(self, mock_translate):
+        mock_translate.side_effect = lambda text: f'[FR] {text}'
+        with override_settings(AUTO_TRANSLATE_ENABLED=False):
+            document = LegalDocument.objects.create(
+                slug='terms', title='Terms', last_updated=timezone.now().date())
+        call_command('retranslate_content', '--language', 'fr', '--model', 'track')
+        document.refresh_from_db()
+        self.assertNotIn('fr', document.title_translations)
+
+    def test_unknown_language_code_errors(self):
+        with self.assertRaises(CommandError):
+            call_command('retranslate_content', '--language', 'xx')
+
+    @override_settings(AUTO_TRANSLATE_ENABLED=False)
+    def test_errors_when_auto_translate_disabled(self):
+        with self.assertRaises(CommandError):
+            call_command('retranslate_content', '--language', 'fr')
+
+    @patch('courses.auto_translate.GoogleTranslator.translate')
+    def test_leaves_translation_missing_and_reports_it_when_the_call_fails(self, mock_translate):
+        mock_translate.side_effect = Exception('rate limited')
+        call_command('retranslate_content', '--language', 'fr', '--model', 'track')
+        self.track.refresh_from_db()
+        self.assertNotIn('fr', self.track.name_translations)
+        # 'ar' still untouched either way.
+        self.assertEqual(self.track.name_translations['ar'], 'الروبوتات')
 
 
 class LegalDocumentTests(TestCase):

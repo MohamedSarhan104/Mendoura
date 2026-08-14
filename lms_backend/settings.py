@@ -135,16 +135,38 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-# English and Arabic ship with real, reviewed translations. Do not add more
-# LANGUAGES entries with machine-translated .po files -- that's how you end
-# up publishing bad translations under the brand's name. Adding a new
-# language later is just a new locale/<code>/LC_MESSAGES/django.po plus an
-# entry here, no code changes.
+# English and Arabic ship with real, reviewed .po files for the site's own
+# UI chrome (nav, buttons, static strings) -- do not add more machine-
+# translated .po files without human review, that's how you end up
+# publishing bad translations under the brand's name. The other entries
+# below (fr/es and everything added since) fall back to English for that
+# static UI chrome until a human-reviewed .po file exists for them; that's
+# a separate, deliberate gap from what this list actually drives day to
+# day, which is DATABASE content -- every Track/Course/LegalDocument field
+# wrapped in AutoTranslatedFieldsMixin (courses/models.py) is auto-
+# translated into every non-English language here via GoogleTranslator
+# (courses/auto_translate.py) whenever its source text is saved, no human
+# review needed since it's machine translation clearly scoped to dynamic
+# content, not the brand's own copy.
+#
+# Codes are Django's own canonical locale codes (django.conf.locale.LANG_INFO)
+# so LANGUAGE_BIDI (RTL detection -- ar/ur below), get_available_languages
+# (the language switcher), and the locale/<code>/ directory convention all
+# agree; auto_translate.py maps a code to GoogleTranslator's own expected
+# target where the two diverge (currently just Simplified Chinese).
 LANGUAGES = [
     ('en', 'English'),
     ('ar', 'العربية'),
     ('fr', 'Français'),
     ('es', 'Español'),
+    ('de', 'Deutsch'),
+    ('it', 'Italiano'),
+    ('pt', 'Português'),
+    ('tr', 'Türkçe'),
+    ('ru', 'Русский'),
+    ('zh-hans', '简体中文'),
+    ('hi', 'हिंदी'),
+    ('ur', 'اردو'),
 ]
 LOCALE_PATHS = [BASE_DIR / 'locale']
 
@@ -352,6 +374,16 @@ GEMINI_USER_RATE_LIMIT_PER_DAY = config('GEMINI_USER_RATE_LIMIT_PER_DAY', defaul
 # @override_settings(AUTO_TRANSLATE_ENABLED=True).
 AUTO_TRANSLATE_ENABLED = config(
     'AUTO_TRANSLATE_ENABLED', default=('test' not in sys.argv), cast=bool)
+
+# Pause (seconds) between consecutive real GoogleTranslator calls
+# (courses/auto_translate.py) -- reduces the odds of hitting its free/
+# unofficial endpoint's rate limiting, which scales with both the number
+# of configured LANGUAGES and the number of lines/cells of Markdown
+# content being translated. Zero under `manage.py test` for the same
+# reason AUTO_TRANSLATE_ENABLED defaults off there -- this would otherwise
+# add real wall-clock time to every test that saves translatable content.
+AUTO_TRANSLATE_REQUEST_DELAY_SECONDS = config(
+    'AUTO_TRANSLATE_REQUEST_DELAY_SECONDS', default=(0.0 if 'test' in sys.argv else 0.2), cast=float)
 
 # Without this, Django's default logging config sends 500 errors to
 # mail_admins (which does nothing since ADMINS isn't set) and prints nothing
