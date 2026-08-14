@@ -24,7 +24,7 @@ from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode
 from django.utils.translation import override as translation_override
 
-from . import ai_coach, auto_translate, certificates, emails, paymob
+from . import ai_coach, auto_translate, certificates, emails, gemini_translate, paymob
 from .models import (
     AIConversation, AIMessage, Certificate, Choice, Course, Enrollment, InstructorWallet, Lecture,
     LectureProgress, LegalDocument, LegalSection, Module, Payment, Payout, Plan, Question, Quiz,
@@ -6730,3 +6730,176 @@ class CompilePoFilesCommandTests(TestCase):
     def test_no_po_files_does_not_raise(self):
         with override_settings(BASE_DIR=self.base_dir):
             call_command('compile_po_files')
+
+
+@override_settings(GEMINI_API_KEY='test-gemini-key')
+class GeminiTranslateTests(TestCase):
+    """courses/gemini_translate.py -- the .po backfill's alternative
+    backend for an environment where GoogleTranslator's host is
+    unreachable but Gemini's isn't. Same genai.Client mocking pattern as
+    GeminiBackendTests (ai_coach.py's own Gemini integration)."""
+
+    def test_is_configured_reflects_setting(self):
+        with override_settings(GEMINI_API_KEY=''):
+            self.assertFalse(gemini_translate.is_configured())
+        with override_settings(GEMINI_API_KEY='some-key'):
+            self.assertTrue(gemini_translate.is_configured())
+
+    @patch('courses.gemini_translate.genai.Client')
+    def test_translate_text_returns_gemini_output(self, mock_client_cls):
+        mock_client = Mock()
+        mock_client.models.generate_content.return_value = Mock(text='Connexion')
+        mock_client_cls.return_value = mock_client
+
+        result = gemini_translate.translate_text('Login', 'fr')
+        self.assertEqual(result, 'Connexion')
+        mock_client_cls.assert_called_once_with(api_key='test-gemini-key')
+
+    @patch('courses.gemini_translate.genai.Client')
+    def test_prompt_names_the_target_language_and_asks_to_preserve_placeholders(self, mock_client_cls):
+        mock_client = Mock()
+        mock_client.models.generate_content.return_value = Mock(text='ok')
+        mock_client_cls.return_value = mock_client
+
+        gemini_translate.translate_text('Hello %(name)s', 'zh-hans')
+
+        contents = mock_client.models.generate_content.call_args.kwargs['contents']
+        prompt_text = contents[0].parts[0].text
+        self.assertIn('Simplified Chinese', prompt_text)
+        self.assertIn('Preserve any placeholders', prompt_text)
+        self.assertIn('Hello %(name)s', prompt_text)
+
+    @patch('courses.gemini_translate.genai.Client')
+    def test_strips_wrapping_quotes_from_response(self, mock_client_cls):
+        mock_client = Mock()
+        mock_client.models.generate_content.return_value = Mock(text='"Connexion"')
+        mock_client_cls.return_value = mock_client
+
+        self.assertEqual(gemini_translate.translate_text('Login', 'fr'), 'Connexion')
+
+    @patch('courses.gemini_translate.genai.Client')
+    def test_429_raises_quota_exceeded_error(self, mock_client_cls):
+        from google.genai import errors as genai_errors
+        mock_client = Mock()
+        mock_client.models.generate_content.side_effect = genai_errors.APIError(
+            429, {'error': {'message': 'quota exceeded'}})
+        mock_client_cls.return_value = mock_client
+
+        with self.assertRaises(gemini_translate.QuotaExceededError):
+            gemini_translate.translate_text('Login', 'fr')
+
+    @patch('courses.gemini_translate.genai.Client')
+    def test_other_api_error_raises_translation_error_not_quota(self, mock_client_cls):
+        from google.genai import errors as genai_errors
+        mock_client = Mock()
+        mock_client.models.generate_content.side_effect = genai_errors.APIError(
+            500, {'error': {'message': 'internal error'}})
+        mock_client_cls.return_value = mock_client
+
+        with self.assertRaises(gemini_translate.TranslationError):
+            gemini_translate.translate_text('Login', 'fr')
+        with self.assertRaises(gemini_translate.QuotaExceededError):
+            mock_client.models.generate_content.side_effect = genai_errors.APIError(
+                429, {'error': {'message': 'quota exceeded'}})
+            gemini_translate.translate_text('Login', 'fr')
+
+    @patch('courses.gemini_translate.genai.Client')
+    def test_empty_response_raises_translation_error(self, mock_client_cls):
+        mock_client = Mock()
+        mock_client.models.generate_content.return_value = Mock(text='')
+        mock_client_cls.return_value = mock_client
+
+        with self.assertRaises(gemini_translate.TranslationError):
+            gemini_translate.translate_text('Login', 'fr')
+
+    def test_translate_text_raises_when_not_configured(self):
+        with override_settings(GEMINI_API_KEY=''):
+            with self.assertRaises(gemini_translate.TranslationError):
+                gemini_translate.translate_text('Login', 'fr')
+
+
+@override_settings(GEMINI_API_KEY='test-gemini-key')
+class TranslatePoEntriesGeminiBackendTests(TestCase):
+    """--backend gemini and the quota-triggered graceful stop -- separate
+    from TranslatePoEntriesCommandTests' default google-backend coverage
+    since these exercise a completely different failure mode (a 429
+    stopping the WHOLE run, not just one entry)."""
+
+    def setUp(self):
+        self.tmpdir = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmpdir.cleanup)
+        self.base_dir = Path(self.tmpdir.name)
+
+    def _write_po(self, lang, msgids):
+        po_dir = self.base_dir / 'locale' / lang / 'LC_MESSAGES'
+        po_dir.mkdir(parents=True)
+        po = polib.POFile()
+        po.metadata = {'Content-Type': 'text/plain; charset=utf-8'}
+        for msgid in msgids:
+            po.append(polib.POEntry(msgid=msgid, msgstr=''))
+        po.save(str(po_dir / 'django.po'))
+        return po_dir / 'django.po'
+
+    @patch('courses.management.commands.translate_po_entries.gemini_translate.translate_text')
+    def test_gemini_backend_translates_entries(self, mock_translate_text):
+        mock_translate_text.side_effect = lambda text, lang: f'[gemini:{lang}] {text}'
+        po_path = self._write_po('fr', ['Login'])
+
+        with override_settings(BASE_DIR=self.base_dir):
+            call_command('translate_po_entries', '--language', 'fr', '--backend', 'gemini', '--sleep', '0')
+
+        po = polib.pofile(str(po_path))
+        self.assertEqual(po.find('Login').msgstr, '[gemini:fr] Login')
+
+    def test_gemini_backend_raises_without_api_key(self):
+        with override_settings(GEMINI_API_KEY=''), override_settings(BASE_DIR=self.base_dir):
+            with self.assertRaises(CommandError):
+                call_command('translate_po_entries', '--language', 'fr', '--backend', 'gemini')
+
+    @patch('courses.management.commands.translate_po_entries.gemini_translate.translate_text')
+    def test_quota_exceeded_stops_the_whole_run_and_saves_progress(self, mock_translate_text):
+        from courses import gemini_translate
+
+        fr_path = self._write_po('fr', ['Login', 'Logout', 'Search'])
+        self._write_po('es', ['Login'])
+
+        def side_effect(text, lang):
+            if text == 'Search':
+                raise gemini_translate.QuotaExceededError('quota exceeded')
+            return f'[{lang}] {text}'
+        mock_translate_text.side_effect = side_effect
+
+        with override_settings(BASE_DIR=self.base_dir):
+            call_command(
+                'translate_po_entries', '--language', 'fr', '--language', 'es',
+                '--backend', 'gemini', '--sleep', '0')
+
+        fr_po = polib.pofile(str(fr_path))
+        # Translated before the quota hit -- must survive even though the
+        # language's own translation loop never reached its normal end.
+        self.assertEqual(fr_po.find('Login').msgstr, '[fr] Login')
+        self.assertEqual(fr_po.find('Logout').msgstr, '[fr] Logout')
+        self.assertEqual(fr_po.find('Search').msgstr, '')
+
+        # es was next in line but never started -- confirms the stop
+        # aborts the whole run, not just the language that hit quota.
+        es_po = polib.pofile(str(self.base_dir / 'locale' / 'es' / 'LC_MESSAGES' / 'django.po'))
+        self.assertEqual(es_po.find('Login').msgstr, '')
+
+    @patch('courses.management.commands.translate_po_entries.gemini_translate.translate_text')
+    def test_saves_incrementally_not_only_at_the_end(self, mock_translate_text):
+        # _SAVE_EVERY entries in, the file on disk should already reflect
+        # what's been translated so far, not wait for the whole language
+        # (or the whole run) to finish before writing anything.
+        from courses.management.commands.translate_po_entries import _SAVE_EVERY
+
+        msgids = [f'String {i}' for i in range(_SAVE_EVERY + 5)]
+        po_path = self._write_po('fr', msgids)
+        mock_translate_text.side_effect = lambda text, lang: f'[{lang}] {text}'
+
+        with override_settings(BASE_DIR=self.base_dir):
+            call_command('translate_po_entries', '--language', 'fr', '--backend', 'gemini', '--sleep', '0')
+
+        po = polib.pofile(str(po_path))
+        for msgid in msgids:
+            self.assertEqual(po.find(msgid).msgstr, f'[fr] {msgid}')
