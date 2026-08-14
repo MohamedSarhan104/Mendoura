@@ -933,10 +933,10 @@ msgstr ""
 "confirmer son authenticité."
 
 msgid "e.g. d7707ed8-6a4c-4f1d-810c-cae63833a505"
-msgstr ""
+msgstr "p. ex. d7707ed8-6a4c-4f1d-810c-cae63833a505"
 
 msgid "Verify"
-msgstr ""
+msgstr "Vérifier"
 
 #, python-format
 msgid "Lesson %(n)s: %(title)s"
@@ -947,58 +947,62 @@ msgid "Delete %(title)s?"
 msgstr ""
 
 msgid "Delete"
-msgstr ""
+msgstr "Supprimer"
 
 msgid "Write or paste this lesson's script here…"
-msgstr ""
+msgstr "Écrivez ou collez le script de cette leçon ici…"
 
 msgid "Save Script"
-msgstr ""
+msgstr "Enregistrer le script"
 
 msgid "Video ready"
-msgstr ""
+msgstr "Vidéo prête"
 
 msgid "Video is still processing on Bunny — check back shortly."
 msgstr ""
+"La vidéo est encore en cours de traitement sur Bunny — revenez vérifier dans"
+" un instant."
 
 msgid "Uploading a new file replaces the current video."
-msgstr ""
+msgstr "Le téléchargement d'un nouveau fichier remplacera la vidéo actuelle."
 
 msgid "External video linked"
-msgstr ""
+msgstr "Vidéo externe liée"
 
 msgid "No video uploaded yet."
-msgstr ""
+msgstr "Aucune vidéo n'a encore été téléchargée."
 
 msgid "Upload Video"
-msgstr ""
+msgstr "Télécharger la vidéo"
 
 msgid "Video hosting isn't configured yet (missing Bunny credentials)."
 msgstr ""
+"L'hébergement vidéo n'est pas encore configuré (identifiants Bunny "
+"manquants)."
 
 msgid "…or an external video link"
-msgstr ""
+msgstr "…ou un lien vidéo externe"
 
 msgid "only if not uploading to Bunny"
-msgstr ""
+msgstr "uniquement si aucun chargement vers Bunny n'est en cours"
 
 msgid "Save Link"
-msgstr ""
+msgstr "Enregistrer le lien"
 
 msgid "Edit Content"
-msgstr ""
+msgstr "Modifier le contenu"
 
 msgid "Admin Overview"
-msgstr ""
+msgstr "Vue d'ensemble de l'administration"
 
 msgid "Approval Queue"
-msgstr ""
+msgstr "File d'attente d'approbation"
 
 msgid "Users"
-msgstr ""
+msgstr "Utilisateurs"
 
 msgid "Payments"
-msgstr ""
+msgstr "Paiements"
 
 msgid "Payouts"
 msgstr ""
