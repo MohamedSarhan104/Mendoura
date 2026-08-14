@@ -1005,13 +1005,13 @@ msgid "Payments"
 msgstr "Paiements"
 
 msgid "Payouts"
-msgstr ""
+msgstr "Paiements"
 
 msgid "Track Requests"
-msgstr ""
+msgstr "Suivi des demandes"
 
 msgid "Test Emails"
-msgstr ""
+msgstr "Tester les e-mails"
 
 #, python-format
 msgid "%(counter)s course won't appear on any student browse page"
@@ -1023,9 +1023,12 @@ msgid ""
 "Each course below is filed under a parent category (or has no track at all) "
 "instead of a specific track -- fix each one's Track in"
 msgstr ""
+"Chaque cours ci-dessous est classé dans une catégorie parente (ou n'a aucun "
+"parcours) au lieu d'un parcours spécifique -- corrigez le parcours de chacun"
+" dans"
 
 msgid "Django Admin"
-msgstr ""
+msgstr "Administration Django"
 
 #, python-format
 msgid "by %(instructor)s --"
@@ -1036,37 +1039,37 @@ msgid "filed under \"%(track)s\" (a parent category)"
 msgstr ""
 
 msgid "no track assigned"
-msgstr ""
+msgstr "aucune piste assignée"
 
 msgid "Total Revenue"
-msgstr ""
+msgstr "Revenu total"
 
 msgid "Platform Revenue"
-msgstr ""
+msgstr "Revenu de la plateforme"
 
 msgid "Instructor Payouts"
-msgstr ""
+msgstr "Paiements aux instructeurs"
 
 msgid "Enrollments"
 msgstr ""
 
 msgid "Students"
-msgstr ""
+msgstr "Étudiants"
 
 msgid "Instructors"
-msgstr ""
+msgstr "Instructeurs"
 
 msgid "Total Courses"
-msgstr ""
+msgstr "Nombre total de cours"
 
 msgid "Revenue Over Time"
-msgstr ""
+msgstr "Revenu au fil du temps"
 
 msgid "No revenue yet."
-msgstr ""
+msgstr "Aucun revenu pour le moment."
 
 msgid "Subscription Revenue Distribution"
-msgstr ""
+msgstr "Répartition des revenus d'abonnement"
 
 #, python-format
 msgid ""
@@ -1080,84 +1083,88 @@ msgstr[1] ""
 
 msgid "No subscription periods are due for distribution right now."
 msgstr ""
+"Aucune période d'abonnement n'est actuellement en attente de distribution."
 
 msgid ""
 "No automatic scheduler is wired up on the free Render plan (no Cron Jobs) --"
 " run this manually on a regular basis."
 msgstr ""
+"Aucun planificateur automatique n'est configuré sur le plan gratuit de "
+"Render (pas de Cron Jobs) -- exécutez ceci manuellement de manière "
+"régulière."
 
 msgid "View Breakdown"
-msgstr ""
+msgstr "Voir la répartition"
 
 msgid "Run Distribution Now"
-msgstr ""
+msgstr "Exécuter la distribution maintenant"
 
 msgid "Back to Admin Overview"
-msgstr ""
+msgstr "Retour à la vue d'ensemble de l'administration"
 
 msgid "Student"
-msgstr ""
+msgstr "Étudiant"
 
 msgid "Course"
-msgstr ""
+msgstr "Cours"
 
 msgid "Total"
-msgstr ""
+msgstr "Total"
 
 msgid "Instructor Share"
-msgstr ""
+msgstr "Partage de l'instructeur"
 
 msgid "Platform Share"
-msgstr ""
+msgstr "Partage de plateforme"
 
 msgid "Status"
-msgstr ""
+msgstr "État"
 
 msgid "Date"
-msgstr ""
+msgstr "Date"
 
 msgid "No payments yet."
-msgstr ""
+msgstr "Aucun paiement pour le moment."
 
 msgid "Payout Requests"
-msgstr ""
+msgstr "Demandes de paiement"
 
 msgid "Amount"
-msgstr ""
+msgstr "Montant"
 
 msgid "Method"
-msgstr ""
+msgstr "Méthode"
 
 msgid "Actions"
-msgstr ""
+msgstr "Actions"
 
 msgid "Approve"
-msgstr ""
+msgstr "Approuver"
 
 msgid "Reject"
-msgstr ""
+msgstr "Rejeter"
 
 msgid "Mark Paid"
-msgstr ""
+msgstr "Marquer comme payé"
 
 msgid "No payout requests yet."
-msgstr ""
+msgstr "Aucune demande de paiement pour le moment."
 
 #, python-format
 msgid "(%(count)s due)"
 msgstr ""
 
 msgid "pool"
-msgstr ""
+msgstr "pool"
 
 msgid "Minutes Watched"
-msgstr ""
+msgstr "Minutes visionnées"
 
 msgid "Instructor Gets"
-msgstr ""
+msgstr "L'instructeur reçoit"
 
 msgid "Platform Keeps"
-msgstr ""
+msgstr "La plateforme conserve"
 
 msgid ""
 "No watch-time during this period -- the full pool stayed with the platform."
