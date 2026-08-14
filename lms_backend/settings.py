@@ -385,6 +385,20 @@ AUTO_TRANSLATE_ENABLED = config(
 AUTO_TRANSLATE_REQUEST_DELAY_SECONDS = config(
     'AUTO_TRANSLATE_REQUEST_DELAY_SECONDS', default=(0.0 if 'test' in sys.argv else 0.2), cast=float)
 
+# A single line/cell's GoogleTranslator call is retried this many times
+# (linear backoff: 1x, 2x, 3x... AUTO_TRANSLATE_RETRY_BACKOFF_SECONDS
+# apart) before giving up on it. Without this, a long field with many
+# lines/cells (e.g. a Markdown table) was far more likely than a short
+# one-line field to have at least one transient failure discard its
+# ENTIRE translation into a language -- confirmed live on the Terms page:
+# short section headings translated reliably while the revenue-share
+# table's much longer body kept failing outright. Both zero under
+# `manage.py test`, same reasoning as the other AUTO_TRANSLATE_* settings.
+AUTO_TRANSLATE_MAX_RETRIES = config(
+    'AUTO_TRANSLATE_MAX_RETRIES', default=(0 if 'test' in sys.argv else 2), cast=int)
+AUTO_TRANSLATE_RETRY_BACKOFF_SECONDS = config(
+    'AUTO_TRANSLATE_RETRY_BACKOFF_SECONDS', default=(0.0 if 'test' in sys.argv else 1.0), cast=float)
+
 # Without this, Django's default logging config sends 500 errors to
 # mail_admins (which does nothing since ADMINS isn't set) and prints nothing
 # to the console -- so a production 500 leaves no trace anywhere. This makes

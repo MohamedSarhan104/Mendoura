@@ -74,14 +74,11 @@ def is_configured() -> bool:
     return settings.AUTO_TRANSLATE_ENABLED
 
 
-def _translate_text(text: str, target_language: str) -> str:
-    stripped = text.strip()
-    if not stripped:
-        return text
-    leading_ws = text[:len(text) - len(text.lstrip())]
-    trailing_ws = text[len(text.rstrip()):]
-    api_target = _google_translator_target(target_language)
-
+def _translate_once(stripped: str, api_target: str, target_language: str) -> str:
+    """A single raw GoogleTranslator.translate() attempt. Raises
+    TranslationError on any failure (network error, bad response, or an
+    empty result) -- never lets a raw exception from the underlying HTTP
+    library escape."""
     logger.info(
         '%s calling GoogleTranslator: source=en target=%s (api_target=%s) text=%r',
         _DEBUG_TAG, target_language, api_target, _truncate(stripped))
@@ -125,7 +122,44 @@ def _translate_text(text: str, target_language: str) -> str:
     logger.info(
         '%s GoogleTranslator SUCCEEDED after %.2fs: source=en target=%s (api_target=%s) output=%r',
         _DEBUG_TAG, elapsed, target_language, api_target, _truncate(translated))
-    return f'{leading_ws}{translated}{trailing_ws}'
+    return translated
+
+
+def _translate_text(text: str, target_language: str) -> str:
+    """Translates one line/cell, retrying a transient failure a few times
+    with a short backoff before giving up. Matters a lot for a long,
+    multi-line field (e.g. a Markdown table with a dozen cells) even after
+    translate_fields()'s per-(field, language) isolation: without a retry,
+    the odds that AT LEAST ONE of a field's many individual line/cell
+    calls hits a transient blip (and so discards that field's ENTIRE
+    translation into that language) climb fast with how much content the
+    field holds -- exactly what made a short heading translate reliably
+    while a long table-containing body kept failing outright. Retries are
+    zero under tests (see settings.AUTO_TRANSLATE_MAX_RETRIES/
+    AUTO_TRANSLATE_RETRY_BACKOFF_SECONDS) so the suite doesn't pay for
+    them."""
+    stripped = text.strip()
+    if not stripped:
+        return text
+    leading_ws = text[:len(text) - len(text.lstrip())]
+    trailing_ws = text[len(text.rstrip()):]
+    api_target = _google_translator_target(target_language)
+    max_retries = getattr(settings, 'AUTO_TRANSLATE_MAX_RETRIES', 0)
+    backoff = getattr(settings, 'AUTO_TRANSLATE_RETRY_BACKOFF_SECONDS', 0)
+
+    for attempt in range(max_retries + 1):
+        try:
+            translated = _translate_once(stripped, api_target, target_language)
+            return f'{leading_ws}{translated}{trailing_ws}'
+        except TranslationError:
+            if attempt >= max_retries:
+                raise
+            wait = backoff * (attempt + 1)
+            logger.warning(
+                '%s retrying target=%s (attempt %s of %s) in %.1fs...',
+                _DEBUG_TAG, target_language, attempt + 2, max_retries + 1, wait)
+            if wait:
+                time.sleep(wait)
 
 
 def _is_table_row(line: str) -> bool:

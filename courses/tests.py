@@ -4678,6 +4678,35 @@ class AutoTranslateClientTests(TestCase):
         auto_translate._translate_text('Simplified', 'zh-hans')
         mock_cls.assert_called_once_with(source='en', target='zh-CN')
 
+    @override_settings(AUTO_TRANSLATE_MAX_RETRIES=2, AUTO_TRANSLATE_RETRY_BACKOFF_SECONDS=0)
+    @patch('courses.auto_translate.GoogleTranslator.translate')
+    def test_translate_text_retries_a_transient_failure_and_succeeds(self, mock_translate):
+        # Regression test for Gap 1: a long field (many lines/cells) is far
+        # more likely than a short one to have at least one call hit a
+        # transient blip -- confirmed live on the Terms page's revenue-share
+        # table. A retry gives each individual call a second (and third)
+        # chance before the whole field-language pair gives up.
+        mock_translate.side_effect = [Exception('rate limited'), 'الروبوتات']
+        result = auto_translate._translate_text('Robotics', 'ar')
+        self.assertEqual(result, 'الروبوتات')
+        self.assertEqual(mock_translate.call_count, 2)
+
+    @override_settings(AUTO_TRANSLATE_MAX_RETRIES=2, AUTO_TRANSLATE_RETRY_BACKOFF_SECONDS=0)
+    @patch('courses.auto_translate.GoogleTranslator.translate')
+    def test_translate_text_gives_up_after_exhausting_retries(self, mock_translate):
+        mock_translate.side_effect = Exception('still rate limited')
+        with self.assertRaises(auto_translate.TranslationError):
+            auto_translate._translate_text('Robotics', 'ar')
+        # Initial attempt + 2 retries = 3 total.
+        self.assertEqual(mock_translate.call_count, 3)
+
+    @patch('courses.auto_translate.GoogleTranslator.translate')
+    def test_translate_text_does_not_retry_by_default_under_tests(self, mock_translate):
+        mock_translate.side_effect = Exception('rate limited')
+        with self.assertRaises(auto_translate.TranslationError):
+            auto_translate._translate_text('Robotics', 'ar')
+        mock_translate.assert_called_once()
+
     @patch('courses.auto_translate.GoogleTranslator.translate')
     def test_markdown_table_structure_survives_translation(self, mock_translate):
         mock_translate.side_effect = lambda text: f'[AR] {text}'
@@ -4829,6 +4858,16 @@ class RetranslateContentCommandTests(TestCase):
     def test_unknown_language_code_errors(self):
         with self.assertRaises(CommandError):
             call_command('retranslate_content', '--language', 'xx')
+
+    @patch('courses.auto_translate.GoogleTranslator.translate')
+    def test_language_all_expands_to_every_non_english_configured_language(self, mock_translate):
+        mock_translate.side_effect = lambda text: f'[X] {text}'
+        call_command('retranslate_content', '--language', 'all', '--model', 'track')
+        self.track.refresh_from_db()
+        expected = {code for code, _label in settings.LANGUAGES if code != 'en'}
+        # 'ar' was already cached (see setUp) so isn't re-requested; every
+        # other configured language should now be filled in.
+        self.assertEqual(set(self.track.name_translations) - {'__source__'}, expected)
 
     @override_settings(AUTO_TRANSLATE_ENABLED=False)
     def test_errors_when_auto_translate_disabled(self):

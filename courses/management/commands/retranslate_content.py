@@ -27,7 +27,9 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument(
             '--language', action='append', dest='languages', required=True,
-            help='Target language code to (re)translate, e.g. --language fr. Repeatable.')
+            help="Target language code to (re)translate, e.g. --language fr. Repeatable. "
+                 "Pass --language all once to mean every non-English language in "
+                 "settings.LANGUAGES, instead of listing each one out.")
         parser.add_argument(
             '--model', choices=[*MODEL_CHOICES, 'all'], default='all',
             help='Restrict to one model (track/legaldocument/legalsection), or all (default).')
@@ -36,11 +38,14 @@ class Command(BaseCommand):
             help='Re-translate languages that already have a cached value too, not just missing ones.')
 
     def handle(self, *args, **options):
-        languages = options['languages']
         valid_codes = {code for code, _label in settings.LANGUAGES}
-        for lang in languages:
-            if lang not in valid_codes:
-                raise CommandError(f'{lang!r} is not in settings.LANGUAGES ({sorted(valid_codes)}).')
+        if options['languages'] == ['all']:
+            languages = sorted(valid_codes - {'en'})
+        else:
+            languages = options['languages']
+            for lang in languages:
+                if lang not in valid_codes:
+                    raise CommandError(f'{lang!r} is not in settings.LANGUAGES ({sorted(valid_codes)}).')
 
         if not auto_translate.is_configured():
             raise CommandError('AUTO_TRANSLATE_ENABLED is off -- nothing to do.')
