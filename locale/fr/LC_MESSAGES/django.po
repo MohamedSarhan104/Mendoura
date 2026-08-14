@@ -1354,88 +1354,92 @@ msgid "Add New Track"
 msgstr "Ajouter une nouvelle piste"
 
 msgid "Parent track (leave blank for a top-level category)"
-msgstr ""
+msgstr "Piste parente (laisser vide pour une catégorie de premier niveau)"
 
 msgid "Name"
-msgstr ""
+msgstr "Nom"
 
 msgid "Description"
-msgstr ""
+msgstr "Description"
 
 msgid "Icon (Font Awesome class)"
-msgstr ""
+msgstr "Icône (classe Font Awesome)"
 
 msgid "Order"
-msgstr ""
+msgstr "Commander"
 
 msgid "Add Track"
-msgstr ""
+msgstr "Ajouter une piste"
 
 msgid "Pending Registrations"
-msgstr ""
+msgstr "Inscriptions en attente"
 
 msgid "Username"
-msgstr ""
+msgstr "Nom d'utilisateur"
 
 msgid "Email"
 msgstr "E-mail"
 
 msgid "Role"
-msgstr ""
+msgstr "Rôle"
 
 msgid "Country / Payoneer"
-msgstr ""
+msgstr "Pays / Payoneer"
 
 msgid "Joined"
-msgstr ""
+msgstr "Rejoint"
 
 msgid "Reject and permanently delete this registration?"
-msgstr ""
+msgstr "Rejeter et supprimer définitivement cette inscription ?"
 
 msgid "No pending registrations."
-msgstr ""
+msgstr "Aucune inscription en attente."
 
 msgid "Permanently delete this user? This cannot be undone."
 msgstr ""
+"Supprimer définitivement cet utilisateur ? Cette action est irréversible."
 
 msgid "Delete User"
-msgstr ""
+msgstr "Supprimer l'utilisateur"
 
 msgid "No students found."
-msgstr ""
+msgstr "Aucun étudiant trouvé."
 
 msgid "No instructors found."
-msgstr ""
+msgstr "Aucun instructeur trouvé."
 
 msgid "Mendoura AI Coach"
-msgstr ""
+msgstr "Coach IA Mendoura"
 
 msgid "Your 24/7 Study Partner"
-msgstr ""
+msgstr "Votre partenaire d'étude 24h/24 et 7j/7"
 
 msgid "Mendoura General AI Coach"
-msgstr ""
+msgstr "Coach IA général Mendoura"
 
 msgid "Welcome to Mendoura AI Coach - Your 24/7 Study Partner"
-msgstr ""
+msgstr "Bienvenue sur Mendoura AI Coach - Votre partenaire d'étude 24/7"
 
 msgid ""
 "Ask me to explain a tricky concept, summarize a lecture, build you a study "
 "schedule, or just talk through what you're stuck on. I'm here whenever you "
 "need me."
 msgstr ""
+"Demandez-moi d'expliquer un concept complexe, de résumer un cours, d'établir"
+" un planning de révision ou simplement de discuter de ce qui vous bloque. Je"
+" suis là quand vous avez besoin de moi."
 
 msgid "Ask your AI Coach anything..."
-msgstr ""
+msgstr "Posez n'importe quelle question à votre coach IA..."
 
 msgid "Something went wrong. Please try again."
-msgstr ""
+msgstr "Une erreur est survenue. Veuillez réessayer."
 
 msgid "Network error -- please try again."
-msgstr ""
+msgstr "Erreur réseau -- veuillez réessayer."
 
 msgid "Course Approval Queue"
-msgstr ""
+msgstr "File d'attente d'approbation de cours"
 
 #, python-format
 msgid "by %(instructor)s &middot; %(track)s &middot;"
@@ -1448,15 +1452,17 @@ msgstr ""
 msgid ""
 "Preview full course content (modules, videos, quiz questions & answers)"
 msgstr ""
+"Prévisualiser le contenu complet du cours (modules, vidéos, questions et "
+"réponses des quiz)"
 
 msgid "Rejection reason (required, sent to the instructor)"
-msgstr ""
+msgstr "Motif de refus (obligatoire, envoyé à l'instructeur)"
 
 msgid "No courses pending review."
-msgstr ""
+msgstr "Aucun cours en attente de révision."
 
 msgid "Back to Dashboard"
-msgstr ""
+msgstr "Retour au tableau de bord"
 
 #, python-format
 msgid "%(counter)s enrolled student"
@@ -1465,10 +1471,10 @@ msgstr[0] ""
 msgstr[1] ""
 
 msgid "Enrolled"
-msgstr ""
+msgstr "Inscrit"
 
 msgid "No students enrolled yet."
-msgstr ""
+msgstr "Aucun étudiant inscrit pour le moment."
 
 #, python-format
 msgid "%(counter)s homework submission"
@@ -1485,104 +1491,118 @@ msgid "Graded: %(grade)s"
 msgstr ""
 
 msgid "Ungraded"
-msgstr ""
+msgstr "Non noté"
 
 msgid "Feedback:"
-msgstr ""
+msgstr "Commentaires :"
 
 msgid "Feedback (optional)"
-msgstr ""
+msgstr "Commentaires (facultatif)"
 
 msgid "Submit Grade"
-msgstr ""
+msgstr "Soumettre la note"
 
 msgid "No submissions yet."
-msgstr ""
+msgstr "Aucune soumission pour le moment."
 
 msgid "Create a New Course"
-msgstr ""
+msgstr "Créer un nouveau cours"
 
 msgid ""
 "Step 1 of 3 -- start with the basics, then you'll add modules with their "
 "videos and quizzes."
 msgstr ""
+"Étape 1 sur 3 -- commencez par les bases, puis vous ajouterez des modules "
+"avec leurs vidéos et leurs quiz."
 
 msgid "Course Title"
-msgstr ""
+msgstr "Titre du cours"
 
 msgid "Price ($)"
-msgstr ""
+msgstr "Prix ($)"
 
 msgid "This course is free"
-msgstr ""
+msgstr "Ce cours est gratuit"
 
 msgid "Cover Photo"
-msgstr ""
+msgstr "Photo de couverture"
 
 msgid ""
 "A plain photo -- your headshot or a relevant image works well. Shown on "
 "course cards, and used as the video player's cover, with the course title "
 "and your name automatically overlaid in Mendoura's style."
 msgstr ""
+"Une photo simple : votre portrait ou une image pertinente convient "
+"parfaitement. Elle s'affiche sur les cartes de cours et sert de couverture "
+"au lecteur vidéo, avec le titre du cours et votre nom automatiquement "
+"superposés dans le style de Mendoura."
 
 msgid "Production Type"
-msgstr ""
+msgstr "Type de production"
 
 msgid ""
 "This determines your revenue share and cannot be changed once the course has"
 " its first sale."
 msgstr ""
+"Ceci détermine votre part de revenus et ne pourra plus être modifié une fois"
+" que le cours aura réalisé sa première vente."
 
 msgid "Full production (I edit and produce it myself)"
-msgstr ""
+msgstr "Production complète (je monte et produis moi-même)"
 
 #, python-format
 msgid "You keep 70%%"
-msgstr ""
+msgstr "Vous gardez 70%%"
 
 msgid "Script only (Mendoura handles production/montage)"
-msgstr ""
+msgstr "Script uniquement (Mendoura gère la production/le montage)"
 
 #, python-format
 msgid "You keep 50%%"
-msgstr ""
+msgstr "Vous gardez 50%%"
 
 msgid "Video Script"
-msgstr ""
+msgstr "Script vidéo"
 
 msgid ""
 "Provide your lecture script here -- used for Mendoura-produced videos "
 "(coming soon)."
 msgstr ""
+"Saisissez votre script de cours ici -- utilisé pour les vidéos produites par"
+" Mendoura (bientôt disponible)."
 
 msgid "Save Course & Continue"
-msgstr ""
+msgstr "Enregistrer le cours et continuer"
 
 msgid "Edit Course"
-msgstr ""
+msgstr "Modifier le cours"
 
 msgid "This course is live -- saving changes resubmits it for admin review."
 msgstr ""
+"Ce cours est en direct : l'enregistrement des modifications le soumet à "
+"nouveau à l'examen de l'administrateur."
 
 msgid "Update your course details."
-msgstr ""
+msgstr "Mettez à jour les détails de votre cours."
 
 msgid ""
 "Locked -- this course already has a sale, so its revenue split can't change."
 msgstr ""
+"Verrouillé -- ce cours a déjà fait l'objet d'une vente, son partage des "
+"revenus ne peut donc pas être modifié."
 
 #, python-format
 msgid "You keep %(pct)s%%"
 msgstr ""
 
 msgid "Save Changes"
-msgstr ""
+msgstr "Enregistrer les modifications"
 
 msgid "Edit Lecture"
-msgstr ""
+msgstr "Modifier le cours"
 
 msgid "Lecture Title"
-msgstr ""
+msgstr "Titre du cours"
 
 msgid "Order (position in module)"
 msgstr ""
