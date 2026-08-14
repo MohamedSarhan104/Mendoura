@@ -492,36 +492,36 @@ msgid "Share on LinkedIn"
 msgstr "Partager sur LinkedIn"
 
 msgid "Copy Link"
-msgstr ""
+msgstr "Copier le lien"
 
 #, python-format
 msgid "My Mendoura Certificate: %(title)s"
 msgstr ""
 
 msgid "Share"
-msgstr ""
+msgstr "Partager"
 
 msgid "Verification ID"
-msgstr ""
+msgstr "ID de vérification"
 
 msgid "Verify at"
-msgstr ""
+msgstr "Vérifier sur"
 
 msgid "Copied!"
-msgstr ""
+msgstr "Copié !"
 
 msgid "Checkout"
-msgstr ""
+msgstr "Paiement"
 
 #, python-format
 msgid "Back to %(title)s"
 msgstr ""
 
 msgid "Choose how to get access"
-msgstr ""
+msgstr "Choisissez comment obtenir l'accès"
 
 msgid "Pay once for this course, or unlock everything on Mendoura."
-msgstr ""
+msgstr "Payez une seule fois pour ce cours, ou débloquez tout sur Mendoura."
 
 msgid "Single Course"
 msgstr "Cours unique"
@@ -530,15 +530,17 @@ msgid ""
 "Lifetime access to this course only: all lectures, resources, and a "
 "certificate on completion."
 msgstr ""
+"Accès à vie à ce cours uniquement : tous les cours, ressources et un "
+"certificat à la fin."
 
 msgid "Buy This Course"
-msgstr ""
+msgstr "Acheter ce cours"
 
 msgid "Best Value"
 msgstr "Meilleure offre"
 
 msgid "All Tracks & Courses"
-msgstr ""
+msgstr "Tous les morceaux et cours"
 
 msgid "mo"
 msgstr "mois"
@@ -548,15 +550,20 @@ msgstr "an"
 
 msgid "Unlimited access to every course, in every track, billed monthly."
 msgstr ""
+"Accès illimité à tous les cours, dans tous les parcours, facturé "
+"mensuellement."
 
 msgid "Unlimited access to every course, in every track, for a full year."
 msgstr ""
+"Accès illimité à tous les cours, dans tous les parcours, pendant une année "
+"entière."
 
 msgid "Other platforms charge 4,000+ EGP/year for similar access."
 msgstr ""
+"D'autres plateformes facturent plus de 4 000 EGP/an pour un accès similaire."
 
 msgid "Cancel anytime."
-msgstr ""
+msgstr "Annulez à tout moment."
 
 #, python-format
 msgid "Get the %(interval)s Pass"
@@ -567,47 +574,47 @@ msgid "Back to %(track)s"
 msgstr ""
 
 msgid "What You'll Learn"
-msgstr ""
+msgstr "Ce que vous allez apprendre"
 
 msgid "Course Content"
-msgstr ""
+msgstr "Contenu du cours"
 
 msgid "Preview"
-msgstr ""
+msgstr "Aperçu"
 
 msgid "Watch"
-msgstr ""
+msgstr "Regarder"
 
 #, python-format
 msgid "Quiz -- %(count)s question(s), pass at %(passing)s%%"
 msgstr ""
 
 msgid "No answer choices added yet."
-msgstr ""
+msgstr "Aucun choix de réponse ajouté pour le moment."
 
 msgid "No questions added yet."
-msgstr ""
+msgstr "Aucune question ajoutée pour le moment."
 
 msgid "No lectures added yet for this course."
-msgstr ""
+msgstr "Aucun cours n'a encore été ajouté à cette formation."
 
 msgid "Reviews"
-msgstr ""
+msgstr "Avis"
 
 msgid "Submit Review"
-msgstr ""
+msgstr "Soumettre l'avis"
 
 msgid "No reviews yet."
-msgstr ""
+msgstr "Aucun avis pour le moment."
 
 msgid "Go to My Learning"
-msgstr ""
+msgstr "Aller à Mon apprentissage"
 
 msgid "Enroll Now"
-msgstr ""
+msgstr "Inscrivez-vous maintenant"
 
 msgid "Buy Now"
-msgstr ""
+msgstr "Acheter maintenant"
 
 #, python-format
 msgid "Instructor: %(instructor)s"
@@ -634,86 +641,86 @@ msgid "Continue Learning"
 msgstr "Continuer l'apprentissage"
 
 msgid "View Course"
-msgstr ""
+msgstr "Voir le cours"
 
 msgid "Course Completed"
-msgstr ""
+msgstr "Cours terminé"
 
 msgid "View Certificate"
-msgstr ""
+msgstr "Voir le certificat"
 
 msgid "Progress"
-msgstr ""
+msgstr "Progression"
 
 msgid "You haven't enrolled in any courses yet."
-msgstr ""
+msgstr "Vous n'êtes inscrit à aucun cours pour le moment."
 
 msgid "Browse Tracks"
 msgstr "Parcourir les parcours"
 
 msgid "Hide course content"
-msgstr ""
+msgstr "Masquer le contenu du cours"
 
 msgid "complete"
-msgstr ""
+msgstr "terminé"
 
 #, python-format
 msgid "%(done)s of %(total)s lessons"
 msgstr ""
 
 msgid "video"
-msgstr ""
+msgstr "vidéo"
 
 msgid "No lectures in this module yet."
-msgstr ""
+msgstr "Aucun cours dans ce module pour le moment."
 
 msgid "No curriculum added yet."
-msgstr ""
+msgstr "Aucun programme ajouté pour le moment."
 
 msgid "Show Course Content"
-msgstr ""
+msgstr "Afficher le contenu du cours"
 
 msgid "No video available for this lecture."
-msgstr ""
+msgstr "Aucune vidéo n'est disponible pour ce cours."
 
 msgid "Play video"
-msgstr ""
+msgstr "Lire la vidéo"
 
 msgid "Playback protection triggered"
-msgstr ""
+msgstr "Protection de la lecture déclenchée"
 
 msgid "Reload the page to keep watching."
-msgstr ""
+msgstr "Rechargez la page pour continuer à regarder."
 
 msgid "Completed"
-msgstr ""
+msgstr "Terminé"
 
 msgid "Mark as Complete"
-msgstr ""
+msgstr "Marquer comme terminé"
 
 msgid "Previous"
-msgstr ""
+msgstr "Précédent"
 
 msgid "Next"
-msgstr ""
+msgstr "Suivant"
 
 msgid "Homework"
-msgstr ""
+msgstr "Devoirs"
 
 msgid "This lecture has a homework submission."
-msgstr ""
+msgstr "Ce cours comporte une remise de devoirs."
 
 msgid "Submit / View Homework"
-msgstr ""
+msgstr "Soumettre / Voir les devoirs"
 
 msgid "Overview"
-msgstr ""
+msgstr "Vue d'ensemble"
 
 msgid "Transcript"
-msgstr ""
+msgstr "Transcription"
 
 msgid "total"
-msgstr ""
+msgstr "total"
 
 #, python-format
 msgid "%(counter)s rating"
@@ -722,10 +729,10 @@ msgstr[0] ""
 msgstr[1] ""
 
 msgid "Resources"
-msgstr ""
+msgstr "Ressources"
 
 msgid "Download"
-msgstr ""
+msgstr "Télécharger"
 
 #, python-format
 msgid ""
@@ -738,19 +745,19 @@ msgid "Your best score so far: %(score)s%%"
 msgstr ""
 
 msgid "Passed"
-msgstr ""
+msgstr "Réussi"
 
 msgid "Submit Quiz"
-msgstr ""
+msgstr "Soumettre le quiz"
 
 msgid "Quiz Result"
-msgstr ""
+msgstr "Résultat du quiz"
 
 msgid "You passed!"
-msgstr ""
+msgstr "Félicitations, vous avez réussi !"
 
 msgid "Not quite yet"
-msgstr ""
+msgstr "Pas tout à fait encore"
 
 #, python-format
 msgid "Passing score: %(score)s%%"
