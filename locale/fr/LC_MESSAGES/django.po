@@ -1605,144 +1605,162 @@ msgid "Lecture Title"
 msgstr "Titre du cours"
 
 msgid "Order (position in module)"
-msgstr ""
+msgstr "Ordre (position dans le module)"
 
 msgid "Free preview (viewable without enrollment)"
-msgstr ""
+msgstr "Aperçu gratuit (visible sans inscription)"
 
 msgid "Accepts homework submission"
-msgstr ""
+msgstr "Accepte les remises de devoirs"
 
 msgid "External Video URL"
-msgstr ""
+msgstr "URL de vidéo externe"
 
 msgid "Course Video"
-msgstr ""
+msgstr "Vidéo du cours"
 
 msgid ""
 "Uploads securely to Bunny Stream and streams to students through a protected"
 " player."
 msgstr ""
+"Téléversement sécurisé vers Bunny Stream et diffusion aux étudiants via un "
+"lecteur protégé."
 
 msgid ""
 "Video hosting isn't configured yet (missing Bunny credentials). Add them on "
 "the server to enable uploads."
 msgstr ""
+"L'hébergement vidéo n'est pas encore configuré (identifiants Bunny "
+"manquants). Ajoutez-les sur le serveur pour activer les téléchargements."
 
 msgid ""
 "Powers the Transcript tab and lets the AI Coach answer questions about this "
 "specific lesson."
 msgstr ""
+"Alimente l'onglet Transcription et permet au coach IA de répondre aux "
+"questions sur cette leçon spécifique."
 
 msgid "Generating transcript… this can take a few minutes for longer videos."
 msgstr ""
+"Génération de la transcription… cela peut prendre quelques minutes pour les "
+"vidéos plus longues."
 
 msgid "Transcript generated."
-msgstr ""
+msgstr "Transcription générée."
 
 msgid "No transcript yet."
-msgstr ""
+msgstr "Aucune transcription pour le moment."
 
 msgid "Regenerate Transcript"
-msgstr ""
+msgstr "Régénérer la transcription"
 
 msgid "Generate Transcript"
-msgstr ""
+msgstr "Générer la transcription"
 
 msgid ""
 "Upload a video and wait for it to finish processing to generate a "
 "transcript."
 msgstr ""
+"Téléchargez une vidéo et attendez la fin du traitement pour générer une "
+"transcription."
 
 msgid "Choose a video file first."
-msgstr ""
+msgstr "Choisissez d'abord un fichier vidéo."
 
 msgid "Preparing secure upload…"
-msgstr ""
+msgstr "Préparation du téléchargement sécurisé…"
 
 msgid "Could not start the upload. Please try again."
-msgstr ""
+msgstr "Impossible de démarrer le téléchargement. Veuillez réessayer."
 
 msgid "Upload library failed to load. Please refresh the page and try again."
 msgstr ""
+"Le chargement de la bibliothèque de téléchargement a échoué. Veuillez "
+"actualiser la page et réessayer."
 
 msgid "Upload failed. Please try again."
-msgstr ""
+msgstr "Échec du téléchargement. Veuillez réessayer."
 
 msgid "Uploading… "
-msgstr ""
+msgstr "Chargement…"
 
 msgid ""
 "Uploaded! Bunny is now processing the video — reload this page in a minute "
 "to confirm it's ready."
 msgstr ""
+"Téléchargé ! Bunny traite actuellement la vidéo — rechargez cette page dans "
+"une minute pour confirmer qu'elle est prête."
 
 #, python-format
 msgid "%(title)s Curriculum"
 msgstr ""
 
 msgid "Edit Module"
-msgstr ""
+msgstr "Modifier le module"
 
 msgid "Module Title"
-msgstr ""
+msgstr "Titre du module"
 
 #, python-format
 msgid "%(title)s Quiz"
 msgstr ""
 
 msgid "Edit Question"
-msgstr ""
+msgstr "Modifier la question"
 
 msgid "Question Text"
-msgstr ""
+msgstr "Texte de la question"
 
 msgid "Save Question"
-msgstr ""
+msgstr "Enregistrer la question"
 
 msgid "Answer Choices"
-msgstr ""
+msgstr "Choix de réponse"
 
 msgid ""
 "Mark exactly one choice correct -- marking a new one automatically unmarks "
 "the rest."
 msgstr ""
+"Cochez exactement une seule réponse correcte ; en cocher une nouvelle "
+"décochera automatiquement les autres."
 
 msgid "Mark as correct answer"
-msgstr ""
+msgstr "Marquer comme réponse correcte"
 
 msgid "Remove this choice?"
-msgstr ""
+msgstr "Supprimer ce choix ?"
 
 msgid "Remove"
-msgstr ""
+msgstr "Supprimer"
 
 msgid "No choices yet. Add at least two below, and mark one correct."
 msgstr ""
+"Aucun choix pour le moment. Ajoutez-en au moins deux ci-dessous et marquez-"
+"en un comme correct."
 
 msgid "Correct"
-msgstr ""
+msgstr "Correct"
 
 msgid "Add Choice"
-msgstr ""
+msgstr "Ajouter un choix"
 
 msgid "Instructor Dashboard"
-msgstr ""
+msgstr "Tableau de bord de l'instructeur"
 
 msgid "Create New Course"
-msgstr ""
+msgstr "Créer un nouveau cours"
 
 msgid "Total Earnings"
-msgstr ""
+msgstr "Gains totaux"
 
 msgid "Available Balance"
-msgstr ""
+msgstr "Solde disponible"
 
 msgid "Your Courses"
-msgstr ""
+msgstr "Vos cours"
 
 msgid "Request a Track"
-msgstr ""
+msgstr "Demander un titre"
 
 msgid "View Wallet"
 msgstr ""
