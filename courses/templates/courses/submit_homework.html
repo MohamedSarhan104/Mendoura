@@ -1,32 +1,33 @@
 {% extends 'base.html' %}
-{% block title %}Homework - {{ lecture.title }}{% endblock %}
+{% load i18n %}
+{% block title %}{% blocktrans with title=lecture.translated_title %}Homework - {{ title }}{% endblocktrans %}{% endblock %}
 
 {% block content %}
 <div class="max-w-2xl mx-auto px-6 py-12">
 
   <a href="{% url 'course_player' course.id lecture.id %}" class="text-sm text-brand-600 hover:underline">
-    <i class="fa-solid fa-arrow-left"></i> {{ lecture.title }}
+    <i class="fa-solid fa-arrow-left"></i> {{ lecture.translated_title }}
   </a>
 
-  <h1 class="text-3xl font-extrabold mt-4 mb-1">Homework</h1>
-  <p class="text-gray-500 dark:text-gray-400 mb-10">{{ lecture.title }} &middot; {{ course.title }}</p>
+  <h1 class="text-3xl font-extrabold mt-4 mb-1">{% trans "Homework" %}</h1>
+  <p class="text-gray-500 dark:text-gray-400 mb-10">{{ lecture.translated_title }} &middot; {{ course.translated_title }}</p>
 
   {% if submission and submission.is_graded %}
     <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-8">
       <div class="flex items-center gap-2 text-green-600 font-semibold mb-4">
-        <i class="fa-solid fa-circle-check"></i> Graded
+        <i class="fa-solid fa-circle-check"></i> {% trans "Graded" %}
       </div>
-      <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">Grade</p>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">{% trans "Grade" %}</p>
       <p class="text-2xl font-bold mb-6">{{ submission.grade|default:"—" }}</p>
       {% if submission.feedback %}
-        <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">Feedback</p>
-        <p class="mb-6">{{ submission.feedback }}</p>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">{% trans "Feedback" %}</p>
+        <p class="mb-6">{{ submission.translated_feedback }}</p>
       {% endif %}
       <div class="border-t border-gray-100 dark:border-gray-800 pt-5 text-sm text-gray-500 dark:text-gray-400">
-        <p class="mb-2">Your submission (locked — already graded):</p>
+        <p class="mb-2">{% trans "Your submission (locked — already graded):" %}</p>
         {% if submission.submitted_file %}
           <a href="{{ submission.submitted_file.url }}" target="_blank" class="text-brand-600 hover:underline">
-            <i class="fa-solid fa-paperclip"></i> Submitted file
+            <i class="fa-solid fa-paperclip"></i> {% trans "Submitted file" %}
           </a><br>
         {% endif %}
         {% if submission.submission_link %}
@@ -34,7 +35,7 @@
             <i class="fa-solid fa-link"></i> {{ submission.submission_link }}
           </a><br>
         {% endif %}
-        {% if submission.note %}<p class="mt-2">{{ submission.note }}</p>{% endif %}
+        {% if submission.note %}<p class="mt-2">{{ submission.translated_note }}</p>{% endif %}
       </div>
     </div>
   {% else %}
@@ -42,30 +43,30 @@
       {% csrf_token %}
 
       <div>
-        <label class="block text-sm font-semibold mb-2">Upload a file <span class="text-gray-400 font-normal">(optional)</span></label>
+        <label class="block text-sm font-semibold mb-2">{% trans "Upload a file" %} <span class="text-gray-400 font-normal">({% trans "optional" %})</span></label>
         {{ form.submitted_file }}
         {% if submission.submitted_file %}
           <p class="text-xs text-gray-400 mt-2">
-            Current file: <a href="{{ submission.submitted_file.url }}" target="_blank" class="text-brand-600 hover:underline">{{ submission.submitted_file.name }}</a>
+            {% trans "Current file:" %} <a href="{{ submission.submitted_file.url }}" target="_blank" class="text-brand-600 hover:underline">{{ submission.submitted_file.name }}</a>
           </p>
         {% endif %}
       </div>
 
       <div>
-        <label class="block text-sm font-semibold mb-2">Or a link <span class="text-gray-400 font-normal">(optional)</span></label>
+        <label class="block text-sm font-semibold mb-2">{% trans "Or a link" %} <span class="text-gray-400 font-normal">({% trans "optional" %})</span></label>
         {{ form.submission_link }}
       </div>
 
       <div>
-        <label class="block text-sm font-semibold mb-2">Note to your instructor <span class="text-gray-400 font-normal">(optional)</span></label>
+        <label class="block text-sm font-semibold mb-2">{% trans "Note to your instructor" %} <span class="text-gray-400 font-normal">({% trans "optional" %})</span></label>
         {{ form.note }}
       </div>
 
       <button type="submit" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-semibold py-3 rounded-xl transition">
-        {% if submission %}Update Submission{% else %}Submit Homework{% endif %}
+        {% if submission %}{% trans "Update Submission" %}{% else %}{% trans "Submit Homework" %}{% endif %}
       </button>
       {% if submission %}
-        <p class="text-xs text-gray-400 text-center">Submitted {{ submission.submitted_at|date:"M d, Y" }} &middot; you can update this until it's graded.</p>
+        <p class="text-xs text-gray-400 text-center">{% blocktrans with date=submission.submitted_at|date:"M d, Y" %}Submitted {{ date }} &middot; you can update this until it's graded.{% endblocktrans %}</p>
       {% endif %}
     </form>
   {% endif %}

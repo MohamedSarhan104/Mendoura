@@ -1,16 +1,16 @@
 {% extends 'base.html' %}
 {% load i18n %}
-{% block title %}{{ quiz.display_title }} - {{ course.title }}{% endblock %}
+{% block title %}{{ quiz.display_title }} - {{ course.translated_title }}{% endblock %}
 
 {% block content %}
 <div class="max-w-3xl mx-auto px-6 py-10 animate-fade-in">
 
   <a href="{% url 'course_detail' course.id %}" class="text-sm text-brand-600 hover:underline">
-    <i class="fa-solid fa-arrow-left"></i> {{ course.title }}
+    <i class="fa-solid fa-arrow-left"></i> {{ course.translated_title }}
   </a>
 
   <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-8 mt-4">
-    <p class="text-xs font-semibold text-purple-600 uppercase tracking-wide mb-1">{{ module.title }}</p>
+    <p class="text-xs font-semibold text-purple-600 uppercase tracking-wide mb-1">{{ module.translated_title }}</p>
     <h1 class="text-2xl font-extrabold mb-2">{{ quiz.display_title }}</h1>
     <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">
       {% blocktrans with score=quiz.passing_score_percent %}Pass with a score of {{ score }}% or higher. You can retake this quiz as many times as you need.{% endblocktrans %}
@@ -28,13 +28,13 @@
       {% csrf_token %}
       {% for question in questions %}
         <div>
-          <p class="font-semibold mb-3">{{ forloop.counter }}. {{ question.text }}</p>
+          <p class="font-semibold mb-3">{{ forloop.counter }}. {{ question.translated_text }}</p>
           <div class="space-y-2">
             {% for choice in question.choices.all %}
               <label class="flex items-center gap-3 p-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-brand-500 cursor-pointer transition">
                 <input type="radio" name="question_{{ question.id }}" value="{{ choice.id }}" required
                        class="w-4 h-4 text-brand-600 focus:ring-brand-500">
-                <span class="text-sm">{{ choice.text }}</span>
+                <span class="text-sm">{{ choice.translated_text }}</span>
               </label>
             {% endfor %}
           </div>

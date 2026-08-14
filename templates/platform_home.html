@@ -86,7 +86,7 @@
         {% if plan.interval == 'annual' %}
           <span class="absolute -top-3 left-8 bg-brand-600 text-white text-xs font-semibold px-3 py-1 rounded-full">{% trans "Best Value" %}</span>
         {% endif %}
-        <span class="text-xs font-semibold text-brand-600 uppercase">{{ plan.name }}</span>
+        <span class="text-xs font-semibold text-brand-600 uppercase">{{ plan.translated_name }}</span>
         <p class="text-3xl font-extrabold mt-4">{{ plan.price_egp|floatformat:0 }} EGP
           <span class="text-base font-medium text-gray-400">/{% if plan.interval == 'monthly' %}{% trans "mo" %}{% else %}{% trans "yr" %}{% endif %}</span>
         </p>

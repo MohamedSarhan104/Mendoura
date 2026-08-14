@@ -1,12 +1,12 @@
 {% extends 'base.html' %}
 {% load i18n course_extras %}
-{% block title %}{{ lecture.title }} - {{ course.title }}{% endblock %}
+{% block title %}{{ lecture.translated_title }} - {{ course.translated_title }}{% endblock %}
 
 {% block content %}
 <div class="max-w-[1600px] mx-auto px-4 sm:px-6 py-8 animate-fade-in">
 
   <a href="{% url 'course_detail' course.id %}" class="text-sm text-brand-600 hover:underline">
-    <i class="fa-solid fa-arrow-left rtl:rotate-180"></i> {{ course.title }}
+    <i class="fa-solid fa-arrow-left rtl:rotate-180"></i> {{ course.translated_title }}
   </a>
 
   <div class="flex flex-col lg:flex-row gap-6 mt-4 items-start">
@@ -41,7 +41,7 @@
                       class="module-toggle w-full flex items-center justify-between gap-2 px-4 py-3 text-left text-sm font-semibold hover:bg-gray-50 dark:hover:bg-gray-800/60"
                       data-target="module-content-{{ module.id }}"
                       aria-expanded="{% if module.id == lecture.module_id %}true{% else %}false{% endif %}">
-                <span>{{ forloop.counter }}. {{ module.title }}</span>
+                <span>{{ forloop.counter }}. {{ module.translated_title }}</span>
                 <i class="fa-solid fa-chevron-down text-xs text-gray-400 transition-transform {% if module.id == lecture.module_id %}rotate-180{% endif %}"></i>
               </button>
               <div id="module-content-{{ module.id }}" class="{% if module.id != lecture.module_id %}hidden{% endif %}">
@@ -54,7 +54,7 @@
                       <i id="lesson-status-icon-{{ l.id }}" class="fa-regular fa-circle text-gray-300 dark:text-gray-600 mt-0.5 shrink-0"></i>
                     {% endif %}
                     <span class="min-w-0">
-                      <span class="block {% if l.id == lecture.id %}text-brand-600 font-semibold{% endif %}">{{ l.title }}</span>
+                      <span class="block {% if l.id == lecture.id %}text-brand-600 font-semibold{% endif %}">{{ l.translated_title }}</span>
                       <span class="block text-xs text-gray-400 mt-0.5">
                         {% if l.content_type == 'article' %}
                           {% trans "Article" %}
@@ -99,7 +99,7 @@
 
     <!-- ═══ Video + tabs ═══ -->
     <main class="flex-1 min-w-0 order-1 lg:order-2 w-full">
-      <h1 class="text-2xl font-extrabold mb-4">{{ lecture.title }}</h1>
+      <h1 class="text-2xl font-extrabold mb-4">{{ lecture.translated_title }}</h1>
 
       <div id="video-container" class="relative aspect-video bg-black rounded-2xl overflow-hidden flex items-center justify-center">
         {% if bunny_embed_url %}
@@ -138,7 +138,7 @@
               lazily sets the real src, so the video/iframe never loads at all
               until the student actually wants to watch.
             {% endcomment %}
-            <button type="button" id="poster-cover" aria-label="Play video"
+            <button type="button" id="poster-cover" aria-label="{% trans "Play video" %}"
                     class="absolute inset-0 z-[45] w-full h-full group cursor-pointer">
               <img src="{{ course.poster_image.url }}" alt="" class="absolute inset-0 w-full h-full object-cover">
               <div class="absolute inset-0 flex items-center justify-center bg-black/10 group-hover:bg-black/25 transition">
@@ -296,10 +296,11 @@
         {% if lecture.resources.all %}
           <h2 class="text-sm font-bold mt-6 mb-3">{% trans "Resources" %}</h2>
           <div class="space-y-2">
+            {% trans "Download" as msg_download %}
             {% for resource in lecture.resources.all %}
               <a href="{{ resource.file.url }}" target="_blank" class="flex items-center gap-3 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-3 hover:shadow-sm transition">
                 <i class="fa-solid fa-paperclip text-brand-600"></i>
-                <span class="text-sm">{{ resource.title|default:"Download" }}</span>
+                <span class="text-sm">{{ resource.translated_title|default:msg_download }}</span>
               </a>
             {% endfor %}
           </div>
@@ -318,7 +319,7 @@
 
 {% block ai_coach_widget %}
   {% if user.is_authenticated and user.is_student %}
-    {% include 'partials/_ai_coach_widget.html' with lesson_course_id=course.id lesson_lecture_id=lecture.id lesson_title=lecture.title %}
+    {% include 'partials/_ai_coach_widget.html' with lesson_course_id=course.id lesson_lecture_id=lecture.id lesson_title=lecture.translated_title %}
   {% endif %}
 {% endblock %}
 

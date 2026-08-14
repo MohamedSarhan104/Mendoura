@@ -11,7 +11,7 @@
       <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5">
         <div class="flex items-center justify-between gap-4">
           <div>
-            <h3 class="font-bold text-lg">{{ enrollment.course.title }}</h3>
+            <h3 class="font-bold text-lg">{{ enrollment.course.translated_title }}</h3>
             <p class="text-xs text-gray-400 mt-1">{% blocktrans with date=enrollment.enrolled_at|date:"M d, Y" %}Enrolled {{ date }}{% endblocktrans %}</p>
           </div>
           {% with next_lecture=next_lecture_by_enrollment|get_item:enrollment.id %}

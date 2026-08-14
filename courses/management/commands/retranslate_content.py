@@ -2,10 +2,29 @@ from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 
 from courses import auto_translate
-from courses.models import LegalDocument, LegalSection, Track
+from courses.models import (
+    Choice, Course, LegalDocument, LegalSection, Lecture, Module, Plan, Question, Resource,
+    Review, Submission, Quiz, Track, TrackRoadmapStep,
+)
 
+# Every model wrapped in AutoTranslatedFieldsMixin -- kept as an explicit,
+# named list (rather than discovered by scanning INSTALLED_APPS' models for
+# the mixin) so adding a new translated model is a deliberate one-line
+# addition here, not something this command silently picks up and starts
+# hammering with translation calls the next time someone runs --model all.
 MODEL_CHOICES = {
     'track': Track,
+    'trackroadmapstep': TrackRoadmapStep,
+    'course': Course,
+    'module': Module,
+    'lecture': Lecture,
+    'resource': Resource,
+    'quiz': Quiz,
+    'question': Question,
+    'choice': Choice,
+    'submission': Submission,
+    'review': Review,
+    'plan': Plan,
     'legaldocument': LegalDocument,
     'legalsection': LegalSection,
 }
@@ -13,15 +32,16 @@ MODEL_CHOICES = {
 
 class Command(BaseCommand):
     help = (
-        "Force-retranslate Track/LegalDocument/LegalSection content into one or more "
-        "languages, without needing to touch the English source text. "
+        "Force-retranslate content on every AutoTranslatedFieldsMixin model into one "
+        "or more languages, without needing to touch the English source text. "
         "AutoTranslatedFieldsMixin (courses/models.py) only retries a language "
         "automatically when its source text changes or the language is entirely "
         "missing from the cached translations -- this is the explicit 'try again "
         "right now' escape hatch for a language that's been stuck (e.g. after a "
         "past GoogleTranslator failure, or right after adding a new language to "
-        "settings.LANGUAGES). By default only fills in languages missing from the "
-        "cached translations; pass --force to redo ones that already have a value too."
+        "settings.LANGUAGES, or backfilling a model that just gained translation "
+        "support). By default only fills in languages missing from the cached "
+        "translations; pass --force to redo ones that already have a value too."
     )
 
     def add_arguments(self, parser):
@@ -32,7 +52,7 @@ class Command(BaseCommand):
                  "settings.LANGUAGES, instead of listing each one out.")
         parser.add_argument(
             '--model', choices=[*MODEL_CHOICES, 'all'], default='all',
-            help='Restrict to one model (track/legaldocument/legalsection), or all (default).')
+            help=f'Restrict to one model ({"/".join(MODEL_CHOICES)}), or all (default).')
         parser.add_argument(
             '--force', action='store_true',
             help='Re-translate languages that already have a cached value too, not just missing ones.')

@@ -1,9 +1,9 @@
-{% load static %}<!DOCTYPE html>
-<html lang="en">
+{% load static i18n %}<!DOCTYPE html>
+<html lang="{{ LANGUAGE_CODE }}" dir="{% if LANGUAGE_BIDI %}rtl{% else %}ltr{% endif %}">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>You're offline — Mendoura</title>
+<title>{% trans "You're offline" %} — Mendoura</title>
 <style>
   /* No external fonts/CDN here on purpose -- this page has to render with
      zero network, so it can't depend on anything that itself needs a
@@ -26,8 +26,8 @@
 </head>
 <body>
   <img src="{% static 'img/logo.png' %}" alt="Mendoura">
-  <h1>You're offline</h1>
-  <p>Mendoura needs a connection to load courses and lectures. Check your internet and try again.</p>
-  <button onclick="location.reload()">Try Again</button>
+  <h1>{% trans "You're offline" %}</h1>
+  <p>{% trans "Mendoura needs a connection to load courses and lectures. Check your internet and try again." %}</p>
+  <button onclick="location.reload()">{% trans "Try Again" %}</button>
 </body>
 </html>

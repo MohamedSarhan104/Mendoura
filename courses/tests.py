@@ -2,16 +2,19 @@ import hashlib
 import hmac
 import json
 import random
+import tempfile
 from datetime import timedelta
 from decimal import Decimal
+from pathlib import Path
 from unittest.mock import Mock, patch
 
+import polib
 import requests
 from django.conf import settings
 from django.contrib.auth.tokens import default_token_generator
 from django.core import mail
 from django.core.cache import cache
-from django.core.exceptions import ValidationError
+from django.core.exceptions import FieldDoesNotExist, ValidationError
 from django.core.management import call_command
 from django.core.management.base import CommandError
 from django.test import TestCase, override_settings
@@ -26,7 +29,7 @@ from .models import (
     AIConversation, AIMessage, Certificate, Choice, Course, Enrollment, InstructorWallet, Lecture,
     LectureProgress, LegalDocument, LegalSection, Module, Payment, Payout, Plan, Question, Quiz,
     QuizAttempt, Resource, RevenueDistribution, Review, Subscription, SubscriptionPeriod, Submission,
-    Track, TrackRequest, User, WalletTransaction, WatchEvent,
+    Track, TrackRequest, TrackRoadmapStep, User, WalletTransaction, WatchEvent,
 )
 from .money import calculate_split
 
@@ -1990,6 +1993,192 @@ def _signed_transaction(merchant_order_id, **overrides):
     concatenated = ''.join(str(flat.get(f, '')) for f in paymob.HMAC_FIELDS)
     signature = hmac.new(TEST_HMAC_SECRET.encode(), concatenated.encode(), hashlib.sha512).hexdigest()
     return nested, signature
+
+
+@override_settings(AUTO_TRANSLATE_ENABLED=True)
+class ExpandedContentTranslationTests(TestCase):
+    """Category 1 of the broader translation sweep: extends
+    AutoTranslatedFieldsMixin (already used by Track/LegalDocument/
+    LegalSection) to Course, Module, Lecture (title only), Resource,
+    TrackRoadmapStep, Quiz, Question, Choice, Submission (note/feedback),
+    Review, and Plan -- same save()-triggers-_autotranslate()/
+    translated_<field> property pattern throughout, so these tests mirror
+    TrackTranslationTests rather than re-deriving new assertions."""
+
+    def setUp(self):
+        self.instructor = User.objects.create_user(
+            username='i18n_inst', password='pw', is_instructor=True)
+        self.student = User.objects.create_user(
+            username='i18n_stud', password='pw', is_student=True)
+        # AUTO_TRANSLATE_ENABLED=True is a class-level override, but @patch
+        # decorators on individual test methods don't cover setUp() -- an
+        # unpatched _autotranslate() call here would make a REAL (blocked,
+        # now-retried) network attempt on every single test in this class.
+        with override_settings(AUTO_TRANSLATE_ENABLED=False):
+            self.track = Track.objects.create(name='I18N Track')
+            self.course = Course.objects.create(
+                instructor=self.instructor, track=self.track, title='My Course',
+                description='About the course.', production_type=Course.ProductionType.FULL,
+                price=Decimal('0.00'), is_free=True)
+
+    @patch('courses.models.auto_translate.translate_fields')
+    def test_course_title_and_description_translate(self, mock_translate):
+        mock_translate.return_value = {
+            'title': {'ar': 'دورة'},
+            'description': {'ar': 'حول الدورة.'},
+        }
+        self.course.save()
+        with translation_override('ar'):
+            self.assertEqual(self.course.translated_title, 'دورة')
+            self.assertEqual(self.course.translated_description, 'حول الدورة.')
+        with translation_override('en'):
+            self.assertEqual(self.course.translated_title, 'My Course')
+
+    @patch('courses.models.auto_translate.translate_fields')
+    def test_module_title_translates(self, mock_translate):
+        mock_translate.return_value = {'title': {'ar': 'وحدة'}}
+        module = Module.objects.create(course=self.course, title='Intro')
+        with translation_override('ar'):
+            self.assertEqual(module.translated_title, 'وحدة')
+
+    @patch('courses.models.auto_translate.translate_fields')
+    def test_lecture_title_translates_but_script_never_does(self, mock_translate):
+        mock_translate.return_value = {'title': {'ar': 'وحدة'}}
+        module = Module.objects.create(course=self.course, title='Intro')
+        mock_translate.reset_mock()  # Module.save() also auto-translates -- isolate to the Lecture's own call below.
+
+        mock_translate.return_value = {'title': {'ar': 'محاضرة'}}
+        lecture = Lecture.objects.create(
+            module=module, title='Welcome', ai_generated_script='Some transcript text.')
+        with translation_override('ar'):
+            self.assertEqual(lecture.translated_title, 'محاضرة')
+        # ai_generated_script is deliberately excluded -- grounds the AI
+        # Coach and feeds the Transcript tab verbatim, not marketing copy.
+        self.assertNotIn('ai_generated_script', Lecture.TRANSLATABLE_FIELDS)
+        with self.assertRaises(FieldDoesNotExist):
+            Lecture._meta.get_field('ai_generated_script_translations')
+        # Only 'title' was ever passed to the translator -- confirms the
+        # script's content never left this process at all.
+        mock_translate.assert_called_once()
+        fields_arg = mock_translate.call_args.args[0]
+        self.assertEqual(set(fields_arg), {'title'})
+
+    @patch('courses.models.auto_translate.translate_fields')
+    def test_resource_title_translates(self, mock_translate):
+        mock_translate.return_value = {'title': {'ar': 'مورد'}}
+        module = Module.objects.create(course=self.course, title='Intro')
+        lecture = Lecture.objects.create(module=module, title='Welcome')
+        resource = Resource.objects.create(lecture=lecture, title='Slides', file='resources/slides.pdf')
+        with translation_override('ar'):
+            self.assertEqual(resource.translated_title, 'مورد')
+
+    @patch('courses.models.auto_translate.translate_fields')
+    def test_track_roadmap_step_title_translates_and_display_title_prefers_linked_course(self, mock_translate):
+        mock_translate.return_value = {'title': {'ar': 'خطوة'}}
+        step_no_course = TrackRoadmapStep.objects.create(track=self.track, title='Step One', order=1)
+        with translation_override('ar'):
+            self.assertEqual(step_no_course.translated_title, 'خطوة')
+            # No linked course yet -- falls back to the step's own
+            # (translated) title, per its help_text ("used until a course
+            # is linked"). This also regression-tests the previously
+            # broken display_title, which referenced attributes
+            # (self.course/self.title as if this were TrackRequest) that
+            # didn't raise loudly because Django templates swallow
+            # AttributeError -- it just silently rendered blank.
+            self.assertEqual(step_no_course.display_title, 'خطوة')
+
+        mock_translate.return_value = {'title': {'ar': 'دورة مرتبطة'}}
+        self.course.save()
+        step_with_course = TrackRoadmapStep.objects.create(
+            track=self.track, course=self.course, title='Step Two', order=2)
+        with translation_override('ar'):
+            self.assertEqual(step_with_course.display_title, self.course.translated_title)
+
+    @patch('courses.models.auto_translate.translate_fields')
+    def test_quiz_title_translates_and_display_title_falls_back_to_module(self, mock_translate):
+        mock_translate.return_value = {'title': {'ar': 'اختبار'}}
+        module = Module.objects.create(course=self.course, title='Intro')
+        quiz_with_title = Quiz.objects.create(module=module, title='Final Exam')
+        with translation_override('ar'):
+            self.assertEqual(quiz_with_title.translated_title, 'اختبار')
+            self.assertEqual(quiz_with_title.display_title, 'اختبار')
+
+        module2 = Module.objects.create(course=self.course, title='Advanced')
+        mock_translate.return_value = {'title': {'ar': 'متقدم'}}
+        module2.save()
+        blank_quiz = Quiz.objects.create(module=module2, title='')
+        with translation_override('ar'):
+            self.assertEqual(blank_quiz.display_title, 'متقدم Quiz')
+
+    def test_quiz_display_title_unchanged_in_english_without_translation(self):
+        # Regression guard for the display_title rewrite -- must still
+        # produce the exact same string it always has when nothing is
+        # actually translated (AUTO_TRANSLATE off/no cache).
+        with override_settings(AUTO_TRANSLATE_ENABLED=False):
+            module = Module.objects.create(course=self.course, title='M1')
+            quiz = Quiz.objects.create(module=module, title='')
+        self.assertEqual(quiz.display_title, 'M1 Quiz')
+
+    @patch('courses.models.auto_translate.translate_fields')
+    def test_question_and_choice_text_translate(self, mock_translate):
+        module = Module.objects.create(course=self.course, title='Intro')
+        quiz = Quiz.objects.create(module=module, title='Quiz')
+        mock_translate.return_value = {'text': {'ar': 'ما هو 2+2؟'}}
+        question = Question.objects.create(quiz=quiz, text='What is 2+2?')
+        mock_translate.return_value = {'text': {'ar': 'أربعة'}}
+        choice = Choice.objects.create(question=question, text='Four')
+        with translation_override('ar'):
+            self.assertEqual(question.translated_text, 'ما هو 2+2؟')
+            self.assertEqual(choice.translated_text, 'أربعة')
+
+    @patch('courses.models.auto_translate.translate_fields')
+    def test_submission_note_and_feedback_translate(self, mock_translate):
+        module = Module.objects.create(course=self.course, title='Intro')
+        lecture = Lecture.objects.create(module=module, title='Welcome', accepts_submission=True)
+        mock_translate.return_value = {
+            'note': {'ar': 'ملاحظتي'},
+            'feedback': {'ar': 'عمل جيد'},
+        }
+        submission = Submission.objects.create(
+            student=self.student, lecture=lecture, note='My note', feedback='Good work')
+        with translation_override('ar'):
+            self.assertEqual(submission.translated_note, 'ملاحظتي')
+            self.assertEqual(submission.translated_feedback, 'عمل جيد')
+
+    @patch('courses.models.auto_translate.translate_fields')
+    def test_review_comment_translates(self, mock_translate):
+        mock_translate.return_value = {'comment': {'ar': 'دورة رائعة'}}
+        review = Review.objects.create(
+            student=self.student, course=self.course, rating=5, comment='Great course')
+        with translation_override('ar'):
+            self.assertEqual(review.translated_comment, 'دورة رائعة')
+
+    @patch('courses.models.auto_translate.translate_fields')
+    def test_plan_name_translates(self, mock_translate):
+        mock_translate.return_value = {'name': {'ar': 'خطة سنوية'}}
+        plan = Plan.objects.create(
+            name='Annual Pass', interval=Plan.Interval.ANNUAL,
+            price_egp=Decimal('1000'), price_usd=Decimal('30'))
+        with translation_override('ar'):
+            self.assertEqual(plan.translated_name, 'خطة سنوية')
+
+    # Pinned to a single non-English language (see the identical pattern in
+    # TrackTranslationTests) so the mock's full-coverage return value makes
+    # every field "complete" and the count assertions below stay exact
+    # regardless of how many languages are configured live.
+    @override_settings(LANGUAGES=[('en', 'English'), ('ar', 'ar')])
+    @patch('courses.models.auto_translate.translate_fields')
+    def test_unchanged_source_does_not_retrigger_translation(self, mock_translate):
+        # Same staleness contract Track already relies on -- confirms it
+        # extends cleanly to a freshly-mixed-in model with no special-casing.
+        mock_translate.return_value = {
+            'title': {'ar': 'دورة'}, 'description': {'ar': 'حول الدورة.'},
+        }
+        self.course.save()
+        self.assertEqual(mock_translate.call_count, 1)
+        self.course.price = Decimal('10.00')
+        self.course.save()
+        self.assertEqual(mock_translate.call_count, 1)
 
 
 @override_settings(PAYMOB_HMAC_SECRET=TEST_HMAC_SECRET)
@@ -6120,3 +6309,125 @@ class QuizBuilderInstructorTests(TestCase):
         response = self.client.post(reverse('delete_quiz', args=[self.course.id, self.module.id]))
         self.assertEqual(response.status_code, 404)
         self.assertTrue(Quiz.objects.filter(module=self.module).exists())
+
+
+@override_settings(AUTO_TRANSLATE_ENABLED=True)
+class TranslatePoEntriesCommandTests(TestCase):
+    """python manage.py translate_po_entries -- machine-translates blank
+    static-UI-string msgstrs (the Category 2 {% trans %}/{% blocktrans %}
+    strings) using the same GoogleTranslator wrapper as DB-content
+    translation, for the fr/es "real supported language" tier only. Builds
+    a throwaway locale/<lang>/LC_MESSAGES/django.po under a temp BASE_DIR
+    rather than touching the repo's real .po files."""
+
+    def setUp(self):
+        self.tmpdir = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmpdir.cleanup)
+        self.base_dir = Path(self.tmpdir.name)
+        self.po_dir = self.base_dir / 'locale' / 'fr' / 'LC_MESSAGES'
+        self.po_dir.mkdir(parents=True)
+        self.po_path = self.po_dir / 'django.po'
+
+        po = polib.POFile()
+        po.metadata = {'Content-Type': 'text/plain; charset=utf-8'}
+        po.append(polib.POEntry(msgid='Log In', msgstr=''))
+        po.append(polib.POEntry(msgid='Already translated', msgstr='Déjà traduit'))
+        po.append(polib.POEntry(msgid='Hello %(name)s', msgstr=''))
+        po.append(polib.POEntry(msgid='%(count)s items', msgstr=''))
+        po.append(polib.POEntry(msgid='Click <a href="#">here</a>', msgstr=''))
+        po.append(polib.POEntry(
+            msgid='%(count)s day', msgid_plural='%(count)s days', msgstr_plural={0: '', 1: ''}))
+        po.save(str(self.po_path))
+
+    def _reload(self):
+        return polib.pofile(str(self.po_path))
+
+    @patch('courses.management.commands.translate_po_entries.auto_translate._translate_text')
+    def test_translates_blank_simple_entries(self, mock_translate_text):
+        mock_translate_text.side_effect = lambda text, lang: f'[{lang}] {text}'
+        with override_settings(BASE_DIR=self.base_dir):
+            call_command('translate_po_entries', '--language', 'fr')
+
+        po = self._reload()
+        entry = po.find('Log In')
+        self.assertEqual(entry.msgstr, '[fr] Log In')
+        mock_translate_text.assert_called_once_with('Log In', 'fr')
+
+    @patch('courses.management.commands.translate_po_entries.auto_translate._translate_text')
+    def test_does_not_touch_already_translated_entry_without_force(self, mock_translate_text):
+        mock_translate_text.side_effect = lambda text, lang: f'[{lang}] {text}'
+        with override_settings(BASE_DIR=self.base_dir):
+            call_command('translate_po_entries', '--language', 'fr')
+
+        po = self._reload()
+        self.assertEqual(po.find('Already translated').msgstr, 'Déjà traduit')
+
+    @patch('courses.management.commands.translate_po_entries.auto_translate._translate_text')
+    def test_force_retranslates_already_translated_entry(self, mock_translate_text):
+        mock_translate_text.side_effect = lambda text, lang: f'[{lang}] {text}'
+        with override_settings(BASE_DIR=self.base_dir):
+            call_command('translate_po_entries', '--language', 'fr', '--force')
+
+        po = self._reload()
+        self.assertEqual(po.find('Already translated').msgstr, '[fr] Already translated')
+
+    @patch('courses.management.commands.translate_po_entries.auto_translate._translate_text')
+    def test_skips_entries_with_format_placeholders(self, mock_translate_text):
+        mock_translate_text.side_effect = lambda text, lang: f'[{lang}] {text}'
+        with override_settings(BASE_DIR=self.base_dir):
+            call_command('translate_po_entries', '--language', 'fr')
+
+        po = self._reload()
+        self.assertEqual(po.find('Hello %(name)s').msgstr, '')
+        self.assertEqual(po.find('%(count)s items').msgstr, '')
+        translated_msgids = {call.args[0] for call in mock_translate_text.call_args_list}
+        self.assertNotIn('Hello %(name)s', translated_msgids)
+        self.assertNotIn('%(count)s items', translated_msgids)
+
+    @patch('courses.management.commands.translate_po_entries.auto_translate._translate_text')
+    def test_skips_entries_with_html_markup(self, mock_translate_text):
+        mock_translate_text.side_effect = lambda text, lang: f'[{lang}] {text}'
+        with override_settings(BASE_DIR=self.base_dir):
+            call_command('translate_po_entries', '--language', 'fr')
+
+        po = self._reload()
+        self.assertEqual(po.find('Click <a href="#">here</a>').msgstr, '')
+
+    @patch('courses.management.commands.translate_po_entries.auto_translate._translate_text')
+    def test_skips_plural_entries(self, mock_translate_text):
+        mock_translate_text.side_effect = lambda text, lang: f'[{lang}] {text}'
+        with override_settings(BASE_DIR=self.base_dir):
+            call_command('translate_po_entries', '--language', 'fr')
+
+        po = self._reload()
+        plural_entry = po.find('%(count)s day')
+        self.assertEqual(plural_entry.msgstr_plural, {0: '', 1: ''})
+
+    @patch('courses.management.commands.translate_po_entries.auto_translate._translate_text')
+    def test_defaults_to_fr_and_es_when_no_language_given(self, mock_translate_text):
+        mock_translate_text.side_effect = lambda text, lang: f'[{lang}] {text}'
+        es_dir = self.base_dir / 'locale' / 'es' / 'LC_MESSAGES'
+        es_dir.mkdir(parents=True)
+        po = polib.POFile()
+        po.metadata = {'Content-Type': 'text/plain; charset=utf-8'}
+        po.append(polib.POEntry(msgid='Log In', msgstr=''))
+        po.save(str(es_dir / 'django.po'))
+
+        with override_settings(BASE_DIR=self.base_dir):
+            call_command('translate_po_entries')
+
+        fr_po = self._reload()
+        es_po = polib.pofile(str(es_dir / 'django.po'))
+        self.assertEqual(fr_po.find('Log In').msgstr, '[fr] Log In')
+        self.assertEqual(es_po.find('Log In').msgstr, '[es] Log In')
+
+    def test_raises_when_po_file_missing(self):
+        with override_settings(BASE_DIR=self.base_dir):
+            with self.assertRaises(CommandError):
+                call_command('translate_po_entries', '--language', 'de')
+
+    @override_settings(AUTO_TRANSLATE_ENABLED=False)
+    def test_raises_when_auto_translate_disabled(self):
+        with override_settings(BASE_DIR=self.base_dir):
+            with self.assertRaises(CommandError):
+                call_command('translate_po_entries', '--language', 'fr')

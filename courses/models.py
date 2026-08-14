@@ -241,7 +241,7 @@ class Track(AutoTranslatedFieldsMixin, models.Model):
         super().save(*args, **kwargs)
 
 
-class TrackRoadmapStep(models.Model):
+class TrackRoadmapStep(AutoTranslatedFieldsMixin, models.Model):
     """One node in a track's ordered learning path (the track roadmap, distinct
     from a course's own Module/Lecture syllabus). `course` is nullable so an
     admin can lay out a full planned roadmap -- 'Python Fundamentals', 'Machine
@@ -252,6 +252,8 @@ class TrackRoadmapStep(models.Model):
     course = models.ForeignKey('Course', on_delete=models.SET_NULL, null=True, blank=True,
                                 related_name='roadmap_steps')
     title = models.CharField(max_length=255, help_text=_('Used until a course is linked, or if none ever is.'))
+    title_translations = models.JSONField(default=dict, blank=True)
+    TRANSLATABLE_FIELDS = ('title',)
     order = models.PositiveIntegerField(default=0)
     is_optional = models.BooleanField(default=False)
 
@@ -260,6 +262,25 @@ class TrackRoadmapStep(models.Model):
 
     def __str__(self):
         return f'{self.track.name} #{self.order}: {self.display_title}'
+
+    @property
+    def translated_title(self):
+        return self._translated('title')
+
+    @property
+    def display_title(self):
+        # Was referencing self.course/self.title as if this were
+        # TrackRequest (which has neither) -- silently rendered blank in
+        # track_detail.html's roadmap stepper since Django templates
+        # swallow attribute errors. Fixed while adding translation support
+        # here: prefer the linked course's own (translated) title once one
+        # exists, per this field's own help_text ("used until a course is
+        # linked"), falling back to this step's own translated title.
+        return self.course.translated_title if self.course else self.translated_title
+
+    def save(self, *args, **kwargs):
+        self._autotranslate()
+        super().save(*args, **kwargs)
 
 
 class TrackRequest(models.Model):
@@ -340,7 +361,7 @@ class TrackRequest(models.Model):
         return not self.parent_id
 
 
-class Course(models.Model):
+class Course(AutoTranslatedFieldsMixin, models.Model):
     class Level(models.TextChoices):
         BEGINNER = 'beginner', _('Beginner')
         INTERMEDIATE = 'intermediate', _('Intermediate')
@@ -374,6 +395,10 @@ class Course(models.Model):
     slug = models.SlugField(max_length=280, unique=True, blank=True, default='')
     subtitle = models.CharField(max_length=255, blank=True, default='')
     description = models.TextField()
+    # Auto-populated by AutoTranslatedFieldsMixin -- {"ar": "...", "fr": "...", ...}.
+    title_translations = models.JSONField(default=dict, blank=True)
+    description_translations = models.JSONField(default=dict, blank=True)
+    TRANSLATABLE_FIELDS = ('title', 'description')
     what_you_will_learn = models.TextField(blank=True, default='')
     requirements = models.TextField(blank=True, default='')
     language = models.CharField(max_length=50, default='English')
@@ -406,6 +431,14 @@ class Course(models.Model):
 
     def __str__(self):
         return self.title
+
+    @property
+    def translated_title(self):
+        return self._translated('title')
+
+    @property
+    def translated_description(self):
+        return self._translated('description')
 
     @property
     def is_published(self):
@@ -457,6 +490,7 @@ class Course(models.Model):
                 raise ValidationError(
                     _("production_type is read-only once a course has its first successful sale.")
                 )
+        self._autotranslate()
         super().save(*args, **kwargs)
 
     def generate_poster(self):
@@ -477,10 +511,13 @@ class Course(models.Model):
         return self.poster_image
 
 
-class Module(models.Model):
+class Module(AutoTranslatedFieldsMixin, models.Model):
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='modules')
     title = models.CharField(max_length=255)
     order = models.PositiveIntegerField(default=0)
+
+    title_translations = models.JSONField(default=dict, blank=True)
+    TRANSLATABLE_FIELDS = ('title',)
 
     class Meta:
         ordering = ['order']
@@ -488,8 +525,16 @@ class Module(models.Model):
     def __str__(self):
         return f'{self.course.title} - {self.title}'
 
+    @property
+    def translated_title(self):
+        return self._translated('title')
 
-class Lecture(models.Model):
+    def save(self, *args, **kwargs):
+        self._autotranslate()
+        super().save(*args, **kwargs)
+
+
+class Lecture(AutoTranslatedFieldsMixin, models.Model):
     class ContentType(models.TextChoices):
         VIDEO = 'video', _('Video')
         ARTICLE = 'article', _('Article')
@@ -503,6 +548,16 @@ class Lecture(models.Model):
 
     module = models.ForeignKey(Module, on_delete=models.CASCADE, related_name='lectures', null=True)
     title = models.CharField(max_length=255)
+    title_translations = models.JSONField(default=dict, blank=True)
+    # Only `title` is translated -- ai_generated_script is intentionally
+    # excluded. It's instructor/AI-generated source content (a manual
+    # Script Only script, or the "Generate Transcript" button's output)
+    # used verbatim to ground the AI Coach and populate the Transcript tab,
+    # not marketing copy meant for a browsing student to read in their own
+    # language -- machine-translating it would also risk the AI Coach
+    # grounding on a translated (and therefore potentially distorted)
+    # version of what the instructor actually said.
+    TRANSLATABLE_FIELDS = ('title',)
     content_type = models.CharField(max_length=20, choices=ContentType.choices, default=ContentType.VIDEO)
     # Bunny Stream video GUID. When set, the player embeds Bunny's token-signed
     # iframe instead of the legacy video_url/video_file. Those two stay for
@@ -540,6 +595,14 @@ class Lecture(models.Model):
         return f'{self.module.course.title} - {self.title}'
 
     @property
+    def translated_title(self):
+        return self._translated('title')
+
+    def save(self, *args, **kwargs):
+        self._autotranslate()
+        super().save(*args, **kwargs)
+
+    @property
     def course(self):
         return self.module.course
 
@@ -550,25 +613,38 @@ class Lecture(models.Model):
         return bool(self.bunny_video_id) and self.bunny_status >= 4
 
 
-class Resource(models.Model):
+class Resource(AutoTranslatedFieldsMixin, models.Model):
     lecture = models.ForeignKey(Lecture, on_delete=models.CASCADE, related_name='resources')
     file = models.FileField(upload_to='lecture_resources/',
                              help_text=_('Any file: PDF, zip, image, audio, slides, etc.'))
     title = models.CharField(max_length=255, blank=True)
+    title_translations = models.JSONField(default=dict, blank=True)
+    TRANSLATABLE_FIELDS = ('title',)
     file_size = models.PositiveIntegerField(default=0, help_text=_('Size in bytes'))
 
     def __str__(self):
         return self.title or self.file.name
 
+    @property
+    def translated_title(self):
+        return self._translated('title')
 
-class Submission(models.Model):
+    def save(self, *args, **kwargs):
+        self._autotranslate()
+        super().save(*args, **kwargs)
+
+
+class Submission(AutoTranslatedFieldsMixin, models.Model):
     student = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='submissions')
     lecture = models.ForeignKey(Lecture, on_delete=models.CASCADE, related_name='submissions')
     submitted_file = models.FileField(upload_to='submissions/', blank=True, null=True)
     submission_link = models.URLField(blank=True, null=True, help_text=_('Link to Google Drive, GitHub, etc.'))
     note = models.TextField(blank=True, null=True)
+    note_translations = models.JSONField(default=dict, blank=True)
     grade = models.CharField(max_length=50, blank=True, null=True)
     feedback = models.TextField(blank=True, null=True)
+    feedback_translations = models.JSONField(default=dict, blank=True)
+    TRANSLATABLE_FIELDS = ('note', 'feedback')
     submitted_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     # Set the moment an instructor grades this submission. Once set, the
@@ -584,8 +660,20 @@ class Submission(models.Model):
         return f"{self.student.username} - {self.lecture.title}"
 
     @property
+    def translated_note(self):
+        return self._translated('note')
+
+    @property
+    def translated_feedback(self):
+        return self._translated('feedback')
+
+    @property
     def is_graded(self):
         return self.graded_at is not None
+
+    def save(self, *args, **kwargs):
+        self._autotranslate()
+        super().save(*args, **kwargs)
 
 
 class Payment(models.Model):
@@ -727,9 +815,11 @@ class LectureProgress(models.Model):
         return f'{self.enrollment.student} - {self.lecture} ({"done" if self.completed else "in progress"})'
 
 
-class Quiz(models.Model):
+class Quiz(AutoTranslatedFieldsMixin, models.Model):
     module = models.OneToOneField(Module, on_delete=models.CASCADE, related_name='quiz')
     title = models.CharField(max_length=255, blank=True, default='')
+    title_translations = models.JSONField(default=dict, blank=True)
+    TRANSLATABLE_FIELDS = ('title',)
     passing_score_percent = models.PositiveSmallIntegerField(
         default=70, validators=[MinValueValidator(1), MaxValueValidator(100)])
 
@@ -737,11 +827,19 @@ class Quiz(models.Model):
         return self.title or f'Quiz for {self.module}'
 
     @property
+    def translated_title(self):
+        return self._translated('title')
+
+    @property
     def display_title(self):
-        return self.title or f'{self.module.title} Quiz'
+        return self.translated_title or _('%(module)s Quiz') % {'module': self.module.translated_title}
+
+    def save(self, *args, **kwargs):
+        self._autotranslate()
+        super().save(*args, **kwargs)
 
 
-class Question(models.Model):
+class Question(AutoTranslatedFieldsMixin, models.Model):
     class QuestionType(models.TextChoices):
         # The only type graded today. New types (e.g. multiple-answer,
         # true/false) are additional choice values here plus a new grading
@@ -750,6 +848,8 @@ class Question(models.Model):
 
     quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE, related_name='questions')
     text = models.TextField()
+    text_translations = models.JSONField(default=dict, blank=True)
+    TRANSLATABLE_FIELDS = ('text',)
     question_type = models.CharField(
         max_length=20, choices=QuestionType.choices, default=QuestionType.SINGLE_CHOICE)
     order = models.PositiveIntegerField(default=0)
@@ -760,10 +860,20 @@ class Question(models.Model):
     def __str__(self):
         return self.text[:60]
 
+    @property
+    def translated_text(self):
+        return self._translated('text')
 
-class Choice(models.Model):
+    def save(self, *args, **kwargs):
+        self._autotranslate()
+        super().save(*args, **kwargs)
+
+
+class Choice(AutoTranslatedFieldsMixin, models.Model):
     question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name='choices')
     text = models.CharField(max_length=500)
+    text_translations = models.JSONField(default=dict, blank=True)
+    TRANSLATABLE_FIELDS = ('text',)
     is_correct = models.BooleanField(default=False)
     order = models.PositiveIntegerField(default=0)
 
@@ -772,6 +882,14 @@ class Choice(models.Model):
 
     def __str__(self):
         return self.text[:60]
+
+    @property
+    def translated_text(self):
+        return self._translated('text')
+
+    def save(self, *args, **kwargs):
+        self._autotranslate()
+        super().save(*args, **kwargs)
 
 
 class QuizAttempt(models.Model):
@@ -881,7 +999,7 @@ class Payout(models.Model):
         return f'{self.wallet.instructor.username} payout ${self.amount} ({self.status})'
 
 
-class Plan(models.Model):
+class Plan(AutoTranslatedFieldsMixin, models.Model):
     """An all-access subscription tier. Model, not a settings constant, so
     pricing is admin-editable without a deploy."""
     class Interval(models.TextChoices):
@@ -889,6 +1007,8 @@ class Plan(models.Model):
         ANNUAL = 'annual', _('Annual')
 
     name = models.CharField(max_length=100)
+    name_translations = models.JSONField(default=dict, blank=True)
+    TRANSLATABLE_FIELDS = ('name',)
     interval = models.CharField(max_length=20, choices=Interval.choices, default=Interval.ANNUAL)
     price_egp = models.DecimalField(max_digits=10, decimal_places=2)
     price_usd = models.DecimalField(max_digits=10, decimal_places=2)
@@ -900,6 +1020,14 @@ class Plan(models.Model):
 
     def __str__(self):
         return self.name
+
+    @property
+    def translated_name(self):
+        return self._translated('name')
+
+    def save(self, *args, **kwargs):
+        self._autotranslate()
+        super().save(*args, **kwargs)
 
 
 class Subscription(models.Model):
@@ -1015,11 +1143,13 @@ class RevenueDistribution(models.Model):
         return (self.share_of_period * 100).quantize(Decimal('0.1'))
 
 
-class Review(models.Model):
+class Review(AutoTranslatedFieldsMixin, models.Model):
     student = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='reviews')
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='reviews')
     rating = models.PositiveSmallIntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)])
     comment = models.TextField(blank=True)
+    comment_translations = models.JSONField(default=dict, blank=True)
+    TRANSLATABLE_FIELDS = ('comment',)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -1028,6 +1158,14 @@ class Review(models.Model):
 
     def __str__(self):
         return f'{self.student.username} rated {self.course.title}: {self.rating}/5'
+
+    @property
+    def translated_comment(self):
+        return self._translated('comment')
+
+    def save(self, *args, **kwargs):
+        self._autotranslate()
+        super().save(*args, **kwargs)
 
 
 class Certificate(models.Model):

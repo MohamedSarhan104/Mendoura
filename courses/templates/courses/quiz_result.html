@@ -6,7 +6,7 @@
 <div class="max-w-3xl mx-auto px-6 py-10 animate-fade-in">
 
   <a href="{% url 'course_detail' course.id %}" class="text-sm text-brand-600 hover:underline">
-    <i class="fa-solid fa-arrow-left"></i> {{ course.title }}
+    <i class="fa-solid fa-arrow-left"></i> {{ course.translated_title }}
   </a>
 
   <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-8 mt-4 text-center">
@@ -44,7 +44,7 @@
         <h2 class="text-lg font-bold">{% trans "Answer Review" %}</h2>
         {% for answer in attempt.answers.all %}
           <div>
-            <p class="font-semibold mb-2">{{ forloop.counter }}. {{ answer.question.text }}</p>
+            <p class="font-semibold mb-2">{{ forloop.counter }}. {{ answer.question.translated_text }}</p>
             <div class="space-y-1.5">
               {% for choice in answer.question.choices.all %}
                 <div class="flex items-center gap-2 text-sm px-3 py-2 rounded-lg
@@ -58,7 +58,7 @@
                   {% else %}
                     <i class="fa-regular fa-circle text-xs"></i>
                   {% endif %}
-                  {{ choice.text }}
+                  {{ choice.translated_text }}
                   {% if choice == answer.selected_choice %}<span class="text-xs opacity-70">({% trans "your answer" %})</span>{% endif %}
                 </div>
               {% endfor %}

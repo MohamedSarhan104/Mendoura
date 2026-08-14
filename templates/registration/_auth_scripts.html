@@ -1,3 +1,12 @@
+{% load i18n %}
+{% trans "Please wait..." as msg_please_wait %}
+{% trans "Very weak" as msg_very_weak %}
+{% trans "Weak" as msg_weak %}
+{% trans "Fair" as msg_fair %}
+{% trans "Good" as msg_good %}
+{% trans "Strong" as msg_strong %}
+{% trans "Passwords match" as msg_passwords_match %}
+{% trans "Passwords do not match" as msg_passwords_no_match %}
 <script>
 document.addEventListener('DOMContentLoaded', function () {
   const form = document.querySelector('#auth-form');
@@ -8,7 +17,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (form.checkValidity() && submitBtn) {
       submitBtn.disabled = true;
       submitBtn.dataset.originalText = submitBtn.innerHTML;
-      submitBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Please wait...';
+      submitBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> {{ msg_please_wait|escapejs }}';
     }
   });
 
@@ -30,11 +39,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
   const levels = [
     { width: '0%', color: 'bg-gray-200 dark:bg-gray-700', label: '' },
-    { width: '20%', color: 'bg-red-500', label: 'Very weak' },
-    { width: '40%', color: 'bg-red-500', label: 'Weak' },
-    { width: '60%', color: 'bg-yellow-500', label: 'Fair' },
-    { width: '80%', color: 'bg-green-500', label: 'Good' },
-    { width: '100%', color: 'bg-green-600', label: 'Strong' },
+    { width: '20%', color: 'bg-red-500', label: '{{ msg_very_weak|escapejs }}' },
+    { width: '40%', color: 'bg-red-500', label: '{{ msg_weak|escapejs }}' },
+    { width: '60%', color: 'bg-yellow-500', label: '{{ msg_fair|escapejs }}' },
+    { width: '80%', color: 'bg-green-500', label: '{{ msg_good|escapejs }}' },
+    { width: '100%', color: 'bg-green-600', label: '{{ msg_strong|escapejs }}' },
   ];
 
   if (pw1 && meter) {
@@ -50,7 +59,7 @@ document.addEventListener('DOMContentLoaded', function () {
     function checkMatch() {
       if (!pw2.value) { matchHint.textContent = ''; return; }
       const match = pw1.value === pw2.value;
-      matchHint.textContent = match ? 'Passwords match' : 'Passwords do not match';
+      matchHint.textContent = match ? '{{ msg_passwords_match|escapejs }}' : '{{ msg_passwords_no_match|escapejs }}';
       matchHint.className = 'text-xs mt-1 ' + (match ? 'text-green-600' : 'text-red-500');
     }
     pw1.addEventListener('input', checkMatch);
