@@ -2239,6 +2239,60 @@ class ExpandedContentTranslationTests(TestCase):
         self.assertEqual(mock_translate.call_count, 1)
 
 
+class HomepageAndNavStaticStringTranslationTests(TestCase):
+    """Regression test for a real gap: platform_home.html's hero/buttons and
+    base.html's nav items were wrapped in {% trans %} (the DB-content
+    AutoTranslatedFieldsMixin tests above cover a completely different
+    pipeline -- Track/Course/etc content, not static UI chrome), but the
+    compiled fr/es .mo catalogs had empty msgstrs for them, so the English
+    source text rendered regardless of language. Deliberately does NOT mock
+    translation -- it exercises the real compiled locale/fr and locale/es
+    .mo files exactly as production serves them, so a future makemessages
+    run that regenerates an empty msgstr (or a catalog that never gets
+    recompiled/committed) fails this test instead of shipping silently."""
+
+    def setUp(self):
+        self.student = User.objects.create_user(username='i18n_home_stud', password='pw', is_student=True)
+
+    def test_homepage_hero_translates_into_french_for_anonymous_visitor(self):
+        response = self.client.get(reverse('platform_home'), HTTP_ACCEPT_LANGUAGE='fr')
+        self.assertContains(response, 'Là où votre esprit explore')
+        self.assertContains(response, 'Apprenez sans limites')
+
+    def test_homepage_hero_translates_into_spanish_for_anonymous_visitor(self):
+        response = self.client.get(reverse('platform_home'), HTTP_ACCEPT_LANGUAGE='es')
+        self.assertContains(response, 'Donde tu mente explora')
+        self.assertContains(response, 'Aprende sin límites')
+
+    def test_homepage_buttons_and_nav_translate_into_french_for_logged_in_student(self):
+        self.client.force_login(self.student)
+        response = self.client.get(reverse('platform_home'), HTTP_ACCEPT_LANGUAGE='fr')
+        self.assertContains(response, "Continuer l'apprentissage")
+        self.assertContains(response, 'Parcourir les cours')
+        self.assertContains(response, 'Mon apprentissage')
+        self.assertContains(response, 'Coach IA')
+
+    def test_homepage_buttons_and_nav_translate_into_spanish_for_logged_in_student(self):
+        self.client.force_login(self.student)
+        response = self.client.get(reverse('platform_home'), HTTP_ACCEPT_LANGUAGE='es')
+        self.assertContains(response, 'Continuar aprendiendo')
+        self.assertContains(response, 'Explorar cursos')
+        self.assertContains(response, 'Mi aprendizaje')
+        self.assertContains(response, 'Coach de IA')
+
+    def test_footer_translates_into_french(self):
+        response = self.client.get(reverse('platform_home'), HTTP_ACCEPT_LANGUAGE='fr')
+        self.assertContains(response, 'Tous droits réservés')
+
+    def test_page_titles_translate_into_french(self):
+        for url_name, expected in [
+            ('track_list', 'Parcourir les parcours'),
+            ('course_catalog', 'Parcourir les cours'),
+        ]:
+            response = self.client.get(reverse(url_name), HTTP_ACCEPT_LANGUAGE='fr')
+            self.assertContains(response, f'<title>{expected}')
+
+
 @override_settings(PAYMOB_HMAC_SECRET=TEST_HMAC_SECRET)
 class PaymobHmacTests(TestCase):
     def test_valid_signature_verifies(self):

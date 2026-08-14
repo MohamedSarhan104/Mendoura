@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 {% load i18n %}
-{% block title %}Search{% if query %} - "{{ query }}"{% endif %} - Mendoura{% endblock %}
+{% block title %}{% if query %}{% blocktrans %}Search - "{{ query }}"{% endblocktrans %}{% else %}{% trans "Search" %}{% endif %} - Mendoura{% endblock %}
 
 {% block content %}
 <div class="max-w-7xl mx-auto px-6 py-12 animate-fade-in">

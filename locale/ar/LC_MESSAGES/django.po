@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-14 16:40+0000\n"
+"POT-Creation-Date: 2026-08-14 18:53+0000\n"
 "PO-Revision-Date: 2026-07-14 19:49+0000\n"
 "Last-Translator: Mendoura\n"
 "Language-Team: Arabic\n"
@@ -479,6 +479,9 @@ msgstr ""
 msgid "Verification ID"
 msgstr ""
 
+msgid "Verify at"
+msgstr ""
+
 msgid "Copied!"
 msgstr ""
 
@@ -780,10 +783,14 @@ msgid "Detailed answer review unlocks starting from your 3rd attempt."
 msgstr ""
 
 #, python-format
-msgid "Results for \"%(query)s\""
+msgid "Search - \"%(query)s\""
 msgstr ""
 
 msgid "Search"
+msgstr ""
+
+#, python-format
+msgid "Results for \"%(query)s\""
 msgstr ""
 
 #, python-format
@@ -936,6 +943,22 @@ msgstr "ابحث عن مسارات ودورات..."
 msgid "No tracks available yet"
 msgstr ""
 
+#, fuzzy
+#| msgid "Verified Certificates"
+msgid "Verify a Certificate"
+msgstr "شهادات موثّقة"
+
+msgid ""
+"Paste the Verification ID printed on a Mendoura certificate to confirm it's "
+"real."
+msgstr ""
+
+msgid "e.g. d7707ed8-6a4c-4f1d-810c-cae63833a505"
+msgstr ""
+
+msgid "Verify"
+msgstr ""
+
 #, python-format
 msgid "Lesson %(n)s: %(title)s"
 msgstr ""
@@ -982,6 +1005,11 @@ msgstr ""
 
 msgid "Save Link"
 msgstr ""
+
+#, fuzzy
+#| msgid "Single Course"
+msgid "Edit Content"
+msgstr "دورة واحدة"
 
 msgid "Admin Overview"
 msgstr ""
@@ -1490,8 +1518,8 @@ msgid "Create a New Course"
 msgstr ""
 
 msgid ""
-"Step 1 of 4 -- start with the basics, then you'll add modules, videos, and "
-"quizzes."
+"Step 1 of 3 -- start with the basics, then you'll add modules with their "
+"videos and quizzes."
 msgstr ""
 
 msgid "Course Title"
@@ -2020,7 +2048,7 @@ msgid "Back to Modules"
 msgstr "لوحة التحكم"
 
 #, python-format
-msgid "Module %(n)s of %(total)s: %(title)s"
+msgid "Module %(n)s: %(title)s"
 msgstr ""
 
 #, fuzzy, python-format
@@ -2048,9 +2076,6 @@ msgstr ""
 msgid "Lesson Title"
 msgstr ""
 
-msgid "Skip Quiz"
-msgstr ""
-
 msgid ""
 "One quiz covers the whole module. Students must pass it to mark the module "
 "complete. Leave it out entirely and it won't gate anything."
@@ -2068,11 +2093,13 @@ msgstr ""
 msgid "Delete this quiz and all its questions?"
 msgstr ""
 
-msgid "Finish"
+msgid "Add Another Module"
 msgstr ""
 
-msgid "Next Module"
-msgstr ""
+#, fuzzy
+#| msgid "Single Course"
+msgid "Next: Review"
+msgstr "دورة واحدة"
 
 msgid "Add at least one lesson above before continuing."
 msgstr ""
@@ -2094,11 +2121,8 @@ msgid "Save & Exit to Dashboard"
 msgstr "لوحة التحكم"
 
 msgid ""
-"Add at least one module. You'll add lessons (with video) and an optional "
-"quiz for each one in the next step."
-msgstr ""
-
-msgid "Next: Add Video"
+"Add a module, then add its lessons (with video) and an optional quiz right "
+"away -- one module at a time."
 msgstr ""
 
 msgid "Add a module to continue"
@@ -2211,6 +2235,11 @@ msgid "Unable to start checkout right now. Please try again shortly."
 msgstr ""
 
 msgid "Enroll in this course to watch this lecture."
+msgstr ""
+
+msgid ""
+"No certificate found with that Verification ID. Double-check it and try "
+"again."
 msgstr ""
 
 msgid "Homework submitted."
@@ -2600,6 +2629,9 @@ msgid ""
 "Ask me about this lesson -- I can brief it or summarize the whole module for "
 "you."
 msgstr "اسألني عن هذا الدرس -- يمكنني تلخيصه أو تلخيص الوحدة كاملة لك."
+
+msgid "Learn Without Limits"
+msgstr ""
 
 msgid ""
 "Where your mind explores <span class=\"text-brand-600 dark:text-"

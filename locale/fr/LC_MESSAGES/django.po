@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-14 16:40+0000\n"
+"POT-Creation-Date: 2026-08-14 18:53+0000\n"
 "PO-Revision-Date: 2026-07-14 21:14+0000\n"
 "Last-Translator: Mendoura\n"
 "Language-Team: French\n"
@@ -32,7 +32,8 @@ msgid ""
 "shortly."
 msgstr ""
 
-msgid "Mendoura AI Coach couldn't generate a reply just now. Please try again."
+msgid ""
+"Mendoura AI Coach couldn't generate a reply just now. Please try again."
 msgstr ""
 
 msgid "AI transcription isn't configured yet -- GEMINI_API_KEY is missing."
@@ -44,18 +45,19 @@ msgid ""
 msgstr ""
 
 msgid ""
-"Couldn't reach Bunny to check this video's details. Please try again shortly."
+"Couldn't reach Bunny to check this video's details. Please try again "
+"shortly."
 msgstr ""
 
 msgid ""
 "This video doesn't have an MP4 file available for transcription yet -- "
-"enable 'MP4 Fallback' for this library in your Bunny dashboard (or re-upload "
-"the video), then try again."
+"enable 'MP4 Fallback' for this library in your Bunny dashboard (or re-upload"
+" the video), then try again."
 msgstr ""
 
 msgid ""
-"No downloadable resolution is available for this video yet. Please try again "
-"shortly."
+"No downloadable resolution is available for this video yet. Please try again"
+" shortly."
 msgstr ""
 
 msgid ""
@@ -134,8 +136,8 @@ msgid "What is this course about?"
 msgstr ""
 
 msgid ""
-"Type the script here. Mendoura will turn this text into a professional video "
-"lecture."
+"Type the script here. Mendoura will turn this text into a professional video"
+" lecture."
 msgstr ""
 
 msgid "Share your experience with this course..."
@@ -185,8 +187,7 @@ msgstr ""
 msgid "Select a valid category."
 msgstr ""
 
-msgid ""
-"Select a category, or choose \"+ Other / New category…\" to propose one."
+msgid "Select a category, or choose \"+ Other / New category…\" to propose one."
 msgstr ""
 
 msgid "e.g. Getting Started"
@@ -402,7 +403,7 @@ msgid "Free"
 msgstr ""
 
 msgid "Browse Courses"
-msgstr ""
+msgstr "Parcourir les cours"
 
 msgid "Pick a course and start learning today."
 msgstr ""
@@ -450,6 +451,9 @@ msgstr ""
 msgid "Verification ID"
 msgstr ""
 
+msgid "Verify at"
+msgstr ""
+
 msgid "Copied!"
 msgstr ""
 
@@ -467,7 +471,7 @@ msgid "Pay once for this course, or unlock everything on Mendoura."
 msgstr ""
 
 msgid "Single Course"
-msgstr ""
+msgstr "Cours unique"
 
 msgid ""
 "Lifetime access to this course only: all lectures, resources, and a "
@@ -478,16 +482,16 @@ msgid "Buy This Course"
 msgstr ""
 
 msgid "Best Value"
-msgstr ""
+msgstr "Meilleure offre"
 
 msgid "All Tracks & Courses"
 msgstr ""
 
 msgid "mo"
-msgstr ""
+msgstr "mois"
 
 msgid "yr"
-msgstr ""
+msgstr "an"
 
 msgid "Unlimited access to every course, in every track, billed monthly."
 msgstr ""
@@ -567,14 +571,14 @@ msgstr[0] ""
 msgstr[1] ""
 
 msgid "My Learning"
-msgstr ""
+msgstr "Mon apprentissage"
 
 #, python-format
 msgid "Enrolled %(date)s"
 msgstr ""
 
 msgid "Continue Learning"
-msgstr ""
+msgstr "Continuer l'apprentissage"
 
 msgid "View Course"
 msgstr ""
@@ -592,7 +596,7 @@ msgid "You haven't enrolled in any courses yet."
 msgstr ""
 
 msgid "Browse Tracks"
-msgstr ""
+msgstr "Parcourir les parcours"
 
 msgid "Hide course content"
 msgstr ""
@@ -672,8 +676,8 @@ msgstr ""
 
 #, python-format
 msgid ""
-"Pass with a score of %(score)s%% or higher. You can retake this quiz as many "
-"times as you need."
+"Pass with a score of %(score)s%% or higher. You can retake this quiz as many"
+" times as you need."
 msgstr ""
 
 #, python-format
@@ -719,10 +723,14 @@ msgid "Detailed answer review unlocks starting from your 3rd attempt."
 msgstr ""
 
 #, python-format
-msgid "Results for \"%(query)s\""
-msgstr ""
+msgid "Search - \"%(query)s\""
+msgstr "Recherche - « %(query)s »"
 
 msgid "Search"
+msgstr "Rechercher"
+
+#, python-format
+msgid "Results for \"%(query)s\""
 msgstr ""
 
 #, python-format
@@ -771,7 +779,7 @@ msgid "Apply Filters"
 msgstr ""
 
 msgid "Tracks"
-msgstr ""
+msgstr "Parcours"
 
 msgid "Courses"
 msgstr ""
@@ -845,12 +853,26 @@ msgid "Check back soon."
 msgstr ""
 
 msgid "Browse by Track"
-msgstr ""
+msgstr "Parcourir par parcours"
 
 msgid "Pick a track to see its courses."
 msgstr ""
 
 msgid "No tracks available yet"
+msgstr ""
+
+msgid "Verify a Certificate"
+msgstr "Vérifier un certificat"
+
+msgid ""
+"Paste the Verification ID printed on a Mendoura certificate to confirm it's "
+"real."
+msgstr ""
+
+msgid "e.g. d7707ed8-6a4c-4f1d-810c-cae63833a505"
+msgstr ""
+
+msgid "Verify"
 msgstr ""
 
 #, python-format
@@ -898,6 +920,9 @@ msgid "only if not uploading to Bunny"
 msgstr ""
 
 msgid "Save Link"
+msgstr ""
+
+msgid "Edit Content"
 msgstr ""
 
 msgid "Admin Overview"
@@ -978,11 +1003,11 @@ msgstr ""
 
 #, python-format
 msgid ""
-"<span class=\"font-semibold text-brand-600\">%(counter)s</span> subscription "
-"period ready to distribute to instructors."
+"<span class=\"font-semibold text-brand-600\">%(counter)s</span> subscription"
+" period ready to distribute to instructors."
 msgid_plural ""
-"<span class=\"font-semibold text-brand-600\">%(counter)s</span> subscription "
-"periods ready to distribute to instructors."
+"<span class=\"font-semibold text-brand-600\">%(counter)s</span> subscription"
+" periods ready to distribute to instructors."
 msgstr[0] ""
 msgstr[1] ""
 
@@ -990,8 +1015,8 @@ msgid "No subscription periods are due for distribution right now."
 msgstr ""
 
 msgid ""
-"No automatic scheduler is wired up on the free Render plan (no Cron Jobs) -- "
-"run this manually on a regular basis."
+"No automatic scheduler is wired up on the free Render plan (no Cron Jobs) --"
+" run this manually on a regular basis."
 msgstr ""
 
 msgid "View Breakdown"
@@ -1172,7 +1197,8 @@ msgstr ""
 
 msgid ""
 "Sent when an admin rejects a submitted course -- reuses the most recently "
-"created real course's rejection_reason (or a generic fallback if it's blank)."
+"created real course's rejection_reason (or a generic fallback if it's "
+"blank)."
 msgstr ""
 
 msgid "Internal Track-Request Notification"
@@ -1209,7 +1235,7 @@ msgid "Activate"
 msgstr ""
 
 msgid "No tracks yet."
-msgstr ""
+msgstr "Aucun parcours pour le moment."
 
 msgid "Add New Track"
 msgstr ""
@@ -1239,7 +1265,7 @@ msgid "Username"
 msgstr ""
 
 msgid "Email"
-msgstr ""
+msgstr "E-mail"
 
 msgid "Role"
 msgstr ""
@@ -1306,7 +1332,8 @@ msgstr ""
 msgid "Submitted %(date)s"
 msgstr ""
 
-msgid "Preview full course content (modules, videos, quiz questions & answers)"
+msgid ""
+"Preview full course content (modules, videos, quiz questions & answers)"
 msgstr ""
 
 msgid "Rejection reason (required, sent to the instructor)"
@@ -1363,8 +1390,8 @@ msgid "Create a New Course"
 msgstr ""
 
 msgid ""
-"Step 1 of 4 -- start with the basics, then you'll add modules, videos, and "
-"quizzes."
+"Step 1 of 3 -- start with the basics, then you'll add modules with their "
+"videos and quizzes."
 msgstr ""
 
 msgid "Course Title"
@@ -1389,8 +1416,8 @@ msgid "Production Type"
 msgstr ""
 
 msgid ""
-"This determines your revenue share and cannot be changed once the course has "
-"its first sale."
+"This determines your revenue share and cannot be changed once the course has"
+" its first sale."
 msgstr ""
 
 msgid "Full production (I edit and produce it myself)"
@@ -1460,8 +1487,8 @@ msgid "Course Video"
 msgstr ""
 
 msgid ""
-"Uploads securely to Bunny Stream and streams to students through a protected "
-"player."
+"Uploads securely to Bunny Stream and streams to students through a protected"
+" player."
 msgstr ""
 
 msgid ""
@@ -1490,7 +1517,8 @@ msgid "Generate Transcript"
 msgstr ""
 
 msgid ""
-"Upload a video and wait for it to finish processing to generate a transcript."
+"Upload a video and wait for it to finish processing to generate a "
+"transcript."
 msgstr ""
 
 msgid "Choose a video file first."
@@ -1737,15 +1765,15 @@ msgid "Add Question"
 msgstr ""
 
 msgid ""
-"Delete this quiz and all its questions? Students will no longer need to pass "
-"anything to complete this module."
+"Delete this quiz and all its questions? Students will no longer need to pass"
+" anything to complete this module."
 msgstr ""
 
 msgid "Delete Quiz"
 msgstr ""
 
 msgid "Profile"
-msgstr ""
+msgstr "Profil"
 
 msgid "Profile Picture"
 msgstr ""
@@ -1863,7 +1891,7 @@ msgid "Back to Modules"
 msgstr ""
 
 #, python-format
-msgid "Module %(n)s of %(total)s: %(title)s"
+msgid "Module %(n)s: %(title)s"
 msgstr ""
 
 #, python-format
@@ -1873,7 +1901,8 @@ msgstr[0] ""
 msgstr[1] ""
 
 msgid ""
-"Each lesson gets its own title and video -- add as many as this module needs."
+"Each lesson gets its own title and video -- add as many as this module "
+"needs."
 msgstr ""
 
 msgid "No lessons yet. Add your first one below."
@@ -1883,9 +1912,6 @@ msgid "Add Lesson"
 msgstr ""
 
 msgid "Lesson Title"
-msgstr ""
-
-msgid "Skip Quiz"
 msgstr ""
 
 msgid ""
@@ -1905,10 +1931,10 @@ msgstr ""
 msgid "Delete this quiz and all its questions?"
 msgstr ""
 
-msgid "Finish"
+msgid "Add Another Module"
 msgstr ""
 
-msgid "Next Module"
+msgid "Next: Review"
 msgstr ""
 
 msgid "Add at least one lesson above before continuing."
@@ -1929,11 +1955,8 @@ msgid "Save & Exit to Dashboard"
 msgstr ""
 
 msgid ""
-"Add at least one module. You'll add lessons (with video) and an optional "
-"quiz for each one in the next step."
-msgstr ""
-
-msgid "Next: Add Video"
+"Add a module, then add its lessons (with video) and an optional quiz right "
+"away -- one module at a time."
 msgstr ""
 
 msgid "Add a module to continue"
@@ -2032,6 +2055,11 @@ msgstr ""
 msgid "Enroll in this course to watch this lecture."
 msgstr ""
 
+msgid ""
+"No certificate found with that Verification ID. Double-check it and try "
+"again."
+msgstr ""
+
 msgid "Homework submitted."
 msgstr ""
 
@@ -2050,8 +2078,8 @@ msgstr ""
 
 #, python-format
 msgid ""
-"%(title)s has enrollment or payment history, so it has been archived instead "
-"of deleted."
+"%(title)s has enrollment or payment history, so it has been archived instead"
+" of deleted."
 msgstr ""
 
 #, python-format
@@ -2060,8 +2088,8 @@ msgstr ""
 
 #, python-format
 msgid ""
-"%(title)s has watch-time or revenue history, so it has been archived instead "
-"of deleted."
+"%(title)s has watch-time or revenue history, so it has been archived instead"
+" of deleted."
 msgstr ""
 
 #, python-format
@@ -2155,14 +2183,14 @@ msgstr ""
 
 #, python-format
 msgid ""
-"Course-approved email sent to %(email)s (using real course \"%(course)s\" as "
-"sample data)."
+"Course-approved email sent to %(email)s (using real course \"%(course)s\" as"
+" sample data)."
 msgstr ""
 
 #, python-format
 msgid ""
-"Course-rejected email sent to %(email)s (using real course \"%(course)s\" as "
-"sample data)."
+"Course-rejected email sent to %(email)s (using real course \"%(course)s\" as"
+" sample data)."
 msgstr ""
 
 msgid "No track requests exist yet -- submit one, then retry this test."
@@ -2186,7 +2214,8 @@ msgid ""
 msgstr ""
 
 msgid ""
-"No track requests have been rejected yet -- reject one, then retry this test."
+"No track requests have been rejected yet -- reject one, then retry this "
+"test."
 msgstr ""
 
 #, python-format
@@ -2265,8 +2294,8 @@ msgstr ""
 
 #, python-format
 msgid ""
-"A track already exists named \"%(name)s\". Reject this request or rename the "
-"proposed category first."
+"A track already exists named \"%(name)s\". Reject this request or rename the"
+" proposed category first."
 msgstr ""
 
 #, python-format
@@ -2288,22 +2317,22 @@ msgid "\"%(name)s\" rejected."
 msgstr ""
 
 msgid "Mendoura home"
-msgstr ""
+msgstr "Accueil Mendoura"
 
 msgid "Home"
-msgstr ""
+msgstr "Accueil"
 
 msgid "AI Coach"
-msgstr ""
+msgstr "Coach IA"
 
 msgid "Dashboard"
-msgstr ""
+msgstr "Tableau de bord"
 
 msgid "Admin Panel"
-msgstr ""
+msgstr "Panneau d'administration"
 
 msgid "Search tracks & courses..."
-msgstr ""
+msgstr "Rechercher des parcours et des cours..."
 
 #, python-format
 msgid "%(counter)s pending instructor request"
@@ -2324,28 +2353,28 @@ msgstr[0] ""
 msgstr[1] ""
 
 msgid "Logout"
-msgstr ""
+msgstr "Déconnexion"
 
 msgid "Login"
-msgstr ""
+msgstr "Connexion"
 
 msgid "Sign Up"
-msgstr ""
+msgstr "S'inscrire"
 
 msgid "Menu"
-msgstr ""
+msgstr "Menu"
 
 msgid "Terms & Conditions"
-msgstr ""
+msgstr "Conditions générales"
 
 msgid "Privacy Policy"
-msgstr ""
+msgstr "Politique de confidentialité"
 
 msgid "Cairo, Egypt"
-msgstr ""
+msgstr "Le Caire, Égypte"
 
 msgid "All rights reserved."
-msgstr ""
+msgstr "Tous droits réservés."
 
 msgid "Legal"
 msgstr ""
@@ -2404,64 +2433,78 @@ msgid ""
 msgstr ""
 
 msgid ""
-"Ask me about this lesson -- I can brief it or summarize the whole module for "
-"you."
+"Ask me about this lesson -- I can brief it or summarize the whole module for"
+" you."
 msgstr ""
+
+msgid "Learn Without Limits"
+msgstr "Apprenez sans limites"
 
 msgid ""
 "Where your mind explores <span class=\"text-brand-600 dark:text-"
 "brand-400\">the new aura.</span>"
 msgstr ""
+"Là où votre esprit explore <span class=\"text-brand-600 dark:text-"
+"brand-400\">la nouvelle aura.</span>"
 
 msgid ""
 "Courses built by real, expert instructors. Track your progress, earn "
 "certificates, and grow your career."
 msgstr ""
+"Des cours conçus par de vrais instructeurs experts. Suivez votre "
+"progression, obtenez des certificats et développez votre carrière."
 
 msgid "Go to Your Dashboard"
-msgstr ""
+msgstr "Accéder à votre tableau de bord"
 
 msgid "Start Learning"
-msgstr ""
+msgstr "Commencer à apprendre"
 
 msgid "Become an Instructor"
-msgstr ""
+msgstr "Devenir instructeur"
 
 msgid "Expert-Led Courses"
-msgstr ""
+msgstr "Cours dirigés par des experts"
 
 msgid ""
-"Structured lessons and hands-on projects designed by experienced instructors."
+"Structured lessons and hands-on projects designed by experienced "
+"instructors."
 msgstr ""
+"Des leçons structurées et des projets pratiques conçus par des instructeurs "
+"expérimentés."
 
 msgid "Verified Certificates"
-msgstr ""
+msgstr "Certificats vérifiés"
 
 msgid "Complete courses and earn certificates to showcase your skills."
 msgstr ""
+"Terminez des cours et obtenez des certificats pour mettre en valeur vos "
+"compétences."
 
 msgid "Instructor Compensation"
-msgstr ""
+msgstr "Rémunération des instructeurs"
 
 msgid ""
-"Instructors are compensated for their content based on platform performance, "
-"managed directly by Mendoura."
+"Instructors are compensated for their content based on platform performance,"
+" managed directly by Mendoura."
 msgstr ""
+"Les instructeurs sont rémunérés pour leur contenu en fonction des "
+"performances de la plateforme, gérées directement par Mendoura."
 
 msgid "Simple, transparent pricing"
-msgstr ""
+msgstr "Des tarifs simples et transparents"
 
 msgid "Buy a single course, or unlock everything with a subscription."
-msgstr ""
+msgstr "Achetez un seul cours ou débloquez tout avec un abonnement."
 
 msgid "Pay per course"
-msgstr ""
+msgstr "Payer par cours"
 
 msgid "Lifetime access to just the course you need."
-msgstr ""
+msgstr "Accès à vie au cours dont vous avez besoin."
 
 msgid "Unlimited access to every track and course."
-msgstr ""
+msgstr "Accès illimité à tous les parcours et cours."
 
 msgid "Please wait..."
 msgstr ""
@@ -2592,8 +2635,8 @@ msgstr ""
 
 msgid ""
 "We've sent password reset instructions to that address, if it belongs to an "
-"account. It may take a few minutes to arrive — check your spam folder if you "
-"don't see it."
+"account. It may take a few minutes to arrive — check your spam folder if you"
+" don't see it."
 msgstr ""
 
 msgid "Back to Login"
@@ -2668,8 +2711,8 @@ msgid ""
 "I agree to the <a href=\"%(terms_url)s\" target=\"_blank\" class=\"text-"
 "brand-600 dark:text-brand-400 font-semibold hover:underline\">Terms &amp; "
 "Conditions</a> and <a href=\"%(privacy_url)s\" target=\"_blank\" "
-"class=\"text-brand-600 dark:text-brand-400 font-semibold hover:"
-"underline\">Privacy Policy</a>."
+"class=\"text-brand-600 dark:text-brand-400 font-semibold "
+"hover:underline\">Privacy Policy</a>."
 msgstr ""
 
 msgid "Create Instructor Account"
