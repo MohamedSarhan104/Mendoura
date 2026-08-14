@@ -204,19 +204,19 @@ msgid "e.g. Robotics"
 msgstr "p. ex. Robotique"
 
 msgid "Why should this track exist? (optional)"
-msgstr ""
+msgstr "Pourquoi cette piste devrait-elle exister ? (facultatif)"
 
 msgid "e.g. Robotics & Automation"
-msgstr ""
+msgstr "p. ex. Robotique et automatisation"
 
 msgid "Select a category…"
-msgstr ""
+msgstr "Sélectionnez une catégorie…"
 
 msgid "+ Other / New category…"
-msgstr ""
+msgstr "+ Autre / Nouvelle catégorie…"
 
 msgid "Enter a name for the new category."
-msgstr ""
+msgstr "Saisissez un nom pour la nouvelle catégorie."
 
 #, python-format
 msgid ""
@@ -224,121 +224,131 @@ msgid ""
 msgstr ""
 
 msgid "Select a valid category."
-msgstr ""
+msgstr "Sélectionnez une catégorie valide."
 
 msgid "Select a category, or choose \"+ Other / New category…\" to propose one."
 msgstr ""
+"Sélectionnez une catégorie ou choisissez « + Autre / Nouvelle catégorie… » "
+"pour en proposer une."
 
 msgid "e.g. Getting Started"
 msgstr ""
 
 msgid "e.g. Slides.pdf"
-msgstr ""
+msgstr "p. ex. Slides.pdf"
 
 msgid "e.g. Bank transfer, PayPal"
-msgstr ""
+msgstr "p. ex. Virement bancaire, PayPal"
 
 msgid "e.g. Introduction to Variables"
-msgstr ""
+msgstr "p. ex. Introduction aux variables"
 
 msgid "https://youtube.com/... (external embed, optional)"
-msgstr ""
+msgstr "https://youtube.com/... (intégration externe, facultatif)"
 
 msgid "Defaults to \"<Module title> Quiz\" if left blank"
 msgstr ""
 
 msgid "e.g. What does CSS stand for?"
-msgstr ""
+msgstr "p. ex. Que signifie CSS ?"
 
 msgid "Answer choice"
-msgstr ""
+msgstr "Choix de réponse"
 
 msgid ""
 "Enter a valid username. This value may contain only letters, numbers, "
 "spaces, and @/./+/-/_ characters."
 msgstr ""
+"Entrez un nom d'utilisateur valide. Cette valeur ne peut contenir que des "
+"lettres, des chiffres, des espaces et les caractères @/./+/-/_."
 
 msgid "username"
-msgstr ""
+msgstr "nom d'utilisateur"
 
 msgid ""
 "Required. 150 characters or fewer. Letters, digits, spaces and @/./+/-/_ "
 "only."
 msgstr ""
+"Obligatoire. 150 caractères ou moins. Lettres, chiffres, espaces et "
+"@/./+/-/_ uniquement."
 
 msgid "A user with that username already exists."
-msgstr ""
+msgstr "Un utilisateur avec ce nom d'utilisateur existe déjà."
 
 msgid ""
 "Payoneer email or account ID. Required for instructors based outside Egypt."
 msgstr ""
+"E-mail ou identifiant de compte Payoneer. Requis pour les instructeurs basés"
+" en dehors de l'Égypte."
 
 msgid "e.g. a Font Awesome class name"
-msgstr ""
+msgstr "p. ex. un nom de classe Font Awesome"
 
 msgid "Used until a course is linked, or if none ever is."
-msgstr ""
+msgstr "Utilisé jusqu'à ce qu'un cours soit lié, ou si aucun ne l'est jamais."
 
 msgid "Pending Review"
-msgstr ""
+msgstr "En attente de révision"
 
 msgid "Approved"
-msgstr ""
+msgstr "Approuvé"
 
 msgid "Rejected"
-msgstr ""
+msgstr "Rejeté"
 
 msgid "Why this track should exist."
-msgstr ""
+msgstr "Pourquoi cette piste devrait exister."
 
 msgid "Beginner"
-msgstr ""
+msgstr "Débutant"
 
 msgid "Intermediate"
-msgstr ""
+msgstr "Intermédiaire"
 
 msgid "Advanced"
-msgstr ""
+msgstr "Avancé"
 
 msgid "Full production by instructor"
-msgstr ""
+msgstr "Production complète par l'instructeur"
 
 msgid "Script only (platform produces)"
-msgstr ""
+msgstr "Script uniquement (produit par la plateforme)"
 
 msgid "Draft"
-msgstr ""
+msgstr "Brouillon"
 
 msgid "Published"
-msgstr ""
+msgstr "Publié"
 
 msgid "Archived"
-msgstr ""
+msgstr "Archivé"
 
 msgid "The script for Mendoura-produced video generation"
-msgstr ""
+msgstr "Le script pour la génération de vidéos produites par Mendoura"
 
 msgid ""
 "production_type is read-only once a course has its first successful sale."
 msgstr ""
+"production_type est en lecture seule une fois qu'un cours a enregistré sa "
+"première vente réussie."
 
 msgid "Video"
-msgstr ""
+msgstr "Vidéo"
 
 msgid "Article"
-msgstr ""
+msgstr "Article"
 
 msgid "Quiz"
-msgstr ""
+msgstr "Quiz"
 
 msgid "Not started"
-msgstr ""
+msgstr "Non commencé"
 
 msgid "Processing"
-msgstr ""
+msgstr "Traitement"
 
 msgid "Done"
-msgstr ""
+msgstr "Terminé"
 
 msgid "Failed"
 msgstr ""
