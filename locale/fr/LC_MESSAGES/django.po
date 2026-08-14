@@ -351,31 +351,31 @@ msgid "Done"
 msgstr "Terminé"
 
 msgid "Failed"
-msgstr ""
+msgstr "Échec"
 
 msgid "Viewable for free without enrollment"
-msgstr ""
+msgstr "Consultable gratuitement sans inscription"
 
 msgid "Students can upload homework for this lecture"
-msgstr ""
+msgstr "Les étudiants peuvent télécharger leurs devoirs pour ce cours"
 
 msgid "Any file: PDF, zip, image, audio, slides, etc."
-msgstr ""
+msgstr "N'importe quel fichier : PDF, zip, image, audio, diapositives, etc."
 
 msgid "Size in bytes"
-msgstr ""
+msgstr "Taille en octets"
 
 msgid "Link to Google Drive, GitHub, etc."
-msgstr ""
+msgstr "Lien vers Google Drive, GitHub, etc."
 
 msgid "Pending"
-msgstr ""
+msgstr "En attente"
 
 msgid "Succeeded"
-msgstr ""
+msgstr "Réussi"
 
 msgid "Refunded"
-msgstr ""
+msgstr "Remboursé"
 
 #, python-format
 msgid "'%(field)s' is immutable after creation."
@@ -386,61 +386,65 @@ msgid "%(module)s Quiz"
 msgstr ""
 
 msgid "Single choice"
-msgstr ""
+msgstr "Choix unique"
 
 msgid "Sale Credit"
-msgstr ""
+msgstr "Crédit de vente"
 
 msgid "Withdrawal"
-msgstr ""
+msgstr "Retrait"
 
 msgid "Adjustment"
-msgstr ""
+msgstr "Ajustement"
 
 msgid "Refund Debit"
-msgstr ""
+msgstr "Débiter le remboursement"
 
 msgid "WalletTransaction rows are append-only and cannot be modified."
 msgstr ""
+"Les lignes WalletTransaction sont en ajout seul et ne peuvent pas être "
+"modifiées."
 
 msgid "WalletTransaction rows are append-only and cannot be deleted."
 msgstr ""
+"Les lignes WalletTransaction sont ajoutées uniquement en fin de fichier et "
+"ne peuvent pas être supprimées."
 
 msgid "Requested"
-msgstr ""
+msgstr "Demandé"
 
 msgid "Paid"
-msgstr ""
+msgstr "Payé"
 
 msgid "Monthly"
-msgstr ""
+msgstr "Mensuel"
 
 msgid "Annual"
-msgstr ""
+msgstr "Annuel"
 
 msgid "Active"
-msgstr ""
+msgstr "Actif"
 
 msgid "Expired"
-msgstr ""
+msgstr "Expiré"
 
 msgid "Canceled"
-msgstr ""
+msgstr "Annulé"
 
 msgid "Open"
-msgstr ""
+msgstr "Ouvrir"
 
 msgid "Distributed"
-msgstr ""
+msgstr "Distribué"
 
 msgid "User"
-msgstr ""
+msgstr "Utilisateur"
 
 msgid "Assistant"
-msgstr ""
+msgstr "Assistant"
 
 msgid "Markdown -- supports tables, bold, and lists."
-msgstr ""
+msgstr "Markdown -- prend en charge les tableaux, le gras et les listes."
 
 #, python-format
 msgid "%(counter)s student"
@@ -449,43 +453,43 @@ msgstr[0] ""
 msgstr[1] ""
 
 msgid "Free"
-msgstr ""
+msgstr "Gratuit"
 
 msgid "Browse Courses"
 msgstr "Parcourir les cours"
 
 msgid "Pick a course and start learning today."
-msgstr ""
+msgstr "Choisissez un cours et commencez à apprendre dès aujourd'hui."
 
 msgid "No courses available yet"
-msgstr ""
+msgstr "Aucun cours disponible pour le moment"
 
 msgid "Check back soon, instructors are cooking up something great."
-msgstr ""
+msgstr "Revenez bientôt, les instructeurs préparent quelque chose de génial."
 
 msgid "Certificate"
-msgstr ""
+msgstr "Certificat"
 
 msgid "Verified Certificate"
-msgstr ""
+msgstr "Certificat vérifié"
 
 msgid "Statement of Accomplishment"
-msgstr ""
+msgstr "Attestation de réussite"
 
 msgid "Awarded to"
-msgstr ""
+msgstr "Décerné à"
 
 msgid "Instructor"
-msgstr ""
+msgstr "Instructeur"
 
 msgid "Issued"
-msgstr ""
+msgstr "Émis"
 
 msgid "Download Certificate"
-msgstr ""
+msgstr "Télécharger le certificat"
 
 msgid "Share on LinkedIn"
-msgstr ""
+msgstr "Partager sur LinkedIn"
 
 msgid "Copy Link"
 msgstr ""
