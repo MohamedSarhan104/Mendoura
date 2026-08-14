@@ -139,6 +139,10 @@ urlpatterns = [
     # Short public-facing alias used in the LinkedIn "Add to Profile" share
     # link and printed on the PDF -- easier to read/type than the /certificates/verify/ path.
     path('verify/<uuid:certificate_uuid>/', views.certificate_view, name='certificate_verify_short'),
+    # Public, no-login "Verify a Certificate" search page -- for anyone who
+    # has only the plain Verification ID text (e.g. read off a printed/
+    # screenshotted certificate) and no clickable link to follow.
+    path('verify/', views.certificate_verify_search, name='certificate_verify_search'),
     path('certificates/<uuid:certificate_uuid>/download/', views.certificate_download, name='certificate_download'),
     path('dashboard/ai-coach/', views.ai_coach, name='ai_coach'),
     path('dashboard/ai-coach/send/', views.ai_coach_send, name='ai_coach_send'),

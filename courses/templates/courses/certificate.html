@@ -47,6 +47,9 @@
     </div>
 
     <p class="text-xs text-gray-400">{% trans "Verification ID" %}: {{ certificate.uuid }}</p>
+    <p class="text-xs text-gray-400 mt-1">
+      {% trans "Verify at" %} <a href="{{ verification_url }}" class="text-brand-600 dark:text-brand-400 hover:underline">{{ verification_url }}</a>
+    </p>
   </div>
 </div>
 {% endblock %}

@@ -766,11 +766,24 @@ def send_certificate_email(certificate, *, to_email=None) -> EmailResult:
         f'The Mendoura Team'
     )
 
-    certificate.pdf_file.open('rb')
     try:
-        pdf_bytes = certificate.pdf_file.read()
-    finally:
-        certificate.pdf_file.close()
+        certificate.pdf_file.open('rb')
+        try:
+            pdf_bytes = certificate.pdf_file.read()
+        finally:
+            certificate.pdf_file.close()
+    except Exception:
+        # Same read-back failure certificate_download guards against (see
+        # its comment in views.py): the PDF was uploaded successfully but
+        # reading it back from storage failed. Without this fallback,
+        # @_never_raises silently swallows the exception and this whole
+        # email quietly never sends -- exactly what happened for a real
+        # certificate before this fix. Rebuild in-memory instead of
+        # failing the send.
+        logger.exception(
+            'Failed to read stored certificate PDF for uuid=%s -- attaching '
+            'an in-memory copy instead.', certificate.uuid)
+        pdf_bytes = certificates.build_certificate_pdf(certificate)
 
     return _send(
         subject=f'🎓 Congratulations! You\'ve completed {course.title}',

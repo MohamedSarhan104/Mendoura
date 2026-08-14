@@ -12,7 +12,7 @@
   <h1 class="text-3xl font-extrabold mt-4 mb-6">{{ course.title }}</h1>
   {% include 'partials/_wizard_steps.html' %}
   <p class="text-gray-500 dark:text-gray-400 mb-8">
-    {% trans "Add at least one module. You'll add lessons (with video) and an optional quiz for each one in the next step." %}
+    {% trans "Add a module, then add its lessons (with video) and an optional quiz right away -- one module at a time." %}
   </p>
 
   <div id="modules-list" class="space-y-3 mb-8">
@@ -42,11 +42,11 @@
     </button>
   </form>
 
-  <div id="wizard-next-area" data-resume-url="{% url 'course_wizard_resume' course.id %}">
+  <div id="wizard-next-area">
     {% if modules %}
-      <a href="{% url 'course_wizard_resume' course.id %}"
+      <a href="{% url 'course_wizard_review' course.id %}"
          class="block text-center w-full bg-brand-600 hover:bg-brand-700 text-white font-semibold py-3 rounded-xl transition">
-        {% trans "Next: Add Video" %} <i class="fa-solid fa-arrow-right ml-1"></i>
+        {% trans "Next: Review" %} <i class="fa-solid fa-arrow-right ml-1"></i>
       </a>
     {% else %}
       <button type="button" disabled
@@ -61,7 +61,7 @@
 
 {% block extra_js %}
 {% trans "Could not add this module. Please check the fields and try again." as msg_add_failed %}
-{% trans "Next: Add Video" as msg_next %}
+{% trans "Next: Review" as msg_next %}
 {% trans "Add a module to continue" as msg_add_to_continue %}
 <script>
   (function () {
@@ -70,7 +70,7 @@
     const list = document.getElementById('modules-list');
     const emptyState = document.getElementById('modules-empty');
     const nextArea = document.getElementById('wizard-next-area');
-    const resumeUrl = nextArea.dataset.resumeUrl;
+    const reviewUrl = "{% url 'course_wizard_review' course.id %}";
     const addForm = document.getElementById('add-module-form');
     const titleInput = addForm.querySelector('[name="title"]');
     const orderInput = addForm.querySelector('[name="order"]');
@@ -80,7 +80,7 @@
       const hasModules = list.children.length > 0;
       emptyState.classList.toggle('hidden', hasModules);
       nextArea.innerHTML = hasModules
-        ? '<a href="' + resumeUrl + '" class="block text-center w-full bg-brand-600 hover:bg-brand-700 text-white font-semibold py-3 rounded-xl transition">{{ msg_next|escapejs }} <i class="fa-solid fa-arrow-right ml-1"></i></a>'
+        ? '<a href="' + reviewUrl + '" class="block text-center w-full bg-brand-600 hover:bg-brand-700 text-white font-semibold py-3 rounded-xl transition">{{ msg_next|escapejs }} <i class="fa-solid fa-arrow-right ml-1"></i></a>'
         : '<button type="button" disabled class="block text-center w-full bg-gray-200 dark:bg-gray-800 text-gray-400 font-semibold py-3 rounded-xl cursor-not-allowed">{{ msg_add_to_continue|escapejs }}</button>';
     }
 
@@ -106,6 +106,10 @@
 
     list.querySelectorAll('.wizard-delete-module-form').forEach(bindDeleteForm);
 
+    // Adding a module goes straight into that module's own lessons/quiz
+    // page -- the whole point of the combined step -- so on success this
+    // navigates away rather than inserting a row in place the way
+    // Add Lesson (staying on one module's page) still does.
     addForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       const submitBtn = addForm.querySelector('button[type="submit"]');
@@ -126,17 +130,11 @@
 
       if (res.ok) {
         const data = await res.json();
-        list.insertAdjacentHTML('beforeend', data.html);
-        const newRow = document.getElementById('module-row-' + data.module_id);
-        const deleteForm = newRow && newRow.querySelector('.wizard-delete-module-form');
-        if (deleteForm) bindDeleteForm(deleteForm);
-        titleInput.value = '';
-        titleInput.focus();
-        refreshNextState();
-      } else {
-        errorEl.textContent = '{{ msg_add_failed|escapejs }}';
-        errorEl.classList.remove('hidden');
+        window.location.href = data.redirect_url;
+        return;
       }
+      errorEl.textContent = '{{ msg_add_failed|escapejs }}';
+      errorEl.classList.remove('hidden');
       submitBtn.disabled = false;
     });
   })();

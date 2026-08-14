@@ -22,6 +22,7 @@ from django.db.models.functions import TruncMonth
 from django.http import Http404, HttpResponse, HttpResponseForbidden, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render, resolve_url
 from django.template.loader import render_to_string
+from django.urls import reverse
 from django.utils import timezone
 from django.utils.translation import gettext as _
 from django.utils.translation import gettext_lazy as _lazy
@@ -226,7 +227,7 @@ def create_course(request):
 # ---------------------------------------------------------------------------
 
 WIZARD_STEP_CHOICES = [
-    (1, _lazy('Details')), (2, _lazy('Modules')), (3, _lazy('Content')), (4, _lazy('Review')),
+    (1, _lazy('Details')), (2, _lazy('Modules & Content')), (3, _lazy('Review')),
 ]
 
 
@@ -308,8 +309,10 @@ def _module_content_ready(course, module):
 
 def _first_incomplete_module(course):
     """First module (in order) still missing its video/script, or None if
-    every module is ready -- this is what "resume where I left off" and the
-    Step 2 -> Step 3 handoff both use to pick which module to land on."""
+    every module is ready -- this is what "resume where I left off" (and
+    landing on a freshly-added module's own content right away, since
+    Modules and Content are now one combined step) uses to pick which
+    module to land on."""
     for module in course.modules.order_by('order', 'id'):
         if not _module_content_ready(course, module):
             return module
@@ -332,10 +335,16 @@ def course_wizard_resume(request, course_id):
     return redirect('course_wizard_review', course_id=course.id)
 
 
-# Step 2 -- Modules. Self-contained (not manage_modules reused) so the
-# "Next" hand-off to Step 3 and the wizard's step-progress header can live
-# here without changing the always-available Curriculum page instructors
-# use to manage modules after creation too.
+# Step 2 -- Modules & Content, combined: adding a module lands the
+# instructor straight on that module's own lessons/quiz page
+# (course_wizard_module_content) instead of staying on this list to add
+# every module up front. This view stays the entry point for that combined
+# step (first visit, and "Add Another Module" from the content page loops
+# back here) and for the always-available list of modules added so far.
+# Self-contained (not manage_modules reused) so the step hand-off and the
+# wizard's step-progress header can live here without changing the
+# always-available Curriculum page instructors use to manage modules after
+# creation too.
 @login_required
 def course_wizard_modules(request, course_id):
     course, bail = _get_draft_course_or_redirect(request, course_id)
@@ -359,11 +368,15 @@ def course_wizard_modules(request, course_id):
             if not module.order:
                 module.order = modules.count() + 1
             module.save()
+            # Straight into this module's own lessons/quiz -- the whole
+            # point of the combined step is never leaving a module's
+            # content for "later", the way the old add-all-modules-first
+            # Step 2 did.
+            redirect_url = reverse(
+                'course_wizard_module_content', args=[course.id, module.id])
             if _is_ajax(request):
-                html = render_to_string(
-                    'dashboard/_wizard_module_row.html', {'module': module}, request=request)
-                return JsonResponse({'html': html, 'module_id': module.id})
-            return redirect('course_wizard_modules', course_id=course.id)
+                return JsonResponse({'redirect_url': redirect_url})
+            return redirect(redirect_url)
 
         if _is_ajax(request):
             return JsonResponse({'errors': form.errors.get_json_data()}, status=400)
@@ -375,17 +388,19 @@ def course_wizard_modules(request, course_id):
     })
 
 
-# Step 3 -- per module, in sequence: one or more lessons (each its own
-# title + video/script), then an optional quiz for the whole module (with
-# its questions and each question's answer choices, all on this one page
-# instead of split across manage_quiz.html + edit_question.html), then
-# Skip Quiz / Next Module / Finish. One view handling several POST actions
-# via a hidden `action` field -- every action redirects back to this same
-# step (or, for add_lesson/delete_lesson, responds to an AJAX fetch in
-# place -- same "instant, no reload" pattern as course_wizard_modules'
-# Add Module) so the instructor is never bounced out of the wizard, the
-# way reusing add_question/add_choice/etc. (which redirect to the classic
-# Curriculum pages) would.
+# Step 2 (second half) -- one module's own lessons (each its own title +
+# video/script), then an optional quiz for the whole module (with its
+# questions and each question's answer choices, all on this one page
+# instead of split across manage_quiz.html + edit_question.html), then a
+# choice: add another module (loops back to course_wizard_modules to
+# create the next one, which immediately lands back here for it) or move
+# on to Review. One view handling several POST actions via a hidden
+# `action` field -- every action redirects back to this same page (or, for
+# add_lesson/delete_lesson, responds to an AJAX fetch in place -- same
+# "instant, no reload" pattern as course_wizard_modules' Add Module) so the
+# instructor is never bounced out of the wizard, the way reusing
+# add_question/add_choice/etc. (which redirect to the classic Curriculum
+# pages) would.
 #
 # Quizzes stay per-MODULE, not per-lesson, even though a module can now
 # hold several lessons: Enrollment.module_is_complete() already gates
@@ -406,7 +421,6 @@ def course_wizard_module_content(request, course_id, module_id):
     quiz = getattr(module, 'quiz', None)
     modules = list(course.modules.order_by('order', 'id'))
     module_index = next((i for i, m in enumerate(modules) if m.id == module.id), 0)
-    is_last_module = module_index == len(modules) - 1
 
     if request.method == 'POST':
         action = request.POST.get('action')
@@ -496,9 +510,14 @@ def course_wizard_module_content(request, course_id, module_id):
                 )
                 messages.error(request, error_message)
                 return redirect('course_wizard_module_content', course_id=course.id, module_id=module.id)
-            if is_last_module:
-                return redirect('course_wizard_review', course_id=course.id)
-            return redirect('course_wizard_module_content', course_id=course.id, module_id=modules[module_index + 1].id)
+            # This module's content is done -- the instructor explicitly
+            # chooses what's next, since (unlike the old add-all-modules-
+            # first flow) there's no longer a next pre-made module to fall
+            # back on automatically: either loop back to add another one,
+            # or move on to Review.
+            if request.POST.get('next') == 'add_module':
+                return redirect('course_wizard_modules', course_id=course.id)
+            return redirect('course_wizard_review', course_id=course.id)
 
         return redirect('course_wizard_module_content', course_id=course.id, module_id=module.id)
 
@@ -508,13 +527,13 @@ def course_wizard_module_content(request, course_id, module_id):
         'questions': questions, 'quiz_form': QuizForm(instance=quiz),
         'question_form': QuestionForm(), 'choice_form': ChoiceForm(),
         'bunny_configured': bunny.is_configured(),
-        'module_index': module_index, 'module_count': len(modules), 'is_last_module': is_last_module,
+        'module_index': module_index, 'module_count': len(modules),
         'content_ready': _module_content_ready(course, module),
-        'wizard_step_choices': WIZARD_STEP_CHOICES, 'current_step': 3,
+        'wizard_step_choices': WIZARD_STEP_CHOICES, 'current_step': 2,
     })
 
 
-# Step 4 -- summary + the same Draft/Rejected -> Pending Review transition
+# Step 3 -- summary + the same Draft/Rejected -> Pending Review transition
 # toggle_publish() already does for the classic dashboard button.
 @login_required
 def course_wizard_review(request, course_id):
@@ -542,7 +561,7 @@ def course_wizard_review(request, course_id):
     return render(request, 'dashboard/wizard_review.html', {
         'course': course, 'modules_summary': modules_summary,
         'all_ready': all(m['content_ready'] for m in modules_summary) if modules_summary else False,
-        'wizard_step_choices': WIZARD_STEP_CHOICES, 'current_step': 4,
+        'wizard_step_choices': WIZARD_STEP_CHOICES, 'current_step': 3,
     })
 
 
@@ -1245,11 +1264,44 @@ def certificate_view(request, certificate_uuid):
     })
 
 
+# Public, no-login "Verify a Certificate" search page -- the entry point for
+# someone who only has the plain Verification ID text (no clickable link to
+# follow, e.g. read off a printed or screenshotted certificate). Looks the ID
+# up and redirects straight to its real certificate page on success, so this
+# view itself never needs to duplicate certificate.html's own rendering.
+def certificate_verify_search(request):
+    query = request.GET.get('q', '').strip()
+    error = None
+    if query:
+        try:
+            parsed_uuid = uuid.UUID(query)
+            certificate = Certificate.objects.get(uuid=parsed_uuid)
+        except (ValueError, Certificate.DoesNotExist):
+            error = _('No certificate found with that Verification ID. Double-check it and try again.')
+        else:
+            return redirect('certificate_verify_short', certificate_uuid=certificate.uuid)
+    return render(request, 'courses/verify_certificate.html', {'query': query, 'error': error})
+
+
 def certificate_download(request, certificate_uuid):
     certificate = get_object_or_404(Certificate, uuid=certificate_uuid)
-    if not certificate.pdf_file:
-        certificate.generate_pdf()
-    response = HttpResponse(certificate.pdf_file.read(), content_type='application/pdf')
+    try:
+        if not certificate.pdf_file:
+            certificate.generate_pdf()
+        pdf_bytes = certificate.pdf_file.read()
+    except Exception:
+        # Storage write succeeding but the read-back failing (a real
+        # production incident: Cloudinary rejecting delivery of a PDF
+        # stored under the wrong resource type) must never surface as a
+        # raw 500 to a student clicking "Download Certificate" -- the PDF
+        # is fully and cheaply reproducible in-memory from the same data
+        # already on the certificate/enrollment, so fall back to that
+        # instead of failing the request.
+        logger.exception(
+            'Failed to read/generate stored certificate PDF for uuid=%s -- '
+            'serving an in-memory copy instead.', certificate.uuid)
+        pdf_bytes = certificates.build_certificate_pdf(certificate)
+    response = HttpResponse(pdf_bytes, content_type='application/pdf')
     response['Content-Disposition'] = f'attachment; filename="certificate-{certificate.uuid}.pdf"'
     return response
 
