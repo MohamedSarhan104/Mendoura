@@ -768,19 +768,20 @@ msgid "Attempt #%(n)s"
 msgstr ""
 
 msgid "Retake Quiz"
-msgstr ""
+msgstr "Repasser le quiz"
 
 msgid "Continue Course"
-msgstr ""
+msgstr "Continuer le cours"
 
 msgid "Answer Review"
-msgstr ""
+msgstr "Révision de la réponse"
 
 msgid "your answer"
-msgstr ""
+msgstr "votre réponse"
 
 msgid "Detailed answer review unlocks starting from your 3rd attempt."
 msgstr ""
+"L'examen détaillé des réponses est débloqué à partir de votre 3e tentative."
 
 #, python-format
 msgid "Search - \"%(query)s\""
@@ -806,120 +807,120 @@ msgstr[0] ""
 msgstr[1] ""
 
 msgid "found."
-msgstr ""
+msgstr "trouvé."
 
 msgid "Type something in the search box above"
-msgstr ""
+msgstr "Saisissez quelque chose dans la zone de recherche ci-dessus"
 
 msgid "Track"
-msgstr ""
+msgstr "Suivre"
 
 msgid "All tracks"
-msgstr ""
+msgstr "Toutes les pistes"
 
 msgid "Level"
-msgstr ""
+msgstr "Niveau"
 
 msgid "Any level"
-msgstr ""
+msgstr "Tous niveaux"
 
 msgid "Price"
-msgstr ""
+msgstr "Prix"
 
 msgid "Any price"
-msgstr ""
+msgstr "Tous les prix"
 
 msgid "Language"
-msgstr ""
+msgstr "Langue"
 
 msgid "e.g. English"
-msgstr ""
+msgstr "p. ex. anglais"
 
 msgid "Apply Filters"
-msgstr ""
+msgstr "Appliquer les filtres"
 
 msgid "Tracks"
 msgstr "Parcours"
 
 msgid "Courses"
-msgstr ""
+msgstr "Cours"
 
 msgid "No courses match your search"
-msgstr ""
+msgstr "Aucun cours ne correspond à votre recherche"
 
 #, python-format
 msgid "Homework - %(title)s"
 msgstr ""
 
 msgid "Graded"
-msgstr ""
+msgstr "Noté"
 
 msgid "Grade"
-msgstr ""
+msgstr "Note"
 
 msgid "Feedback"
-msgstr ""
+msgstr "Commentaires"
 
 msgid "Your submission (locked — already graded):"
-msgstr ""
+msgstr "Votre soumission (verrouillée — déjà notée) :"
 
 msgid "Submitted file"
-msgstr ""
+msgstr "Fichier soumis"
 
 msgid "Upload a file"
-msgstr ""
+msgstr "Télécharger un fichier"
 
 msgid "optional"
-msgstr ""
+msgstr "facultatif"
 
 msgid "Current file:"
-msgstr ""
+msgstr "Fichier actuel :"
 
 msgid "Or a link"
-msgstr ""
+msgstr "Ou un lien"
 
 msgid "Note to your instructor"
-msgstr ""
+msgstr "Note à votre instructeur"
 
 msgid "Update Submission"
-msgstr ""
+msgstr "Mettre à jour la soumission"
 
 msgid "Submit Homework"
-msgstr ""
+msgstr "Soumettre le devoir"
 
 #, python-format
 msgid "Submitted %(date)s &middot; you can update this until it's graded."
 msgstr ""
 
 msgid "All Tracks"
-msgstr ""
+msgstr "Toutes les pistes"
 
 msgid "No tracks in this category yet"
-msgstr ""
+msgstr "Aucune piste dans cette catégorie pour le moment"
 
 msgid "Track Roadmap"
-msgstr ""
+msgstr "Suivre la feuille de route"
 
 msgid "Coming soon"
-msgstr ""
+msgstr "Bientôt disponible"
 
 msgid "Optional"
-msgstr ""
+msgstr "Facultatif"
 
 msgid "No courses in this track yet"
-msgstr ""
+msgstr "Aucun cours dans ce parcours pour le moment"
 
 msgid "Check back soon."
-msgstr ""
+msgstr "Revenez bientôt."
 
 msgid "Browse by Track"
 msgstr "Parcourir par parcours"
 
 msgid "Pick a track to see its courses."
-msgstr ""
+msgstr "Choisissez un parcours pour voir ses cours."
 
 msgid "No tracks available yet"
-msgstr ""
+msgstr "Aucune piste disponible pour le moment"
 
 msgid "Verify a Certificate"
 msgstr "Vérifier un certificat"
@@ -928,6 +929,8 @@ msgid ""
 "Paste the Verification ID printed on a Mendoura certificate to confirm it's "
 "real."
 msgstr ""
+"Collez l'ID de vérification imprimé sur un certificat Mendoura pour "
+"confirmer son authenticité."
 
 msgid "e.g. d7707ed8-6a4c-4f1d-810c-cae63833a505"
 msgstr ""
