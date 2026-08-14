@@ -5236,6 +5236,17 @@ class CourseCreationWizardTests(TestCase):
         data.update(overrides)
         return data
 
+    def _add_ready_lesson(self, course, module, video_url='https://youtube.com/watch?v=abc'):
+        """Adds a single lesson to `module` with an external video link
+        already saved, so the module satisfies _module_content_ready() --
+        the multi-lesson-per-module equivalent of the old single
+        save_video_url call most step-4/resume tests just need as setup."""
+        url = reverse('course_wizard_module_content', args=[course.id, module.id])
+        self.client.post(url, {'action': 'add_lesson', 'title': 'Lesson 1'})
+        lesson = Lecture.objects.filter(module=module).latest('id')
+        self.client.post(url, {'action': 'save_lesson_video_url', 'lesson_id': lesson.id, 'video_url': video_url})
+        return lesson
+
     def test_step1_creates_draft_course_and_redirects_to_step2(self):
         self.client.force_login(self.instructor)
         response = self.client.post(reverse('create_course'), self._course_details_payload())
@@ -5245,17 +5256,39 @@ class CourseCreationWizardTests(TestCase):
         self.assertRedirects(response, reverse('course_wizard_modules', args=[course.id]))
 
     def test_step2_requires_at_least_one_module_before_next_is_offered(self):
+        # The enabled "Next" link's real href is only ever server-rendered
+        # once a module exists -- checked as an actual anchor tag rather
+        # than the raw "Next: Add Video" phrase, since that phrase also
+        # lives inside the page's JS (as a fallback string the client
+        # rebuilds the block from after an AJAX add/delete) and is
+        # therefore always present in the response body regardless of
+        # module count.
         self.client.force_login(self.instructor)
         self.client.post(reverse('create_course'), self._course_details_payload())
         course = Course.objects.get(title='Wizard Course')
+        resume_url = reverse('course_wizard_resume', args=[course.id])
         response = self.client.get(reverse('course_wizard_modules', args=[course.id]))
         self.assertContains(response, 'Add a module to continue')
-        self.assertNotContains(response, 'Next: Add Video')
+        self.assertNotContains(response, f'<a href="{resume_url}"')
 
         self.client.post(reverse('course_wizard_modules', args=[course.id]),
                           {'action': 'add', 'title': 'Module 1', 'order': 1})
         response = self.client.get(reverse('course_wizard_modules', args=[course.id]))
-        self.assertContains(response, 'Next: Add Video')
+        self.assertContains(response, f'<a href="{resume_url}"')
+
+    def test_step3_blocks_advance_with_no_lessons_at_all(self):
+        self.client.force_login(self.instructor)
+        self.client.post(reverse('create_course'), self._course_details_payload(production_type='full'))
+        course = Course.objects.get(title='Wizard Course')
+        self.client.post(reverse('course_wizard_modules', args=[course.id]),
+                          {'action': 'add', 'title': 'Module 1', 'order': 1})
+        module = Module.objects.get(course=course)
+
+        response = self.client.post(
+            reverse('course_wizard_module_content', args=[course.id, module.id]),
+            {'action': 'advance'}, follow=True)
+        self.assertContains(response, 'Add at least one lesson')
+        self.assertFalse(Lecture.objects.filter(module=module).exists())
 
     def test_step3_blocks_advance_without_video_for_full_production(self):
         self.client.force_login(self.instructor)
@@ -5264,6 +5297,8 @@ class CourseCreationWizardTests(TestCase):
         self.client.post(reverse('course_wizard_modules', args=[course.id]),
                           {'action': 'add', 'title': 'Module 1', 'order': 1})
         module = Module.objects.get(course=course)
+        self.client.post(reverse('course_wizard_module_content', args=[course.id, module.id]),
+                          {'action': 'add_lesson', 'title': 'Lesson 1'})
 
         response = self.client.post(
             reverse('course_wizard_module_content', args=[course.id, module.id]),
@@ -5280,9 +5315,13 @@ class CourseCreationWizardTests(TestCase):
         self.client.post(reverse('course_wizard_modules', args=[course.id]),
                           {'action': 'add', 'title': 'Module 1', 'order': 1})
         module = Module.objects.get(course=course)
+        self.client.post(reverse('course_wizard_module_content', args=[course.id, module.id]),
+                          {'action': 'add_lesson', 'title': 'Lesson 1'})
+        lesson = Lecture.objects.get(module=module)
 
         self.client.post(reverse('course_wizard_module_content', args=[course.id, module.id]),
-                          {'action': 'save_video_url', 'video_url': 'https://youtube.com/watch?v=abc'})
+                          {'action': 'save_lesson_video_url', 'lesson_id': lesson.id,
+                           'video_url': 'https://youtube.com/watch?v=abc'})
         response = self.client.post(
             reverse('course_wizard_module_content', args=[course.id, module.id]),
             {'action': 'advance'})
@@ -5295,20 +5334,114 @@ class CourseCreationWizardTests(TestCase):
         self.client.post(reverse('course_wizard_modules', args=[course.id]),
                           {'action': 'add', 'title': 'Module 1', 'order': 1})
         module = Module.objects.get(course=course)
+        self.client.post(reverse('course_wizard_module_content', args=[course.id, module.id]),
+                          {'action': 'add_lesson', 'title': 'Lesson 1'})
+        lesson = Lecture.objects.get(module=module)
 
         blocked = self.client.post(
             reverse('course_wizard_module_content', args=[course.id, module.id]),
             {'action': 'advance'}, follow=True)
-        self.assertContains(blocked, 'Add your script')
+        self.assertContains(blocked, 'Add a script')
 
         self.client.post(reverse('course_wizard_module_content', args=[course.id, module.id]),
-                          {'action': 'save_script', 'script': 'Once upon a time...'})
+                          {'action': 'save_lesson_script', 'lesson_id': lesson.id, 'script': 'Once upon a time...'})
         response = self.client.post(
             reverse('course_wizard_module_content', args=[course.id, module.id]),
             {'action': 'advance'})
         self.assertRedirects(response, reverse('course_wizard_review', args=[course.id]))
-        lecture = Lecture.objects.get(module=module)
-        self.assertEqual(lecture.ai_generated_script, 'Once upon a time...')
+        lesson.refresh_from_db()
+        self.assertEqual(lesson.ai_generated_script, 'Once upon a time...')
+
+    def test_step3_multiple_lessons_all_need_video_before_advancing(self):
+        # The core of Issue 2: a module can hold more than one lesson, each
+        # with its own video -- and ALL of them (not just one) must be
+        # ready before the module can advance.
+        self.client.force_login(self.instructor)
+        self.client.post(reverse('create_course'), self._course_details_payload(production_type='full'))
+        course = Course.objects.get(title='Wizard Course')
+        self.client.post(reverse('course_wizard_modules', args=[course.id]),
+                          {'action': 'add', 'title': 'Module 1', 'order': 1})
+        module = Module.objects.get(course=course)
+        url = reverse('course_wizard_module_content', args=[course.id, module.id])
+
+        self.client.post(url, {'action': 'add_lesson', 'title': 'Lesson 1'})
+        self.client.post(url, {'action': 'add_lesson', 'title': 'Lesson 2'})
+        lesson1, lesson2 = Lecture.objects.filter(module=module).order_by('order', 'id')
+        self.assertEqual(lesson1.title, 'Lesson 1')
+        self.assertEqual(lesson2.title, 'Lesson 2')
+
+        self.client.post(url, {'action': 'save_lesson_video_url', 'lesson_id': lesson1.id,
+                                'video_url': 'https://youtube.com/watch?v=one'})
+        blocked = self.client.post(url, {'action': 'advance'}, follow=True)
+        self.assertContains(blocked, 'every lesson')
+
+        self.client.post(url, {'action': 'save_lesson_video_url', 'lesson_id': lesson2.id,
+                                'video_url': 'https://youtube.com/watch?v=two'})
+        response = self.client.post(url, {'action': 'advance'})
+        self.assertRedirects(response, reverse('course_wizard_review', args=[course.id]))
+
+    def test_deleting_a_lesson_in_step3_removes_it(self):
+        self.client.force_login(self.instructor)
+        self.client.post(reverse('create_course'), self._course_details_payload())
+        course = Course.objects.get(title='Wizard Course')
+        self.client.post(reverse('course_wizard_modules', args=[course.id]),
+                          {'action': 'add', 'title': 'Module 1', 'order': 1})
+        module = Module.objects.get(course=course)
+        url = reverse('course_wizard_module_content', args=[course.id, module.id])
+        self.client.post(url, {'action': 'add_lesson', 'title': 'Lesson 1'})
+        lesson = Lecture.objects.get(module=module)
+
+        self.client.post(url, {'action': 'delete_lesson', 'lesson_id': lesson.id})
+        self.assertFalse(Lecture.objects.filter(id=lesson.id).exists())
+
+    def test_add_lesson_via_ajax_returns_card_html_without_redirect(self):
+        self.client.force_login(self.instructor)
+        self.client.post(reverse('create_course'), self._course_details_payload())
+        course = Course.objects.get(title='Wizard Course')
+        self.client.post(reverse('course_wizard_modules', args=[course.id]),
+                          {'action': 'add', 'title': 'Module 1', 'order': 1})
+        module = Module.objects.get(course=course)
+        url = reverse('course_wizard_module_content', args=[course.id, module.id])
+
+        response = self.client.post(
+            url, {'action': 'add_lesson', 'title': 'AJAX Lesson'}, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        lesson = Lecture.objects.get(title='AJAX Lesson')
+        self.assertEqual(data['lesson_id'], lesson.id)
+        self.assertIn('AJAX Lesson', data['html'])
+        self.assertIn(f'id="lesson-card-{lesson.id}"', data['html'])
+
+    def test_add_lesson_via_ajax_without_title_returns_json_error(self):
+        self.client.force_login(self.instructor)
+        self.client.post(reverse('create_course'), self._course_details_payload())
+        course = Course.objects.get(title='Wizard Course')
+        self.client.post(reverse('course_wizard_modules', args=[course.id]),
+                          {'action': 'add', 'title': 'Module 1', 'order': 1})
+        module = Module.objects.get(course=course)
+        url = reverse('course_wizard_module_content', args=[course.id, module.id])
+
+        response = self.client.post(
+            url, {'action': 'add_lesson', 'title': ''}, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('title', response.json()['errors'])
+
+    def test_delete_lesson_via_ajax_returns_json_without_redirect(self):
+        self.client.force_login(self.instructor)
+        self.client.post(reverse('create_course'), self._course_details_payload())
+        course = Course.objects.get(title='Wizard Course')
+        self.client.post(reverse('course_wizard_modules', args=[course.id]),
+                          {'action': 'add', 'title': 'Module 1', 'order': 1})
+        module = Module.objects.get(course=course)
+        url = reverse('course_wizard_module_content', args=[course.id, module.id])
+        self.client.post(url, {'action': 'add_lesson', 'title': 'Lesson 1'})
+        lesson = Lecture.objects.get(module=module)
+
+        response = self.client.post(
+            url, {'action': 'delete_lesson', 'lesson_id': lesson.id}, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {'deleted': True})
+        self.assertFalse(Lecture.objects.filter(id=lesson.id).exists())
 
     def test_step3_quiz_question_and_choices_end_to_end(self):
         self.client.force_login(self.instructor)
@@ -5353,9 +5486,9 @@ class CourseCreationWizardTests(TestCase):
         self.client.post(reverse('course_wizard_modules', args=[course.id]),
                           {'action': 'add', 'title': 'Only Module', 'order': 1})
         module = Module.objects.get(course=course)
-        url = reverse('course_wizard_module_content', args=[course.id, module.id])
-        self.client.post(url, {'action': 'save_video_url', 'video_url': 'https://youtube.com/watch?v=abc'})
+        self._add_ready_lesson(course, module)
 
+        url = reverse('course_wizard_module_content', args=[course.id, module.id])
         response = self.client.post(url, {'action': 'advance'})
         self.assertRedirects(response, reverse('course_wizard_review', args=[course.id]))
 
@@ -5366,8 +5499,7 @@ class CourseCreationWizardTests(TestCase):
         self.client.post(reverse('course_wizard_modules', args=[course.id]),
                           {'action': 'add', 'title': 'Only Module', 'order': 1})
         module = Module.objects.get(course=course)
-        self.client.post(reverse('course_wizard_module_content', args=[course.id, module.id]),
-                          {'action': 'save_video_url', 'video_url': 'https://youtube.com/watch?v=abc'})
+        self._add_ready_lesson(course, module)
 
         response = self.client.post(reverse('course_wizard_review', args=[course.id]))
         self.assertRedirects(response, reverse('instructor_dashboard'))
@@ -5384,8 +5516,7 @@ class CourseCreationWizardTests(TestCase):
         self.client.post(reverse('course_wizard_modules', args=[course.id]),
                           {'action': 'add', 'title': 'Only Module', 'order': 1})
         module = Module.objects.get(course=course)
-        self.client.post(reverse('course_wizard_module_content', args=[course.id, module.id]),
-                          {'action': 'save_video_url', 'video_url': 'https://youtube.com/watch?v=abc'})
+        self._add_ready_lesson(course, module)
 
         self.client.post(reverse('course_wizard_review', args=[course.id]))
         notification = next(
@@ -5423,8 +5554,7 @@ class CourseCreationWizardTests(TestCase):
                           {'action': 'add', 'title': 'Module 2', 'order': 2})
         module1 = Module.objects.get(title='Module 1')
         module2 = Module.objects.get(title='Module 2')
-        self.client.post(reverse('course_wizard_module_content', args=[course.id, module1.id]),
-                          {'action': 'save_video_url', 'video_url': 'https://youtube.com/watch?v=abc'})
+        self._add_ready_lesson(course, module1)
 
         response = self.client.get(reverse('course_wizard_resume', args=[course.id]))
         self.assertRedirects(response, reverse('course_wizard_module_content', args=[course.id, module2.id]))
@@ -5436,8 +5566,7 @@ class CourseCreationWizardTests(TestCase):
         self.client.post(reverse('course_wizard_modules', args=[course.id]),
                           {'action': 'add', 'title': 'Module 1', 'order': 1})
         module = Module.objects.get(course=course)
-        self.client.post(reverse('course_wizard_module_content', args=[course.id, module.id]),
-                          {'action': 'save_video_url', 'video_url': 'https://youtube.com/watch?v=abc'})
+        self._add_ready_lesson(course, module)
         response = self.client.get(reverse('course_wizard_resume', args=[course.id]))
         self.assertRedirects(response, reverse('course_wizard_review', args=[course.id]))
 
@@ -5468,6 +5597,50 @@ class CourseCreationWizardTests(TestCase):
         module = Module.objects.get(course=course)
         self.client.post(reverse('course_wizard_modules', args=[course.id]),
                           {'action': 'delete', 'module_id': module.id})
+        self.assertFalse(Module.objects.filter(id=module.id).exists())
+
+    def test_add_module_via_ajax_returns_row_html_without_redirect(self):
+        # The "instant, no full reload" behavior Issue 1 asked for: an
+        # X-Requested-With POST gets a 200 JSON response with the new row's
+        # rendered HTML instead of the classic redirect.
+        self.client.force_login(self.instructor)
+        self.client.post(reverse('create_course'), self._course_details_payload())
+        course = Course.objects.get(title='Wizard Course')
+        response = self.client.post(
+            reverse('course_wizard_modules', args=[course.id]),
+            {'action': 'add', 'title': 'AJAX Module', 'order': 1},
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        module = Module.objects.get(title='AJAX Module')
+        self.assertEqual(data['module_id'], module.id)
+        self.assertIn('AJAX Module', data['html'])
+        self.assertIn(f'id="module-row-{module.id}"', data['html'])
+
+    def test_add_module_via_ajax_with_invalid_data_returns_json_errors(self):
+        self.client.force_login(self.instructor)
+        self.client.post(reverse('create_course'), self._course_details_payload())
+        course = Course.objects.get(title='Wizard Course')
+        response = self.client.post(
+            reverse('course_wizard_modules', args=[course.id]),
+            {'action': 'add', 'title': '', 'order': 1},
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('title', response.json()['errors'])
+
+    def test_delete_module_via_ajax_returns_json_without_redirect(self):
+        self.client.force_login(self.instructor)
+        self.client.post(reverse('create_course'), self._course_details_payload())
+        course = Course.objects.get(title='Wizard Course')
+        self.client.post(reverse('course_wizard_modules', args=[course.id]),
+                          {'action': 'add', 'title': 'Module 1', 'order': 1})
+        module = Module.objects.get(course=course)
+        response = self.client.post(
+            reverse('course_wizard_modules', args=[course.id]),
+            {'action': 'delete', 'module_id': module.id},
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {'deleted': True, 'has_modules': False})
         self.assertFalse(Module.objects.filter(id=module.id).exists())
 
     def test_instructor_dashboard_shows_continue_setup_for_draft(self):

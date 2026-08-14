@@ -21,86 +21,42 @@
     {% endfor %}
   {% endif %}
 
-  <!-- ── Video / Script ── -->
-  <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-8 mb-8">
-    {% if course.production_type == 'script_only' %}
-      <h2 class="text-lg font-bold mb-1"><i class="fa-solid fa-file-lines text-brand-600 mr-1"></i> {% trans "Lecture Script" %}</h2>
-      <p class="text-sm text-gray-500 dark:text-gray-400 mb-5">
-        {% trans "Mendoura will produce the video for this module from your script." %}
-      </p>
-      <form method="post">
-        {% csrf_token %}
-        <input type="hidden" name="action" value="save_script">
-        <textarea name="script" rows="8" placeholder="{% trans "Write or paste this module's lecture script here…" %}"
-                  class="w-full border border-gray-300 dark:border-gray-700 bg-transparent rounded-lg p-3 focus:ring-2 focus:ring-brand-500 outline-none">{{ lecture.ai_generated_script }}</textarea>
-        <button type="submit" class="mt-4 px-5 py-2.5 rounded-lg bg-brand-600 text-white font-semibold hover:bg-brand-700">
-          {% trans "Save Script" %}
-        </button>
-      </form>
-    {% else %}
-      <h2 class="text-lg font-bold mb-1"><i class="fa-solid fa-video text-brand-600 mr-1"></i> {% trans "Lecture Video" %}</h2>
-      <p class="text-sm text-gray-500 dark:text-gray-400 mb-5">
-        {% trans "Uploads securely to Bunny Stream and streams to students through a protected player." %}
-      </p>
+  <!-- ── Lessons ── -->
+  <h2 class="text-lg font-bold mb-1">
+    <i class="fa-solid fa-list-ol text-brand-600 mr-1"></i>
+    <span id="lessons-count-label">{% blocktrans count count=lectures|length %}{{ count }} Lesson{% plural %}{{ count }} Lessons{% endblocktrans %}</span>
+  </h2>
+  <p class="text-sm text-gray-500 dark:text-gray-400 mb-5">
+    {% trans "Each lesson gets its own title and video -- add as many as this module needs." %}
+  </p>
 
-      <div id="bunny-current" class="mb-5 text-sm">
-        {% if lecture.bunny_video_id %}
-          {% if lecture.bunny_ready %}
-            <span class="inline-flex items-center gap-2 text-green-600 font-semibold">
-              <i class="fa-solid fa-circle-check"></i> {% trans "Video ready" %}
-            </span>
-          {% else %}
-            <span class="inline-flex items-center gap-2 text-yellow-600 font-semibold">
-              <i class="fa-solid fa-spinner fa-spin"></i> {% trans "Video is still processing on Bunny — check back shortly." %}
-            </span>
-          {% endif %}
-          <p class="text-xs text-gray-400 mt-1">{% trans "Uploading a new file replaces the current video." %}</p>
-        {% else %}
-          <span class="text-gray-400">{% trans "No video uploaded yet." %}</span>
-        {% endif %}
-      </div>
-
-      <div id="bunny-uploader"
-           data-create-url="{% url 'create_bunny_video' lecture.id %}"
-           data-configured="{% if bunny_configured %}1{% else %}0{% endif %}">
-        {% if bunny_configured %}
-          <input type="file" id="bunny-file" accept="video/*"
-                 class="w-full border border-gray-300 dark:border-gray-700 rounded-lg p-3 text-sm mb-3">
-          <button type="button" id="bunny-upload-btn"
-                  class="px-5 py-2.5 rounded-lg bg-brand-600 text-white font-semibold hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed">
-            <i class="fa-solid fa-cloud-arrow-up mr-1"></i> {% trans "Upload Video" %}
-          </button>
-          <div id="bunny-progress-wrap" class="hidden mt-4">
-            <div class="w-full h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
-              <div id="bunny-progress-bar" class="h-full bg-brand-600 transition-all" style="width:0%"></div>
-            </div>
-          </div>
-          <p id="bunny-status" class="text-sm text-gray-500 dark:text-gray-400 mt-3"></p>
-        {% else %}
-          <p class="text-sm text-yellow-600">
-            {% trans "Video hosting isn't configured yet (missing Bunny credentials)." %}
-          </p>
-        {% endif %}
-      </div>
-
-      <form method="post" class="mt-6 pt-6 border-t border-gray-100 dark:border-gray-800">
-        {% csrf_token %}
-        <input type="hidden" name="action" value="save_video_url">
-        <label class="block text-sm font-semibold mb-2">
-          {% trans "…or an external video link" %} <span class="text-gray-400 font-normal">({% trans "only if not uploading to Bunny" %})</span>
-        </label>
-        <div class="flex gap-2">
-          <input type="url" name="video_url" value="{{ lecture.video_url|default:'' }}" placeholder="https://youtube.com/..."
-                 class="flex-1 border border-gray-300 dark:border-gray-700 bg-transparent rounded-lg p-3 focus:ring-2 focus:ring-brand-500 outline-none">
-          <button type="submit" class="px-5 py-2.5 rounded-lg bg-gray-100 dark:bg-gray-800 font-semibold hover:bg-gray-200 dark:hover:bg-gray-700 whitespace-nowrap">
-            {% trans "Save Link" %}
-          </button>
-        </div>
-      </form>
-    {% endif %}
+  <div id="lessons-list">
+    {% for lesson in lectures %}
+      {% include 'dashboard/_wizard_lesson_card.html' with lesson=lesson lesson_index=forloop.counter0 %}
+    {% endfor %}
+  </div>
+  <div id="lessons-empty" class="bg-white dark:bg-gray-900 border border-dashed border-gray-300 dark:border-gray-700 rounded-xl p-8 text-center text-gray-400 mb-6 {% if lectures %}hidden{% endif %}">
+    {% trans "No lessons yet. Add your first one below." %}
   </div>
 
-  <!-- ── Quiz ── -->
+  <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-8 mb-8">
+    <h2 class="text-lg font-bold mb-4">{% trans "Add Lesson" %}</h2>
+    <form id="add-lesson-form" method="post">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="add_lesson">
+      <label class="block text-sm font-semibold mb-2">{% trans "Lesson Title" %}</label>
+      <div class="flex gap-2">
+        <input type="text" name="title" placeholder="{% trans "e.g. Introduction to Variables" %}"
+               class="flex-1 border border-gray-300 dark:border-gray-700 bg-transparent rounded-lg p-3 focus:ring-2 focus:ring-brand-500 outline-none" required>
+        <button type="submit" class="px-5 py-2.5 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 font-semibold whitespace-nowrap">
+          <i class="fa-solid fa-plus mr-1"></i> {% trans "Add Lesson" %}
+        </button>
+      </div>
+      <p id="add-lesson-error" class="hidden text-sm text-red-600 mt-2"></p>
+    </form>
+  </div>
+
+  <!-- ── Quiz (whole module) ── -->
   <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-8 mb-8">
     <div class="flex items-center justify-between mb-1">
       <h2 class="text-lg font-bold"><i class="fa-solid fa-circle-question text-purple-600 mr-1"></i> {% trans "Quiz" %} <span class="text-gray-400 font-normal text-sm">({% trans "optional" %})</span></h2>
@@ -115,7 +71,7 @@
       {% endif %}
     </div>
     <p class="text-sm text-gray-500 dark:text-gray-400 mb-5">
-      {% trans "Students must pass this quiz to mark the module complete. Leave it out entirely and it won't gate anything." %}
+      {% trans "One quiz covers the whole module. Students must pass it to mark the module complete. Leave it out entirely and it won't gate anything." %}
     </p>
 
     <form method="post" class="space-y-4 mb-6 {% if quiz %}pb-6 border-b border-gray-100 dark:border-gray-800{% endif %}">
@@ -238,10 +194,12 @@
     </button>
     {% if not content_ready %}
       <p class="text-xs text-center text-gray-400 mt-2">
-        {% if course.production_type == 'script_only' %}
-          {% trans "Add your script above before continuing." %}
+        {% if not lectures %}
+          {% trans "Add at least one lesson above before continuing." %}
+        {% elif course.production_type == 'script_only' %}
+          {% trans "Add a script for every lesson above before continuing." %}
         {% else %}
-          {% trans "Upload a video (or add an external link) above before continuing." %}
+          {% trans "Upload a video (or add an external link) for every lesson above before continuing." %}
         {% endif %}
       </p>
     {% endif %}
@@ -253,6 +211,7 @@
 {% block extra_js %}
 {% if bunny_configured and course.production_type != 'script_only' %}
 <script src="{% static 'js/tus.min.js' %}"></script>
+{% endif %}
 {% trans "Choose a video file first." as msg_choose_file %}
 {% trans "Preparing secure upload…" as msg_preparing %}
 {% trans "Could not start the upload. Please try again." as msg_start_failed %}
@@ -260,69 +219,158 @@
 {% trans "Upload failed. Please try again." as msg_upload_failed %}
 {% trans "Uploading… " as msg_uploading_prefix %}
 {% trans "Uploaded! Bunny is now processing the video — reload this page in a minute to confirm it's ready." as msg_uploaded %}
+{% trans "Lesson title is required." as msg_lesson_title_required %}
 <script>
   (function () {
-    const root = document.getElementById('bunny-uploader');
-    const fileInput = document.getElementById('bunny-file');
-    const uploadBtn = document.getElementById('bunny-upload-btn');
-    const progressWrap = document.getElementById('bunny-progress-wrap');
-    const progressBar = document.getElementById('bunny-progress-bar');
-    const statusEl = document.getElementById('bunny-status');
-    const createUrl = root.dataset.createUrl;
     const csrftoken = document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '';
 
-    uploadBtn.addEventListener('click', async () => {
-      const file = fileInput.files[0];
-      if (!file) { statusEl.textContent = '{{ msg_choose_file|escapejs }}'; return; }
+    // ── Bunny uploader: one instance per lesson card, all sharing this
+    // same class-based initializer so it works for cards present at load
+    // time and for ones inserted later via the Add Lesson AJAX flow. ──
+    function initBunnyUploader(root) {
+      if (root.dataset.bunnyBound === '1') return;
+      root.dataset.bunnyBound = '1';
+      if (root.dataset.configured !== '1') return;
 
-      uploadBtn.disabled = true;
-      statusEl.textContent = '{{ msg_preparing|escapejs }}';
+      const fileInput = root.querySelector('.bunny-file');
+      const uploadBtn = root.querySelector('.bunny-upload-btn');
+      const progressWrap = root.querySelector('.bunny-progress-wrap');
+      const progressBar = root.querySelector('.bunny-progress-bar');
+      const statusEl = root.querySelector('.bunny-status');
+      const createUrl = root.dataset.createUrl;
 
-      let creds;
-      try {
-        const res = await fetch(createUrl, { method: 'POST', headers: { 'X-CSRFToken': csrftoken } });
-        if (!res.ok) throw new Error();
-        creds = await res.json();
-      } catch (e) {
-        statusEl.textContent = '{{ msg_start_failed|escapejs }}';
-        uploadBtn.disabled = false;
-        return;
-      }
+      uploadBtn.addEventListener('click', async () => {
+        const file = fileInput.files[0];
+        if (!file) { statusEl.textContent = '{{ msg_choose_file|escapejs }}'; return; }
 
-      if (typeof tus === 'undefined') {
-        statusEl.textContent = '{{ msg_lib_failed|escapejs }}';
-        uploadBtn.disabled = false;
-        return;
-      }
+        uploadBtn.disabled = true;
+        statusEl.textContent = '{{ msg_preparing|escapejs }}';
 
-      progressWrap.classList.remove('hidden');
-      const upload = new tus.Upload(file, {
-        endpoint: creds.endpoint,
-        retryDelays: [0, 3000, 5000, 10000, 20000],
-        headers: {
-          AuthorizationSignature: creds.signature,
-          AuthorizationExpire: creds.expiration,
-          VideoId: creds.video_id,
-          LibraryId: creds.library_id,
-        },
-        metadata: { filetype: file.type, title: file.name },
-        onError: () => {
-          statusEl.textContent = '{{ msg_upload_failed|escapejs }}';
+        let creds;
+        try {
+          const res = await fetch(createUrl, { method: 'POST', headers: { 'X-CSRFToken': csrftoken } });
+          if (!res.ok) throw new Error();
+          creds = await res.json();
+        } catch (e) {
+          statusEl.textContent = '{{ msg_start_failed|escapejs }}';
           uploadBtn.disabled = false;
-        },
-        onProgress: (sent, total) => {
-          const pct = Math.round((sent / total) * 100);
-          progressBar.style.width = pct + '%';
-          statusEl.textContent = '{{ msg_uploading_prefix|escapejs }}' + pct + '%';
-        },
-        onSuccess: () => {
-          progressBar.style.width = '100%';
-          statusEl.textContent = '{{ msg_uploaded|escapejs }}';
-        },
+          return;
+        }
+
+        if (typeof tus === 'undefined') {
+          statusEl.textContent = '{{ msg_lib_failed|escapejs }}';
+          uploadBtn.disabled = false;
+          return;
+        }
+
+        progressWrap.classList.remove('hidden');
+        const upload = new tus.Upload(file, {
+          endpoint: creds.endpoint,
+          retryDelays: [0, 3000, 5000, 10000, 20000],
+          headers: {
+            AuthorizationSignature: creds.signature,
+            AuthorizationExpire: creds.expiration,
+            VideoId: creds.video_id,
+            LibraryId: creds.library_id,
+          },
+          metadata: { filetype: file.type, title: file.name },
+          onError: () => {
+            statusEl.textContent = '{{ msg_upload_failed|escapejs }}';
+            uploadBtn.disabled = false;
+          },
+          onProgress: (sent, total) => {
+            const pct = Math.round((sent / total) * 100);
+            progressBar.style.width = pct + '%';
+            statusEl.textContent = '{{ msg_uploading_prefix|escapejs }}' + pct + '%';
+          },
+          onSuccess: () => {
+            progressBar.style.width = '100%';
+            statusEl.textContent = '{{ msg_uploaded|escapejs }}';
+          },
+        });
+        upload.start();
       });
-      upload.start();
+    }
+
+    function initAllBunnyUploaders(scope) {
+      scope.querySelectorAll('.bunny-uploader').forEach(initBunnyUploader);
+    }
+
+    // ── Lessons: Add Lesson / Delete Lesson via AJAX, same pattern as
+    // Step 2's Add/Delete Module -- no full page reload. ──
+    const list = document.getElementById('lessons-list');
+    const emptyState = document.getElementById('lessons-empty');
+    const countLabel = document.getElementById('lessons-count-label');
+    const addForm = document.getElementById('add-lesson-form');
+    const titleInput = addForm.querySelector('[name="title"]');
+    const errorEl = document.getElementById('add-lesson-error');
+    const postUrl = window.location.href;
+
+    function refreshLessonsState() {
+      const count = list.children.length;
+      emptyState.classList.toggle('hidden', count > 0);
+      countLabel.textContent = count === 1 ? '1 Lesson' : count + ' Lessons';
+    }
+
+    function bindDeleteLessonForm(form) {
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        if (!confirm(form.dataset.confirmMessage)) return;
+        const lessonId = form.dataset.lessonId;
+        try {
+          const res = await fetch(postUrl, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrftoken, 'X-Requested-With': 'XMLHttpRequest' },
+            body: new URLSearchParams({ action: 'delete_lesson', lesson_id: lessonId }),
+          });
+          if (!res.ok) throw new Error();
+          document.getElementById('lesson-card-' + lessonId)?.remove();
+          refreshLessonsState();
+        } catch (err) {
+          form.submit();
+        }
+      });
+    }
+
+    initAllBunnyUploaders(document);
+    list.querySelectorAll('.wizard-delete-lesson-form').forEach(bindDeleteLessonForm);
+
+    addForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const submitBtn = addForm.querySelector('button[type="submit"]');
+      submitBtn.disabled = true;
+      errorEl.classList.add('hidden');
+
+      let res;
+      try {
+        res = await fetch(postUrl, {
+          method: 'POST',
+          headers: { 'X-CSRFToken': csrftoken, 'X-Requested-With': 'XMLHttpRequest' },
+          body: new URLSearchParams({ action: 'add_lesson', title: titleInput.value }),
+        });
+      } catch (networkErr) {
+        addForm.submit();
+        return;
+      }
+
+      if (res.ok) {
+        const data = await res.json();
+        list.insertAdjacentHTML('beforeend', data.html);
+        const newCard = document.getElementById('lesson-card-' + data.lesson_id);
+        if (newCard) {
+          initAllBunnyUploaders(newCard);
+          const deleteForm = newCard.querySelector('.wizard-delete-lesson-form');
+          if (deleteForm) bindDeleteLessonForm(deleteForm);
+        }
+        titleInput.value = '';
+        titleInput.focus();
+        refreshLessonsState();
+      } else {
+        errorEl.textContent = '{{ msg_lesson_title_required|escapejs }}';
+        errorEl.classList.remove('hidden');
+      }
+      submitBtn.disabled = false;
     });
   })();
 </script>
-{% endif %}
 {% endblock %}

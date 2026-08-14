@@ -1,0 +1,15 @@
+{% load i18n %}
+<div class="flex items-center justify-between bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5"
+     id="module-row-{{ module.id }}">
+  <div class="flex items-center gap-3">
+    <span class="w-8 h-8 flex items-center justify-center rounded-full bg-brand-50 dark:bg-gray-800 text-brand-600 font-bold text-sm">{{ module.order }}</span>
+    <p class="font-semibold">{{ module.title }}</p>
+  </div>
+  <form method="post" class="wizard-delete-module-form" data-module-id="{{ module.id }}"
+        data-confirm-message="{% blocktrans with title=module.title|escapejs %}Delete {{ title }}?{% endblocktrans %}">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="delete">
+    <input type="hidden" name="module_id" value="{{ module.id }}">
+    <button type="submit" class="text-sm font-semibold text-red-600 hover:underline">{% trans "Delete" %}</button>
+  </form>
+</div>

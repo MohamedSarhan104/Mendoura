@@ -40,9 +40,13 @@
           <a href="{% url 'course_wizard_module_content' course.id item.module.id %}" class="text-xs font-semibold text-brand-600 hover:underline">{% trans "Edit" %}</a>
         </div>
         <div class="flex flex-wrap gap-3 mt-2 text-xs">
+          <span class="text-gray-500 dark:text-gray-400 font-semibold">
+            <i class="fa-solid fa-list-ol"></i>
+            {% blocktrans count count=item.lesson_count %}{{ count }} lesson{% plural %}{{ count }} lessons{% endblocktrans %}
+          </span>
           {% if item.content_ready %}
             <span class="text-green-600 font-semibold"><i class="fa-solid fa-circle-check"></i>
-              {% if course.production_type == 'script_only' %}{% trans "Script added" %}{% else %}{% trans "Video added" %}{% endif %}
+              {% if course.production_type == 'script_only' %}{% trans "All scripts added" %}{% else %}{% trans "All videos added" %}{% endif %}
             </span>
           {% else %}
             <span class="text-red-500 font-semibold"><i class="fa-solid fa-triangle-exclamation"></i>

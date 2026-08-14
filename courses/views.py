@@ -21,6 +21,7 @@ from django.db.models import Avg, Count, Prefetch, ProtectedError, Q, Sum
 from django.db.models.functions import TruncMonth
 from django.http import Http404, HttpResponse, HttpResponseForbidden, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render, resolve_url
+from django.template.loader import render_to_string
 from django.utils import timezone
 from django.utils.translation import gettext as _
 from django.utils.translation import gettext_lazy as _lazy
@@ -229,6 +230,15 @@ WIZARD_STEP_CHOICES = [
 ]
 
 
+def _is_ajax(request):
+    """Same "no full page reload" pattern the Bunny uploader and transcript
+    polling already use elsewhere -- the wizard's Add Module/Add Lesson
+    forms POST here with this header via fetch() for an instant, in-place
+    update; every action still has a plain-form fallback (redirect) for
+    JS-disabled clients or a network hiccup."""
+    return request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+
+
 def _get_draft_course_or_redirect(request, course_id):
     """Shared ownership + draft-status guard for every wizard step. Returns
     (course, None) on success, or (None, redirect_response) if the caller
@@ -239,20 +249,6 @@ def _get_draft_course_or_redirect(request, course_id):
         # first-time setup. Send them to the normal editing tools instead.
         return None, redirect('manage_modules', course_id=course.id)
     return course, None
-
-
-def _wizard_module_lecture(module):
-    """The wizard treats each module as having exactly one primary lecture
-    (its video or script) -- simpler to build/understand step 3 around than
-    the full multi-lecture-per-module editor, which stays available via
-    Curriculum -> Manage Lectures after creation for anyone who wants more
-    than one lecture per module. Auto-created the first time this module's
-    wizard step is opened, titled after the module until the instructor
-    renames it."""
-    lecture = module.lectures.first()
-    if lecture is None:
-        lecture = Lecture.objects.create(module=module, title=module.title)
-    return lecture
 
 
 def _sync_bunny_status(lecture):
@@ -295,16 +291,19 @@ def _sync_bunny_status(lecture):
 
 
 def _module_content_ready(course, module):
-    """Whether this module's required video/script has been provided --
-    gates the wizard's Next Module/Finish action. Checked live against the
+    """Whether every lesson in this module has its required video/script --
+    gates the wizard's Next Module/Finish action. A module needs at least
+    one lesson, and EVERY lesson in it needs content -- an instructor who
+    added a second lesson but forgot its video shouldn't be able to publish
+    a course with a silently broken lecture. Checked live against the
     actual data instead of a stored flag, so it can never disagree with
     what's really there."""
-    lecture = module.lectures.first()
-    if lecture is None:
+    lectures = list(module.lectures.all())
+    if not lectures:
         return False
     if course.production_type == Course.ProductionType.SCRIPT_ONLY:
-        return bool(lecture.ai_generated_script and lecture.ai_generated_script.strip())
-    return bool(lecture.bunny_video_id or lecture.video_url)
+        return all(l.ai_generated_script and l.ai_generated_script.strip() for l in lectures)
+    return all(l.bunny_video_id or l.video_url for l in lectures)
 
 
 def _first_incomplete_module(course):
@@ -349,14 +348,25 @@ def course_wizard_modules(request, course_id):
         if action == 'delete':
             module = get_object_or_404(Module, id=request.POST.get('module_id'), course=course)
             module.delete()
-        else:
-            form = ModuleForm(request.POST)
-            if form.is_valid():
-                module = form.save(commit=False)
-                module.course = course
-                if not module.order:
-                    module.order = modules.count() + 1
-                module.save()
+            if _is_ajax(request):
+                return JsonResponse({'deleted': True, 'has_modules': course.modules.exists()})
+            return redirect('course_wizard_modules', course_id=course.id)
+
+        form = ModuleForm(request.POST)
+        if form.is_valid():
+            module = form.save(commit=False)
+            module.course = course
+            if not module.order:
+                module.order = modules.count() + 1
+            module.save()
+            if _is_ajax(request):
+                html = render_to_string(
+                    'dashboard/_wizard_module_row.html', {'module': module}, request=request)
+                return JsonResponse({'html': html, 'module_id': module.id})
+            return redirect('course_wizard_modules', course_id=course.id)
+
+        if _is_ajax(request):
+            return JsonResponse({'errors': form.errors.get_json_data()}, status=400)
         return redirect('course_wizard_modules', course_id=course.id)
 
     return render(request, 'dashboard/wizard_modules.html', {
@@ -365,23 +375,34 @@ def course_wizard_modules(request, course_id):
     })
 
 
-# Step 3 -- per module, in sequence: video/script, then an optional quiz
-# (with its questions and each question's answer choices, all on this one
-# page instead of split across manage_quiz.html + edit_question.html), then
+# Step 3 -- per module, in sequence: one or more lessons (each its own
+# title + video/script), then an optional quiz for the whole module (with
+# its questions and each question's answer choices, all on this one page
+# instead of split across manage_quiz.html + edit_question.html), then
 # Skip Quiz / Next Module / Finish. One view handling several POST actions
 # via a hidden `action` field -- every action redirects back to this same
-# step so the instructor is never bounced out of the wizard, the way
-# reusing add_question/add_choice/etc. (which redirect to the classic
+# step (or, for add_lesson/delete_lesson, responds to an AJAX fetch in
+# place -- same "instant, no reload" pattern as course_wizard_modules'
+# Add Module) so the instructor is never bounced out of the wizard, the
+# way reusing add_question/add_choice/etc. (which redirect to the classic
 # Curriculum pages) would.
+#
+# Quizzes stay per-MODULE, not per-lesson, even though a module can now
+# hold several lessons: Enrollment.module_is_complete() already gates
+# completion on one quiz per module, a quiz naturally tests understanding
+# of the whole module's material rather than a single short video, and
+# keeping it per-module means this change needed no schema/migration and
+# no changes to certificate issuance or progress tracking.
 @login_required
 def course_wizard_module_content(request, course_id, module_id):
     course, bail = _get_draft_course_or_redirect(request, course_id)
     if bail:
         return bail
     module = get_object_or_404(Module, id=module_id, course=course)
-    lecture = _wizard_module_lecture(module)
+    lectures = list(module.lectures.order_by('order', 'id'))
     if request.method == 'GET':
-        _sync_bunny_status(lecture)
+        for lesson in lectures:
+            _sync_bunny_status(lesson)
     quiz = getattr(module, 'quiz', None)
     modules = list(course.modules.order_by('order', 'id'))
     module_index = next((i for i, m in enumerate(modules) if m.id == module.id), 0)
@@ -390,13 +411,37 @@ def course_wizard_module_content(request, course_id, module_id):
     if request.method == 'POST':
         action = request.POST.get('action')
 
-        if action == 'save_video_url':
-            lecture.video_url = request.POST.get('video_url', '').strip()
-            lecture.save(update_fields=['video_url'])
+        if action == 'add_lesson':
+            title = request.POST.get('title', '').strip()
+            if title:
+                lesson = Lecture.objects.create(module=module, title=title, order=len(lectures) + 1)
+                lectures.append(lesson)
+                if _is_ajax(request):
+                    html = render_to_string('dashboard/_wizard_lesson_card.html', {
+                        'course': course, 'lesson': lesson, 'lesson_index': len(lectures) - 1,
+                        'bunny_configured': bunny.is_configured(),
+                    }, request=request)
+                    return JsonResponse({'html': html, 'lesson_id': lesson.id})
+            elif _is_ajax(request):
+                return JsonResponse({'errors': {'title': [_('Lesson title is required.')]}}, status=400)
+            return redirect('course_wizard_module_content', course_id=course.id, module_id=module.id)
 
-        elif action == 'save_script':
-            lecture.ai_generated_script = request.POST.get('script', '').strip()
-            lecture.save(update_fields=['ai_generated_script'])
+        elif action == 'delete_lesson':
+            lesson_id = request.POST.get('lesson_id')
+            Lecture.objects.filter(id=lesson_id, module=module).delete()
+            if _is_ajax(request):
+                return JsonResponse({'deleted': True})
+            return redirect('course_wizard_module_content', course_id=course.id, module_id=module.id)
+
+        elif action == 'save_lesson_video_url':
+            lesson = get_object_or_404(Lecture, id=request.POST.get('lesson_id'), module=module)
+            lesson.video_url = request.POST.get('video_url', '').strip()
+            lesson.save(update_fields=['video_url'])
+
+        elif action == 'save_lesson_script':
+            lesson = get_object_or_404(Lecture, id=request.POST.get('lesson_id'), module=module)
+            lesson.ai_generated_script = request.POST.get('script', '').strip()
+            lesson.save(update_fields=['ai_generated_script'])
 
         elif action == 'save_quiz_settings':
             form = QuizForm(request.POST, instance=quiz)
@@ -440,11 +485,14 @@ def course_wizard_module_content(request, course_id, module_id):
             quiz = None
 
         elif action == 'advance':
+            if not lectures:
+                messages.error(request, _('Add at least one lesson to this module before continuing.'))
+                return redirect('course_wizard_module_content', course_id=course.id, module_id=module.id)
             if not _module_content_ready(course, module):
                 error_message = (
-                    _('Add your script for this module before continuing.')
+                    _('Add a script for every lesson in this module before continuing.')
                     if course.production_type == Course.ProductionType.SCRIPT_ONLY
-                    else _('Upload a video (or add an external video link) for this module before continuing.')
+                    else _('Upload a video (or add an external video link) for every lesson in this module before continuing.')
                 )
                 messages.error(request, error_message)
                 return redirect('course_wizard_module_content', course_id=course.id, module_id=module.id)
@@ -456,7 +504,7 @@ def course_wizard_module_content(request, course_id, module_id):
 
     questions = quiz.questions.prefetch_related('choices') if quiz else []
     return render(request, 'dashboard/wizard_module_content.html', {
-        'course': course, 'module': module, 'lecture': lecture, 'quiz': quiz,
+        'course': course, 'module': module, 'lectures': lectures, 'quiz': quiz,
         'questions': questions, 'quiz_form': QuizForm(instance=quiz),
         'question_form': QuestionForm(), 'choice_form': ChoiceForm(),
         'bunny_configured': bunny.is_configured(),
@@ -486,7 +534,7 @@ def course_wizard_review(request, course_id):
 
     modules_summary = [{
         'module': module,
-        'lecture': module.lectures.first(),
+        'lesson_count': len(module.lectures.all()),
         'content_ready': _module_content_ready(course, module),
         'question_count': module.quiz.questions.count() if getattr(module, 'quiz', None) else 0,
     } for module in modules]

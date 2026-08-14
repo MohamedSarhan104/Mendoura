@@ -12,32 +12,20 @@
   <h1 class="text-3xl font-extrabold mt-4 mb-6">{{ course.title }}</h1>
   {% include 'partials/_wizard_steps.html' %}
   <p class="text-gray-500 dark:text-gray-400 mb-8">
-    {% trans "Add at least one module. You'll add the video/script and an optional quiz for each one in the next step." %}
+    {% trans "Add at least one module. You'll add lessons (with video) and an optional quiz for each one in the next step." %}
   </p>
 
-  <div class="space-y-3 mb-8">
+  <div id="modules-list" class="space-y-3 mb-8">
     {% for module in modules %}
-      <div class="flex items-center justify-between bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5">
-        <div class="flex items-center gap-3">
-          <span class="w-8 h-8 flex items-center justify-center rounded-full bg-brand-50 dark:bg-gray-800 text-brand-600 font-bold text-sm">{{ forloop.counter }}</span>
-          <p class="font-semibold">{{ module.title }}</p>
-        </div>
-        <form method="post" onsubmit="return confirm('{% blocktrans with title=module.title|escapejs %}Delete {{ title }}?{% endblocktrans %}');">
-          {% csrf_token %}
-          <input type="hidden" name="action" value="delete">
-          <input type="hidden" name="module_id" value="{{ module.id }}">
-          <button type="submit" class="text-sm font-semibold text-red-600 hover:underline">{% trans "Delete" %}</button>
-        </form>
-      </div>
-    {% empty %}
-      <div class="bg-white dark:bg-gray-900 border border-dashed border-gray-300 dark:border-gray-700 rounded-xl p-8 text-center text-gray-400">
-        {% trans "No modules yet. Add your first one below." %}
-      </div>
+      {% include 'dashboard/_wizard_module_row.html' %}
     {% endfor %}
+  </div>
+  <div id="modules-empty" class="bg-white dark:bg-gray-900 border border-dashed border-gray-300 dark:border-gray-700 rounded-xl p-8 text-center text-gray-400 mb-8 {% if modules %}hidden{% endif %}">
+    {% trans "No modules yet. Add your first one below." %}
   </div>
 
   <h2 class="text-lg font-bold mb-4">{% trans "Add Module" %}</h2>
-  <form method="post" class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-8 space-y-5 mb-10">
+  <form id="add-module-form" method="post" class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-8 space-y-5 mb-10">
     {% csrf_token %}
     <input type="hidden" name="action" value="add">
     <div>
@@ -48,22 +36,109 @@
       <label class="block text-sm font-semibold mb-2">{% trans "Order" %}</label>
       {{ form.order }}
     </div>
+    <p id="add-module-error" class="hidden text-sm text-red-600"></p>
     <button type="submit" class="w-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 font-semibold py-3 rounded-xl transition">
       <i class="fa-solid fa-plus mr-1"></i> {% trans "Add Module" %}
     </button>
   </form>
 
-  {% if modules %}
-    <a href="{% url 'course_wizard_resume' course.id %}"
-       class="block text-center w-full bg-brand-600 hover:bg-brand-700 text-white font-semibold py-3 rounded-xl transition">
-      {% trans "Next: Add Video & Quiz" %} <i class="fa-solid fa-arrow-right ml-1"></i>
-    </a>
-  {% else %}
-    <button type="button" disabled
-            class="block text-center w-full bg-gray-200 dark:bg-gray-800 text-gray-400 font-semibold py-3 rounded-xl cursor-not-allowed">
-      {% trans "Add a module to continue" %}
-    </button>
-  {% endif %}
+  <div id="wizard-next-area" data-resume-url="{% url 'course_wizard_resume' course.id %}">
+    {% if modules %}
+      <a href="{% url 'course_wizard_resume' course.id %}"
+         class="block text-center w-full bg-brand-600 hover:bg-brand-700 text-white font-semibold py-3 rounded-xl transition">
+        {% trans "Next: Add Video" %} <i class="fa-solid fa-arrow-right ml-1"></i>
+      </a>
+    {% else %}
+      <button type="button" disabled
+              class="block text-center w-full bg-gray-200 dark:bg-gray-800 text-gray-400 font-semibold py-3 rounded-xl cursor-not-allowed">
+        {% trans "Add a module to continue" %}
+      </button>
+    {% endif %}
+  </div>
 
 </div>
+{% endblock %}
+
+{% block extra_js %}
+{% trans "Could not add this module. Please check the fields and try again." as msg_add_failed %}
+{% trans "Next: Add Video" as msg_next %}
+{% trans "Add a module to continue" as msg_add_to_continue %}
+<script>
+  (function () {
+    const csrftoken = document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '';
+    const postUrl = window.location.href;
+    const list = document.getElementById('modules-list');
+    const emptyState = document.getElementById('modules-empty');
+    const nextArea = document.getElementById('wizard-next-area');
+    const resumeUrl = nextArea.dataset.resumeUrl;
+    const addForm = document.getElementById('add-module-form');
+    const titleInput = addForm.querySelector('[name="title"]');
+    const orderInput = addForm.querySelector('[name="order"]');
+    const errorEl = document.getElementById('add-module-error');
+
+    function refreshNextState() {
+      const hasModules = list.children.length > 0;
+      emptyState.classList.toggle('hidden', hasModules);
+      nextArea.innerHTML = hasModules
+        ? '<a href="' + resumeUrl + '" class="block text-center w-full bg-brand-600 hover:bg-brand-700 text-white font-semibold py-3 rounded-xl transition">{{ msg_next|escapejs }} <i class="fa-solid fa-arrow-right ml-1"></i></a>'
+        : '<button type="button" disabled class="block text-center w-full bg-gray-200 dark:bg-gray-800 text-gray-400 font-semibold py-3 rounded-xl cursor-not-allowed">{{ msg_add_to_continue|escapejs }}</button>';
+    }
+
+    function bindDeleteForm(form) {
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        if (!confirm(form.dataset.confirmMessage)) return;
+        const moduleId = form.dataset.moduleId;
+        try {
+          const res = await fetch(postUrl, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrftoken, 'X-Requested-With': 'XMLHttpRequest' },
+            body: new URLSearchParams({ action: 'delete', module_id: moduleId }),
+          });
+          if (!res.ok) throw new Error();
+          document.getElementById('module-row-' + moduleId)?.remove();
+          refreshNextState();
+        } catch (err) {
+          form.submit();
+        }
+      });
+    }
+
+    list.querySelectorAll('.wizard-delete-module-form').forEach(bindDeleteForm);
+
+    addForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const submitBtn = addForm.querySelector('button[type="submit"]');
+      submitBtn.disabled = true;
+      errorEl.classList.add('hidden');
+
+      let res;
+      try {
+        res = await fetch(postUrl, {
+          method: 'POST',
+          headers: { 'X-CSRFToken': csrftoken, 'X-Requested-With': 'XMLHttpRequest' },
+          body: new URLSearchParams({ action: 'add', title: titleInput.value, order: orderInput.value }),
+        });
+      } catch (networkErr) {
+        addForm.submit();
+        return;
+      }
+
+      if (res.ok) {
+        const data = await res.json();
+        list.insertAdjacentHTML('beforeend', data.html);
+        const newRow = document.getElementById('module-row-' + data.module_id);
+        const deleteForm = newRow && newRow.querySelector('.wizard-delete-module-form');
+        if (deleteForm) bindDeleteForm(deleteForm);
+        titleInput.value = '';
+        titleInput.focus();
+        refreshNextState();
+      } else {
+        errorEl.textContent = '{{ msg_add_failed|escapejs }}';
+        errorEl.classList.remove('hidden');
+      }
+      submitBtn.disabled = false;
+    });
+  })();
+</script>
 {% endblock %}
