@@ -2013,23 +2013,23 @@ msgid "Request Payout"
 msgstr "Demander un paiement"
 
 msgid "You can request a payout once a week."
-msgstr ""
+msgstr "Vous pouvez demander un paiement une fois par semaine."
 
 #, python-format
 msgid "Next available: %(next_date)s."
 msgstr ""
 
 msgid "Amount ($)"
-msgstr ""
+msgstr "Montant ($)"
 
 msgid "Subscription Revenue Breakdown"
-msgstr ""
+msgstr "Répartition des revenus d'abonnement"
 
 msgid "Share of Period"
-msgstr ""
+msgstr "Part de la période"
 
 msgid "You Earned"
-msgstr ""
+msgstr "Vous avez gagné"
 
 #, python-format
 msgid "%(minutes)s min"
@@ -2040,22 +2040,22 @@ msgid "(%(pct)s%% subscription pool)"
 msgstr ""
 
 msgid "No subscription revenue yet."
-msgstr ""
+msgstr "Aucun revenu d'abonnement pour le moment."
 
 msgid "Transaction Ledger"
-msgstr ""
+msgstr "Grand livre des transactions"
 
 msgid "Type"
-msgstr ""
+msgstr "Type"
 
 msgid "Balance After"
-msgstr ""
+msgstr "Solde après"
 
 msgid "No transactions yet."
-msgstr ""
+msgstr "Aucune transaction pour le moment."
 
 msgid "Back to Modules"
-msgstr ""
+msgstr "Retour aux modules"
 
 #, python-format
 msgid "Module %(n)s: %(title)s"
