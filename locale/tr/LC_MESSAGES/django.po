@@ -1,0 +1,2738 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-08-14 19:07+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+msgid ""
+"Mendoura AI Coach is getting a lot of questions right now (we run on a free "
+"tier with limited capacity). Please wait a minute and try again."
+msgstr ""
+
+msgid ""
+"Mendoura AI Coach hit Google's free-tier limit just now. Please wait a "
+"minute and try again."
+msgstr ""
+
+msgid ""
+"Mendoura AI Coach couldn't reach the AI service just now. Please try again "
+"shortly."
+msgstr ""
+
+msgid "Mendoura AI Coach couldn't generate a reply just now. Please try again."
+msgstr ""
+
+msgid "AI transcription isn't configured yet -- GEMINI_API_KEY is missing."
+msgstr ""
+
+msgid ""
+"Video transcription needs BUNNY_PULL_ZONE_HOSTNAME configured -- see this "
+"Bunny library's CDN Hostname in its dashboard settings."
+msgstr ""
+
+msgid ""
+"Couldn't reach Bunny to check this video's details. Please try again shortly."
+msgstr ""
+
+msgid ""
+"This video doesn't have an MP4 file available for transcription yet -- "
+"enable 'MP4 Fallback' for this library in your Bunny dashboard (or re-upload "
+"the video), then try again."
+msgstr ""
+
+msgid ""
+"No downloadable resolution is available for this video yet. Please try again "
+"shortly."
+msgstr ""
+
+msgid ""
+"Mendoura AI Coach is getting a lot of use right now (we run on a free tier "
+"with limited capacity). Please wait a minute and try again."
+msgstr ""
+
+msgid ""
+"Transcription failed -- the video may be too large for the free tier, or "
+"Gemini couldn't process it. Please try again shortly."
+msgstr ""
+
+msgid "Gemini didn't return a transcript for this video. Please try again."
+msgstr ""
+
+msgid "An account with this username already exists."
+msgstr ""
+
+msgid "An account with this email already exists."
+msgstr ""
+
+msgid "An account with this phone number already exists."
+msgstr ""
+
+msgid "Phone Number"
+msgstr ""
+
+msgid ""
+"You must accept the Terms & Conditions and Privacy Policy to create an "
+"account."
+msgstr ""
+
+msgid "e.g. Egypt, Saudi Arabia, France..."
+msgstr ""
+
+msgid ""
+"Instructors based outside Egypt must also provide a Payoneer account below."
+msgstr ""
+
+msgid "Payoneer email or account ID"
+msgstr ""
+
+msgid ""
+"A Payoneer account (email or account ID) is required for instructors based "
+"outside Egypt."
+msgstr ""
+
+msgid "Your account is currently pending administrator approval."
+msgstr ""
+
+msgid "English"
+msgstr ""
+
+msgid "Arabic"
+msgstr ""
+
+msgid "French"
+msgstr ""
+
+msgid "German"
+msgstr ""
+
+msgid "Spanish"
+msgstr ""
+
+msgid "Italian"
+msgstr ""
+
+msgid "Turkish"
+msgstr ""
+
+msgid "e.g. Introduction to Python"
+msgstr ""
+
+msgid "What is this course about?"
+msgstr ""
+
+msgid ""
+"Type the script here. Mendoura will turn this text into a professional video "
+"lecture."
+msgstr ""
+
+msgid "Share your experience with this course..."
+msgstr ""
+
+msgid "Optional: Google Drive / GitHub link"
+msgstr ""
+
+msgid "Any notes for your instructor?"
+msgstr ""
+
+msgid "e.g. 18/20 or A-"
+msgstr ""
+
+msgid "Feedback for the student..."
+msgstr ""
+
+msgid "e.g. Web Development"
+msgstr ""
+
+msgid "Category"
+msgstr ""
+
+msgid "e.g. Robotics"
+msgstr ""
+
+msgid "Why should this track exist? (optional)"
+msgstr ""
+
+msgid "e.g. Robotics & Automation"
+msgstr ""
+
+msgid "Select a category…"
+msgstr ""
+
+msgid "+ Other / New category…"
+msgstr ""
+
+msgid "Enter a name for the new category."
+msgstr ""
+
+#, python-format
+msgid ""
+"\"%(name)s\" already exists -- select it from the Category dropdown instead."
+msgstr ""
+
+msgid "Select a valid category."
+msgstr ""
+
+msgid ""
+"Select a category, or choose \"+ Other / New category…\" to propose one."
+msgstr ""
+
+msgid "e.g. Getting Started"
+msgstr ""
+
+msgid "e.g. Slides.pdf"
+msgstr ""
+
+msgid "e.g. Bank transfer, PayPal"
+msgstr ""
+
+msgid "e.g. Introduction to Variables"
+msgstr ""
+
+msgid "https://youtube.com/... (external embed, optional)"
+msgstr ""
+
+msgid "Defaults to \"<Module title> Quiz\" if left blank"
+msgstr ""
+
+msgid "e.g. What does CSS stand for?"
+msgstr ""
+
+msgid "Answer choice"
+msgstr ""
+
+msgid ""
+"Enter a valid username. This value may contain only letters, numbers, "
+"spaces, and @/./+/-/_ characters."
+msgstr ""
+
+msgid "username"
+msgstr ""
+
+msgid ""
+"Required. 150 characters or fewer. Letters, digits, spaces and @/./+/-/_ "
+"only."
+msgstr ""
+
+msgid "A user with that username already exists."
+msgstr ""
+
+msgid ""
+"Payoneer email or account ID. Required for instructors based outside Egypt."
+msgstr ""
+
+msgid "e.g. a Font Awesome class name"
+msgstr ""
+
+msgid "Used until a course is linked, or if none ever is."
+msgstr ""
+
+msgid "Pending Review"
+msgstr ""
+
+msgid "Approved"
+msgstr ""
+
+msgid "Rejected"
+msgstr ""
+
+msgid "Why this track should exist."
+msgstr ""
+
+msgid "Beginner"
+msgstr ""
+
+msgid "Intermediate"
+msgstr ""
+
+msgid "Advanced"
+msgstr ""
+
+msgid "Full production by instructor"
+msgstr ""
+
+msgid "Script only (platform produces)"
+msgstr ""
+
+msgid "Draft"
+msgstr ""
+
+msgid "Published"
+msgstr ""
+
+msgid "Archived"
+msgstr ""
+
+msgid "The script for Mendoura-produced video generation"
+msgstr ""
+
+msgid ""
+"production_type is read-only once a course has its first successful sale."
+msgstr ""
+
+msgid "Video"
+msgstr ""
+
+msgid "Article"
+msgstr ""
+
+msgid "Quiz"
+msgstr ""
+
+msgid "Not started"
+msgstr ""
+
+msgid "Processing"
+msgstr ""
+
+msgid "Done"
+msgstr ""
+
+msgid "Failed"
+msgstr ""
+
+msgid "Viewable for free without enrollment"
+msgstr ""
+
+msgid "Students can upload homework for this lecture"
+msgstr ""
+
+msgid "Any file: PDF, zip, image, audio, slides, etc."
+msgstr ""
+
+msgid "Size in bytes"
+msgstr ""
+
+msgid "Link to Google Drive, GitHub, etc."
+msgstr ""
+
+msgid "Pending"
+msgstr ""
+
+msgid "Succeeded"
+msgstr ""
+
+msgid "Refunded"
+msgstr ""
+
+#, python-format
+msgid "'%(field)s' is immutable after creation."
+msgstr ""
+
+#, python-format
+msgid "%(module)s Quiz"
+msgstr ""
+
+msgid "Single choice"
+msgstr ""
+
+msgid "Sale Credit"
+msgstr ""
+
+msgid "Withdrawal"
+msgstr ""
+
+msgid "Adjustment"
+msgstr ""
+
+msgid "Refund Debit"
+msgstr ""
+
+msgid "WalletTransaction rows are append-only and cannot be modified."
+msgstr ""
+
+msgid "WalletTransaction rows are append-only and cannot be deleted."
+msgstr ""
+
+msgid "Requested"
+msgstr ""
+
+msgid "Paid"
+msgstr ""
+
+msgid "Monthly"
+msgstr ""
+
+msgid "Annual"
+msgstr ""
+
+msgid "Active"
+msgstr ""
+
+msgid "Expired"
+msgstr ""
+
+msgid "Canceled"
+msgstr ""
+
+msgid "Open"
+msgstr ""
+
+msgid "Distributed"
+msgstr ""
+
+msgid "User"
+msgstr ""
+
+msgid "Assistant"
+msgstr ""
+
+msgid "Markdown -- supports tables, bold, and lists."
+msgstr ""
+
+#, python-format
+msgid "%(counter)s student"
+msgid_plural "%(counter)s students"
+msgstr[0] ""
+msgstr[1] ""
+
+msgid "Free"
+msgstr ""
+
+msgid "Browse Courses"
+msgstr ""
+
+msgid "Pick a course and start learning today."
+msgstr ""
+
+msgid "No courses available yet"
+msgstr ""
+
+msgid "Check back soon, instructors are cooking up something great."
+msgstr ""
+
+msgid "Certificate"
+msgstr ""
+
+msgid "Verified Certificate"
+msgstr ""
+
+msgid "Statement of Accomplishment"
+msgstr ""
+
+msgid "Awarded to"
+msgstr ""
+
+msgid "Instructor"
+msgstr ""
+
+msgid "Issued"
+msgstr ""
+
+msgid "Download Certificate"
+msgstr ""
+
+msgid "Share on LinkedIn"
+msgstr ""
+
+msgid "Copy Link"
+msgstr ""
+
+#, python-format
+msgid "My Mendoura Certificate: %(title)s"
+msgstr ""
+
+msgid "Share"
+msgstr ""
+
+msgid "Verification ID"
+msgstr ""
+
+msgid "Verify at"
+msgstr ""
+
+msgid "Copied!"
+msgstr ""
+
+msgid "Checkout"
+msgstr ""
+
+#, python-format
+msgid "Back to %(title)s"
+msgstr ""
+
+msgid "Choose how to get access"
+msgstr ""
+
+msgid "Pay once for this course, or unlock everything on Mendoura."
+msgstr ""
+
+msgid "Single Course"
+msgstr ""
+
+msgid ""
+"Lifetime access to this course only: all lectures, resources, and a "
+"certificate on completion."
+msgstr ""
+
+msgid "Buy This Course"
+msgstr ""
+
+msgid "Best Value"
+msgstr ""
+
+msgid "All Tracks & Courses"
+msgstr ""
+
+msgid "mo"
+msgstr ""
+
+msgid "yr"
+msgstr ""
+
+msgid "Unlimited access to every course, in every track, billed monthly."
+msgstr ""
+
+msgid "Unlimited access to every course, in every track, for a full year."
+msgstr ""
+
+msgid "Other platforms charge 4,000+ EGP/year for similar access."
+msgstr ""
+
+msgid "Cancel anytime."
+msgstr ""
+
+#, python-format
+msgid "Get the %(interval)s Pass"
+msgstr ""
+
+#, python-format
+msgid "Back to %(track)s"
+msgstr ""
+
+msgid "What You'll Learn"
+msgstr ""
+
+msgid "Course Content"
+msgstr ""
+
+msgid "Preview"
+msgstr ""
+
+msgid "Watch"
+msgstr ""
+
+#, python-format
+msgid "Quiz -- %(count)s question(s), pass at %(passing)s%%"
+msgstr ""
+
+msgid "No answer choices added yet."
+msgstr ""
+
+msgid "No questions added yet."
+msgstr ""
+
+msgid "No lectures added yet for this course."
+msgstr ""
+
+msgid "Reviews"
+msgstr ""
+
+msgid "Submit Review"
+msgstr ""
+
+msgid "No reviews yet."
+msgstr ""
+
+msgid "Go to My Learning"
+msgstr ""
+
+msgid "Enroll Now"
+msgstr ""
+
+msgid "Buy Now"
+msgstr ""
+
+#, python-format
+msgid "Instructor: %(instructor)s"
+msgstr ""
+
+#, python-format
+msgid "Level: %(level)s"
+msgstr ""
+
+#, python-format
+msgid "%(counter)s hour"
+msgid_plural "%(counter)s hours"
+msgstr[0] ""
+msgstr[1] ""
+
+msgid "My Learning"
+msgstr ""
+
+#, python-format
+msgid "Enrolled %(date)s"
+msgstr ""
+
+msgid "Continue Learning"
+msgstr ""
+
+msgid "View Course"
+msgstr ""
+
+msgid "Course Completed"
+msgstr ""
+
+msgid "View Certificate"
+msgstr ""
+
+msgid "Progress"
+msgstr ""
+
+msgid "You haven't enrolled in any courses yet."
+msgstr ""
+
+msgid "Browse Tracks"
+msgstr ""
+
+msgid "Hide course content"
+msgstr ""
+
+msgid "complete"
+msgstr ""
+
+#, python-format
+msgid "%(done)s of %(total)s lessons"
+msgstr ""
+
+msgid "video"
+msgstr ""
+
+msgid "No lectures in this module yet."
+msgstr ""
+
+msgid "No curriculum added yet."
+msgstr ""
+
+msgid "Show Course Content"
+msgstr ""
+
+msgid "No video available for this lecture."
+msgstr ""
+
+msgid "Play video"
+msgstr ""
+
+msgid "Playback protection triggered"
+msgstr ""
+
+msgid "Reload the page to keep watching."
+msgstr ""
+
+msgid "Completed"
+msgstr ""
+
+msgid "Mark as Complete"
+msgstr ""
+
+msgid "Previous"
+msgstr ""
+
+msgid "Next"
+msgstr ""
+
+msgid "Homework"
+msgstr ""
+
+msgid "This lecture has a homework submission."
+msgstr ""
+
+msgid "Submit / View Homework"
+msgstr ""
+
+msgid "Overview"
+msgstr ""
+
+msgid "Transcript"
+msgstr ""
+
+msgid "total"
+msgstr ""
+
+#, python-format
+msgid "%(counter)s rating"
+msgid_plural "%(counter)s ratings"
+msgstr[0] ""
+msgstr[1] ""
+
+msgid "Resources"
+msgstr ""
+
+msgid "Download"
+msgstr ""
+
+#, python-format
+msgid ""
+"Pass with a score of %(score)s%% or higher. You can retake this quiz as many "
+"times as you need."
+msgstr ""
+
+#, python-format
+msgid "Your best score so far: %(score)s%%"
+msgstr ""
+
+msgid "Passed"
+msgstr ""
+
+msgid "Submit Quiz"
+msgstr ""
+
+msgid "Quiz Result"
+msgstr ""
+
+msgid "You passed!"
+msgstr ""
+
+msgid "Not quite yet"
+msgstr ""
+
+#, python-format
+msgid "Passing score: %(score)s%%"
+msgstr ""
+
+#, python-format
+msgid "Attempt #%(n)s"
+msgstr ""
+
+msgid "Retake Quiz"
+msgstr ""
+
+msgid "Continue Course"
+msgstr ""
+
+msgid "Answer Review"
+msgstr ""
+
+msgid "your answer"
+msgstr ""
+
+msgid "Detailed answer review unlocks starting from your 3rd attempt."
+msgstr ""
+
+#, python-format
+msgid "Search - \"%(query)s\""
+msgstr ""
+
+msgid "Search"
+msgstr ""
+
+#, python-format
+msgid "Results for \"%(query)s\""
+msgstr ""
+
+#, python-format
+msgid "%(counter)s track"
+msgid_plural "%(counter)s tracks"
+msgstr[0] ""
+msgstr[1] ""
+
+#, python-format
+msgid "%(counter)s course"
+msgid_plural "%(counter)s courses"
+msgstr[0] ""
+msgstr[1] ""
+
+msgid "found."
+msgstr ""
+
+msgid "Type something in the search box above"
+msgstr ""
+
+msgid "Track"
+msgstr ""
+
+msgid "All tracks"
+msgstr ""
+
+msgid "Level"
+msgstr ""
+
+msgid "Any level"
+msgstr ""
+
+msgid "Price"
+msgstr ""
+
+msgid "Any price"
+msgstr ""
+
+msgid "Language"
+msgstr ""
+
+msgid "e.g. English"
+msgstr ""
+
+msgid "Apply Filters"
+msgstr ""
+
+msgid "Tracks"
+msgstr ""
+
+msgid "Courses"
+msgstr ""
+
+msgid "No courses match your search"
+msgstr ""
+
+#, python-format
+msgid "Homework - %(title)s"
+msgstr ""
+
+msgid "Graded"
+msgstr ""
+
+msgid "Grade"
+msgstr ""
+
+msgid "Feedback"
+msgstr ""
+
+msgid "Your submission (locked — already graded):"
+msgstr ""
+
+msgid "Submitted file"
+msgstr ""
+
+msgid "Upload a file"
+msgstr ""
+
+msgid "optional"
+msgstr ""
+
+msgid "Current file:"
+msgstr ""
+
+msgid "Or a link"
+msgstr ""
+
+msgid "Note to your instructor"
+msgstr ""
+
+msgid "Update Submission"
+msgstr ""
+
+msgid "Submit Homework"
+msgstr ""
+
+#, python-format
+msgid "Submitted %(date)s &middot; you can update this until it's graded."
+msgstr ""
+
+msgid "All Tracks"
+msgstr ""
+
+msgid "No tracks in this category yet"
+msgstr ""
+
+msgid "Track Roadmap"
+msgstr ""
+
+msgid "Coming soon"
+msgstr ""
+
+msgid "Optional"
+msgstr ""
+
+msgid "No courses in this track yet"
+msgstr ""
+
+msgid "Check back soon."
+msgstr ""
+
+msgid "Browse by Track"
+msgstr ""
+
+msgid "Pick a track to see its courses."
+msgstr ""
+
+msgid "No tracks available yet"
+msgstr ""
+
+msgid "Verify a Certificate"
+msgstr ""
+
+msgid ""
+"Paste the Verification ID printed on a Mendoura certificate to confirm it's "
+"real."
+msgstr ""
+
+msgid "e.g. d7707ed8-6a4c-4f1d-810c-cae63833a505"
+msgstr ""
+
+msgid "Verify"
+msgstr ""
+
+#, python-format
+msgid "Lesson %(n)s: %(title)s"
+msgstr ""
+
+#, python-format
+msgid "Delete %(title)s?"
+msgstr ""
+
+msgid "Delete"
+msgstr ""
+
+msgid "Write or paste this lesson's script here…"
+msgstr ""
+
+msgid "Save Script"
+msgstr ""
+
+msgid "Video ready"
+msgstr ""
+
+msgid "Video is still processing on Bunny — check back shortly."
+msgstr ""
+
+msgid "Uploading a new file replaces the current video."
+msgstr ""
+
+msgid "External video linked"
+msgstr ""
+
+msgid "No video uploaded yet."
+msgstr ""
+
+msgid "Upload Video"
+msgstr ""
+
+msgid "Video hosting isn't configured yet (missing Bunny credentials)."
+msgstr ""
+
+msgid "…or an external video link"
+msgstr ""
+
+msgid "only if not uploading to Bunny"
+msgstr ""
+
+msgid "Save Link"
+msgstr ""
+
+msgid "Edit Content"
+msgstr ""
+
+msgid "Admin Overview"
+msgstr ""
+
+msgid "Approval Queue"
+msgstr ""
+
+msgid "Users"
+msgstr ""
+
+msgid "Payments"
+msgstr ""
+
+msgid "Payouts"
+msgstr ""
+
+msgid "Track Requests"
+msgstr ""
+
+msgid "Test Emails"
+msgstr ""
+
+#, python-format
+msgid "%(counter)s course won't appear on any student browse page"
+msgid_plural "%(counter)s courses won't appear on any student browse page"
+msgstr[0] ""
+msgstr[1] ""
+
+msgid ""
+"Each course below is filed under a parent category (or has no track at all) "
+"instead of a specific track -- fix each one's Track in"
+msgstr ""
+
+msgid "Django Admin"
+msgstr ""
+
+#, python-format
+msgid "by %(instructor)s --"
+msgstr ""
+
+#, python-format
+msgid "filed under \"%(track)s\" (a parent category)"
+msgstr ""
+
+msgid "no track assigned"
+msgstr ""
+
+msgid "Total Revenue"
+msgstr ""
+
+msgid "Platform Revenue"
+msgstr ""
+
+msgid "Instructor Payouts"
+msgstr ""
+
+msgid "Enrollments"
+msgstr ""
+
+msgid "Students"
+msgstr ""
+
+msgid "Instructors"
+msgstr ""
+
+msgid "Total Courses"
+msgstr ""
+
+msgid "Revenue Over Time"
+msgstr ""
+
+msgid "No revenue yet."
+msgstr ""
+
+msgid "Subscription Revenue Distribution"
+msgstr ""
+
+#, python-format
+msgid ""
+"<span class=\"font-semibold text-brand-600\">%(counter)s</span> subscription "
+"period ready to distribute to instructors."
+msgid_plural ""
+"<span class=\"font-semibold text-brand-600\">%(counter)s</span> subscription "
+"periods ready to distribute to instructors."
+msgstr[0] ""
+msgstr[1] ""
+
+msgid "No subscription periods are due for distribution right now."
+msgstr ""
+
+msgid ""
+"No automatic scheduler is wired up on the free Render plan (no Cron Jobs) -- "
+"run this manually on a regular basis."
+msgstr ""
+
+msgid "View Breakdown"
+msgstr ""
+
+msgid "Run Distribution Now"
+msgstr ""
+
+msgid "Back to Admin Overview"
+msgstr ""
+
+msgid "Student"
+msgstr ""
+
+msgid "Course"
+msgstr ""
+
+msgid "Total"
+msgstr ""
+
+msgid "Instructor Share"
+msgstr ""
+
+msgid "Platform Share"
+msgstr ""
+
+msgid "Status"
+msgstr ""
+
+msgid "Date"
+msgstr ""
+
+msgid "No payments yet."
+msgstr ""
+
+msgid "Payout Requests"
+msgstr ""
+
+msgid "Amount"
+msgstr ""
+
+msgid "Method"
+msgstr ""
+
+msgid "Actions"
+msgstr ""
+
+msgid "Approve"
+msgstr ""
+
+msgid "Reject"
+msgstr ""
+
+msgid "Mark Paid"
+msgstr ""
+
+msgid "No payout requests yet."
+msgstr ""
+
+#, python-format
+msgid "(%(count)s due)"
+msgstr ""
+
+msgid "pool"
+msgstr ""
+
+msgid "Minutes Watched"
+msgstr ""
+
+msgid "Instructor Gets"
+msgstr ""
+
+msgid "Platform Keeps"
+msgstr ""
+
+msgid ""
+"No watch-time during this period -- the full pool stayed with the platform."
+msgstr ""
+
+msgid "Canceled before distribution (refunded)."
+msgstr ""
+
+msgid "Not distributed yet."
+msgstr ""
+
+msgid "No subscription periods yet."
+msgstr ""
+
+msgid ""
+"Send a real copy of each transactional email so you can confirm formatting, "
+"links, and attachments before relying on them in production."
+msgstr ""
+
+msgid "Target email address"
+msgstr ""
+
+msgid ""
+"Used for the Welcome and Certificate tests below. The Password Reset tests "
+"always go to your own account's email instead, since they contain a real, "
+"working reset link."
+msgstr ""
+
+msgid "Welcome Email"
+msgstr ""
+
+msgid "Sent on registration -- uses your own name in the sample."
+msgstr ""
+
+msgid "Send Test"
+msgstr ""
+
+msgid "Enrollment Confirmation Email"
+msgstr ""
+
+msgid ""
+"Sent when a student is granted access to a course (free enroll, subscriber "
+"unlock, or purchase) -- reuses the most recent real enrollment as sample "
+"data."
+msgstr ""
+
+msgid "Certificate Email"
+msgstr ""
+
+msgid ""
+"Sent on course completion -- reuses the most recently issued real "
+"certificate, PDF attached."
+msgstr ""
+
+msgid "Password Reset Email (Student)"
+msgstr ""
+
+msgid "Real reset link, sent only to your own account's email."
+msgstr ""
+
+msgid "Application Received Email"
+msgstr ""
+
+msgid "Sent immediately on instructor registration, before approval."
+msgstr ""
+
+msgid "Internal Application Notification"
+msgstr ""
+
+msgid ""
+"Sent to the team (not the applicant) alongside the Application Received "
+"email -- uses your own account's details as sample data."
+msgstr ""
+
+msgid "Instructor Welcome Email"
+msgstr ""
+
+msgid ""
+"Sent when an admin approves an instructor account -- not at registration."
+msgstr ""
+
+msgid "Instructor Rejection Email"
+msgstr ""
+
+msgid "Sent when an admin rejects a pending instructor application."
+msgstr ""
+
+msgid "Password Reset Email (Instructor)"
+msgstr ""
+
+msgid "Course Review"
+msgstr ""
+
+msgid "Course Approved Email"
+msgstr ""
+
+msgid ""
+"Sent when an admin approves a submitted course -- reuses the most recently "
+"created real course as sample data."
+msgstr ""
+
+msgid "Course Rejected Email"
+msgstr ""
+
+msgid ""
+"Sent when an admin rejects a submitted course -- reuses the most recently "
+"created real course's rejection_reason (or a generic fallback if it's blank)."
+msgstr ""
+
+msgid "Internal Track-Request Notification"
+msgstr ""
+
+msgid ""
+"Sent to the team when an instructor requests a new track -- reuses the most "
+"recently submitted real request as sample data."
+msgstr ""
+
+msgid "Track-Request Approved Email"
+msgstr ""
+
+msgid ""
+"Sent when an admin approves a track request -- reuses the most recently "
+"approved real request as sample data."
+msgstr ""
+
+msgid "Track-Request Rejected Email"
+msgstr ""
+
+msgid ""
+"Sent when an admin rejects a track request -- reuses the most recently "
+"rejected real request's rejection_reason as sample data."
+msgstr ""
+
+msgid "Inactive"
+msgstr ""
+
+msgid "Deactivate"
+msgstr ""
+
+msgid "Activate"
+msgstr ""
+
+msgid "No tracks yet."
+msgstr ""
+
+msgid "Add New Track"
+msgstr ""
+
+msgid "Parent track (leave blank for a top-level category)"
+msgstr ""
+
+msgid "Name"
+msgstr ""
+
+msgid "Description"
+msgstr ""
+
+msgid "Icon (Font Awesome class)"
+msgstr ""
+
+msgid "Order"
+msgstr ""
+
+msgid "Add Track"
+msgstr ""
+
+msgid "Pending Registrations"
+msgstr ""
+
+msgid "Username"
+msgstr ""
+
+msgid "Email"
+msgstr ""
+
+msgid "Role"
+msgstr ""
+
+msgid "Country / Payoneer"
+msgstr ""
+
+msgid "Joined"
+msgstr ""
+
+msgid "Reject and permanently delete this registration?"
+msgstr ""
+
+msgid "No pending registrations."
+msgstr ""
+
+msgid "Permanently delete this user? This cannot be undone."
+msgstr ""
+
+msgid "Delete User"
+msgstr ""
+
+msgid "No students found."
+msgstr ""
+
+msgid "No instructors found."
+msgstr ""
+
+msgid "Mendoura AI Coach"
+msgstr ""
+
+msgid "Your 24/7 Study Partner"
+msgstr ""
+
+msgid "Mendoura General AI Coach"
+msgstr ""
+
+msgid "Welcome to Mendoura AI Coach - Your 24/7 Study Partner"
+msgstr ""
+
+msgid ""
+"Ask me to explain a tricky concept, summarize a lecture, build you a study "
+"schedule, or just talk through what you're stuck on. I'm here whenever you "
+"need me."
+msgstr ""
+
+msgid "Ask your AI Coach anything..."
+msgstr ""
+
+msgid "Something went wrong. Please try again."
+msgstr ""
+
+msgid "Network error -- please try again."
+msgstr ""
+
+msgid "Course Approval Queue"
+msgstr ""
+
+#, python-format
+msgid "by %(instructor)s &middot; %(track)s &middot;"
+msgstr ""
+
+#, python-format
+msgid "Submitted %(date)s"
+msgstr ""
+
+msgid "Preview full course content (modules, videos, quiz questions & answers)"
+msgstr ""
+
+msgid "Rejection reason (required, sent to the instructor)"
+msgstr ""
+
+msgid "No courses pending review."
+msgstr ""
+
+msgid "Back to Dashboard"
+msgstr ""
+
+#, python-format
+msgid "%(counter)s enrolled student"
+msgid_plural "%(counter)s enrolled students"
+msgstr[0] ""
+msgstr[1] ""
+
+msgid "Enrolled"
+msgstr ""
+
+msgid "No students enrolled yet."
+msgstr ""
+
+#, python-format
+msgid "%(counter)s homework submission"
+msgid_plural "%(counter)s homework submissions"
+msgstr[0] ""
+msgstr[1] ""
+
+#, python-format
+msgid "%(lecture)s &middot; submitted %(date)s"
+msgstr ""
+
+#, python-format
+msgid "Graded: %(grade)s"
+msgstr ""
+
+msgid "Ungraded"
+msgstr ""
+
+msgid "Feedback:"
+msgstr ""
+
+msgid "Feedback (optional)"
+msgstr ""
+
+msgid "Submit Grade"
+msgstr ""
+
+msgid "No submissions yet."
+msgstr ""
+
+msgid "Create a New Course"
+msgstr ""
+
+msgid ""
+"Step 1 of 3 -- start with the basics, then you'll add modules with their "
+"videos and quizzes."
+msgstr ""
+
+msgid "Course Title"
+msgstr ""
+
+msgid "Price ($)"
+msgstr ""
+
+msgid "This course is free"
+msgstr ""
+
+msgid "Cover Photo"
+msgstr ""
+
+msgid ""
+"A plain photo -- your headshot or a relevant image works well. Shown on "
+"course cards, and used as the video player's cover, with the course title "
+"and your name automatically overlaid in Mendoura's style."
+msgstr ""
+
+msgid "Production Type"
+msgstr ""
+
+msgid ""
+"This determines your revenue share and cannot be changed once the course has "
+"its first sale."
+msgstr ""
+
+msgid "Full production (I edit and produce it myself)"
+msgstr ""
+
+#, python-format
+msgid "You keep 70%%"
+msgstr ""
+
+msgid "Script only (Mendoura handles production/montage)"
+msgstr ""
+
+#, python-format
+msgid "You keep 50%%"
+msgstr ""
+
+msgid "Video Script"
+msgstr ""
+
+msgid ""
+"Provide your lecture script here -- used for Mendoura-produced videos "
+"(coming soon)."
+msgstr ""
+
+msgid "Save Course & Continue"
+msgstr ""
+
+msgid "Edit Course"
+msgstr ""
+
+msgid "This course is live -- saving changes resubmits it for admin review."
+msgstr ""
+
+msgid "Update your course details."
+msgstr ""
+
+msgid ""
+"Locked -- this course already has a sale, so its revenue split can't change."
+msgstr ""
+
+#, python-format
+msgid "You keep %(pct)s%%"
+msgstr ""
+
+msgid "Save Changes"
+msgstr ""
+
+msgid "Edit Lecture"
+msgstr ""
+
+msgid "Lecture Title"
+msgstr ""
+
+msgid "Order (position in module)"
+msgstr ""
+
+msgid "Free preview (viewable without enrollment)"
+msgstr ""
+
+msgid "Accepts homework submission"
+msgstr ""
+
+msgid "External Video URL"
+msgstr ""
+
+msgid "Course Video"
+msgstr ""
+
+msgid ""
+"Uploads securely to Bunny Stream and streams to students through a protected "
+"player."
+msgstr ""
+
+msgid ""
+"Video hosting isn't configured yet (missing Bunny credentials). Add them on "
+"the server to enable uploads."
+msgstr ""
+
+msgid ""
+"Powers the Transcript tab and lets the AI Coach answer questions about this "
+"specific lesson."
+msgstr ""
+
+msgid "Generating transcript… this can take a few minutes for longer videos."
+msgstr ""
+
+msgid "Transcript generated."
+msgstr ""
+
+msgid "No transcript yet."
+msgstr ""
+
+msgid "Regenerate Transcript"
+msgstr ""
+
+msgid "Generate Transcript"
+msgstr ""
+
+msgid ""
+"Upload a video and wait for it to finish processing to generate a transcript."
+msgstr ""
+
+msgid "Choose a video file first."
+msgstr ""
+
+msgid "Preparing secure upload…"
+msgstr ""
+
+msgid "Could not start the upload. Please try again."
+msgstr ""
+
+msgid "Upload library failed to load. Please refresh the page and try again."
+msgstr ""
+
+msgid "Upload failed. Please try again."
+msgstr ""
+
+msgid "Uploading… "
+msgstr ""
+
+msgid ""
+"Uploaded! Bunny is now processing the video — reload this page in a minute "
+"to confirm it's ready."
+msgstr ""
+
+#, python-format
+msgid "%(title)s Curriculum"
+msgstr ""
+
+msgid "Edit Module"
+msgstr ""
+
+msgid "Module Title"
+msgstr ""
+
+#, python-format
+msgid "%(title)s Quiz"
+msgstr ""
+
+msgid "Edit Question"
+msgstr ""
+
+msgid "Question Text"
+msgstr ""
+
+msgid "Save Question"
+msgstr ""
+
+msgid "Answer Choices"
+msgstr ""
+
+msgid ""
+"Mark exactly one choice correct -- marking a new one automatically unmarks "
+"the rest."
+msgstr ""
+
+msgid "Mark as correct answer"
+msgstr ""
+
+msgid "Remove this choice?"
+msgstr ""
+
+msgid "Remove"
+msgstr ""
+
+msgid "No choices yet. Add at least two below, and mark one correct."
+msgstr ""
+
+msgid "Correct"
+msgstr ""
+
+msgid "Add Choice"
+msgstr ""
+
+msgid "Instructor Dashboard"
+msgstr ""
+
+msgid "Create New Course"
+msgstr ""
+
+msgid "Total Earnings"
+msgstr ""
+
+msgid "Available Balance"
+msgstr ""
+
+msgid "Your Courses"
+msgstr ""
+
+msgid "Request a Track"
+msgstr ""
+
+msgid "View Wallet"
+msgstr ""
+
+#, python-format
+msgid "Created %(created)s"
+msgstr ""
+
+msgid "Continue Setup"
+msgstr ""
+
+msgid "Edit Details"
+msgstr ""
+
+msgid "Curriculum"
+msgstr ""
+
+msgid "Submissions"
+msgstr ""
+
+msgid "Edit"
+msgstr ""
+
+msgid "Submit for Review"
+msgstr ""
+
+#, python-format
+msgid ""
+"Delete %(title)s? If it has any enrollment or payment history, it will be "
+"archived instead."
+msgstr ""
+
+msgid "No courses created yet. Click \"Create New Course\" to get started."
+msgstr ""
+
+msgid "Recent Compensation"
+msgstr ""
+
+msgid "Your Compensation"
+msgstr ""
+
+msgid "No compensation recorded yet."
+msgstr ""
+
+msgid "Add lectures, videos, and resources for this module."
+msgstr ""
+
+#, python-format
+msgid "Lectures (%(count)s)"
+msgstr ""
+
+msgid "Free Preview"
+msgstr ""
+
+msgid "External Video"
+msgstr ""
+
+msgid "Video File"
+msgstr ""
+
+msgid "Add video"
+msgstr ""
+
+msgid "Resource"
+msgstr ""
+
+msgid "Remove this resource?"
+msgstr ""
+
+msgid "Add Resource"
+msgstr ""
+
+msgid "No lectures added yet. Add your first one below."
+msgstr ""
+
+msgid "Add New Lecture"
+msgstr ""
+
+msgid ""
+"To upload a video to Bunny Stream, save the lecture first, then click "
+"\"Edit\" on it."
+msgstr ""
+
+msgid "Add Lecture"
+msgstr ""
+
+msgid "Organize your course into modules, then add lectures to each one."
+msgstr ""
+
+msgid "Modules"
+msgstr ""
+
+#, python-format
+msgid "%(counter)s lecture"
+msgid_plural "%(counter)s lectures"
+msgstr[0] ""
+msgstr[1] ""
+
+msgid "Add Quiz"
+msgstr ""
+
+#, python-format
+msgid "Delete %(title)s and all its lectures?"
+msgstr ""
+
+msgid "No modules yet. Add your first one below."
+msgstr ""
+
+msgid "Add New Module"
+msgstr ""
+
+msgid "Add Module"
+msgstr ""
+
+msgid ""
+"Students must pass this quiz to mark this module complete. Leave it with "
+"zero questions and it won't gate anything yet."
+msgstr ""
+
+msgid "Quiz Settings"
+msgstr ""
+
+msgid "Quiz Title"
+msgstr ""
+
+#, python-format
+msgid "Passing Score (%%)"
+msgstr ""
+
+msgid "Save Settings"
+msgstr ""
+
+msgid "Create Quiz"
+msgstr ""
+
+#, python-format
+msgid "Questions (%(count)s)"
+msgstr ""
+
+msgid "Edit / Choices"
+msgstr ""
+
+msgid "Delete this question?"
+msgstr ""
+
+msgid "No answer choices yet -- add at least two"
+msgstr ""
+
+msgid "No questions yet. Add your first one below."
+msgstr ""
+
+msgid "Add Question"
+msgstr ""
+
+msgid ""
+"Delete this quiz and all its questions? Students will no longer need to pass "
+"anything to complete this module."
+msgstr ""
+
+msgid "Delete Quiz"
+msgstr ""
+
+msgid "Profile"
+msgstr ""
+
+msgid "Profile Picture"
+msgstr ""
+
+msgid "Save"
+msgstr ""
+
+msgid ""
+"Don't see a track that fits your course? Request a new one -- an admin will "
+"review it before it's available to select."
+msgstr ""
+
+msgid "New category"
+msgstr ""
+
+#, python-format
+msgid "Under %(category)s &middot; Requested %(date)s"
+msgstr ""
+
+msgid "Reason:"
+msgstr ""
+
+msgid "You haven't requested any tracks yet."
+msgstr ""
+
+msgid "New Track Request"
+msgstr ""
+
+msgid "New Category Name"
+msgstr ""
+
+msgid ""
+"Since this doesn't fit any existing category, propose a new one -- an admin "
+"will create it alongside your track if approved."
+msgstr ""
+
+msgid "Track Name"
+msgstr ""
+
+msgid "Reason"
+msgstr ""
+
+msgid "Submit Request"
+msgstr ""
+
+msgid "Track Approval Queue"
+msgstr ""
+
+#, python-format
+msgid "by %(instructor)s &middot; proposing new category \"%(category)s\""
+msgstr ""
+
+#, python-format
+msgid "by %(instructor)s &middot; under %(category)s"
+msgstr ""
+
+msgid "No track requests pending review."
+msgstr ""
+
+msgid "Wallet"
+msgstr ""
+
+msgid "Available"
+msgstr ""
+
+msgid "Withdrawn"
+msgstr ""
+
+msgid "Request Payout"
+msgstr ""
+
+msgid "You can request a payout once a week."
+msgstr ""
+
+#, python-format
+msgid "Next available: %(next_date)s."
+msgstr ""
+
+msgid "Amount ($)"
+msgstr ""
+
+msgid "Subscription Revenue Breakdown"
+msgstr ""
+
+msgid "Share of Period"
+msgstr ""
+
+msgid "You Earned"
+msgstr ""
+
+#, python-format
+msgid "%(minutes)s min"
+msgstr ""
+
+#, python-format
+msgid "(%(pct)s%% subscription pool)"
+msgstr ""
+
+msgid "No subscription revenue yet."
+msgstr ""
+
+msgid "Transaction Ledger"
+msgstr ""
+
+msgid "Type"
+msgstr ""
+
+msgid "Balance After"
+msgstr ""
+
+msgid "No transactions yet."
+msgstr ""
+
+msgid "Back to Modules"
+msgstr ""
+
+#, python-format
+msgid "Module %(n)s: %(title)s"
+msgstr ""
+
+#, python-format
+msgid "%(count)s Lesson"
+msgid_plural "%(count)s Lessons"
+msgstr[0] ""
+msgstr[1] ""
+
+msgid ""
+"Each lesson gets its own title and video -- add as many as this module needs."
+msgstr ""
+
+msgid "No lessons yet. Add your first one below."
+msgstr ""
+
+msgid "Add Lesson"
+msgstr ""
+
+msgid "Lesson Title"
+msgstr ""
+
+msgid ""
+"One quiz covers the whole module. Students must pass it to mark the module "
+"complete. Leave it out entirely and it won't gate anything."
+msgstr ""
+
+msgid "Save Quiz Settings"
+msgstr ""
+
+msgid "Add a Quiz to This Module"
+msgstr ""
+
+msgid "No answer choices yet -- add at least two below."
+msgstr ""
+
+msgid "Delete this quiz and all its questions?"
+msgstr ""
+
+msgid "Add Another Module"
+msgstr ""
+
+msgid "Next: Review"
+msgstr ""
+
+msgid "Add at least one lesson above before continuing."
+msgstr ""
+
+msgid "Add a script for every lesson above before continuing."
+msgstr ""
+
+msgid ""
+"Upload a video (or add an external link) for every lesson above before "
+"continuing."
+msgstr ""
+
+msgid "Lesson title is required."
+msgstr ""
+
+msgid "Save & Exit to Dashboard"
+msgstr ""
+
+msgid ""
+"Add a module, then add its lessons (with video) and an optional quiz right "
+"away -- one module at a time."
+msgstr ""
+
+msgid "Add a module to continue"
+msgstr ""
+
+msgid "Could not add this module. Please check the fields and try again."
+msgstr ""
+
+msgid ""
+"Review everything below, then submit for admin review. You can still make "
+"changes from your dashboard after submitting."
+msgstr ""
+
+#, python-format
+msgid "%(count)s Module"
+msgid_plural "%(count)s Modules"
+msgstr[0] ""
+msgstr[1] ""
+
+#, python-format
+msgid "%(count)s lesson"
+msgid_plural "%(count)s lessons"
+msgstr[0] ""
+msgstr[1] ""
+
+msgid "All scripts added"
+msgstr ""
+
+msgid "All videos added"
+msgstr ""
+
+msgid "Script missing"
+msgstr ""
+
+msgid "Video missing"
+msgstr ""
+
+#, python-format
+msgid "%(count)s quiz question"
+msgid_plural "%(count)s quiz questions"
+msgstr[0] ""
+msgstr[1] ""
+
+msgid "No quiz"
+msgstr ""
+
+msgid "Submit this course for admin review?"
+msgstr ""
+
+msgid ""
+"Every module needs its video or script before you can submit -- click Edit "
+"above on any module missing one."
+msgstr ""
+
+msgid "Profile updated."
+msgstr ""
+
+msgid "That username was just taken by someone else. Please try again."
+msgstr ""
+
+msgid "Welcome to Mendoura! Your account is ready."
+msgstr ""
+
+msgid ""
+"Your account has been created and is pending administrator approval. You'll "
+"be able to log in once it's approved."
+msgstr ""
+
+msgid "Add at least one lesson to this module before continuing."
+msgstr ""
+
+msgid "Add a script for every lesson in this module before continuing."
+msgstr ""
+
+msgid ""
+"Upload a video (or add an external video link) for every lesson in this "
+"module before continuing."
+msgstr ""
+
+#, python-format
+msgid "%(title)s submitted for review. We'll email you once it's approved."
+msgstr ""
+
+#, python-format
+msgid ""
+"%(title)s was live, so this change has been resubmitted for admin review."
+msgstr ""
+
+#, python-format
+msgid "You are now enrolled in %(title)s."
+msgstr ""
+
+msgid "Unable to start checkout right now. Please try again shortly."
+msgstr ""
+
+msgid "Enroll in this course to watch this lecture."
+msgstr ""
+
+msgid ""
+"No certificate found with that Verification ID. Double-check it and try "
+"again."
+msgstr ""
+
+msgid "Homework submitted."
+msgstr ""
+
+msgid "Malformed request."
+msgstr ""
+
+msgid "Message cannot be empty."
+msgstr ""
+
+msgid "That message is too long -- please shorten it."
+msgstr ""
+
+#, python-format
+msgid "%(title)s updated."
+msgstr ""
+
+#, python-format
+msgid ""
+"%(title)s has enrollment or payment history, so it has been archived instead "
+"of deleted."
+msgstr ""
+
+#, python-format
+msgid "%(title)s has been deleted."
+msgstr ""
+
+#, python-format
+msgid ""
+"%(title)s has watch-time or revenue history, so it has been archived instead "
+"of deleted."
+msgstr ""
+
+#, python-format
+msgid ""
+"\"%(title)s\" has watch-time history on one of its lectures and cannot be "
+"deleted."
+msgstr ""
+
+msgid "An unexpected error occurred. Please try again."
+msgstr ""
+
+msgid ""
+"Upload a video and wait for it to finish processing before generating a "
+"transcript."
+msgstr ""
+
+#, python-format
+msgid "\"%(title)s\" has watch-time history and cannot be deleted."
+msgstr ""
+
+msgid "Video hosting is not configured."
+msgstr ""
+
+msgid "This submission has already been graded."
+msgstr ""
+
+#, python-format
+msgid "Graded %(username)s's submission."
+msgstr ""
+
+#, python-format
+msgid "You can request a payout once a week. Next available: %(date)s."
+msgstr ""
+
+msgid "Payout request submitted."
+msgstr ""
+
+msgid "Payout amount cannot exceed your available balance."
+msgstr ""
+
+msgid "Please enter a valid payout amount."
+msgstr ""
+
+#, python-format
+msgid "Your request for \"%(name)s\" has been submitted for review."
+msgstr ""
+
+#, python-format
+msgid "Send failed: %(reason)s"
+msgstr ""
+
+msgid "unknown error"
+msgstr ""
+
+msgid "Enter a target email address first."
+msgstr ""
+
+#, python-format
+msgid "Student welcome email sent to %(email)s."
+msgstr ""
+
+msgid "No enrollments exist yet -- enroll in a course, then retry this test."
+msgstr ""
+
+#, python-format
+msgid ""
+"Enrollment-confirmation email sent to %(email)s (using real enrollment in "
+"\"%(course)s\" as sample data)."
+msgstr ""
+
+#, python-format
+msgid "Instructor application-received email sent to %(email)s."
+msgstr ""
+
+#, python-format
+msgid ""
+"Internal application-notification email sent to %(email)s (using your own "
+"account's details as sample applicant data)."
+msgstr ""
+
+#, python-format
+msgid "Instructor welcome email sent to %(email)s."
+msgstr ""
+
+#, python-format
+msgid "Instructor rejection email sent to %(email)s."
+msgstr ""
+
+msgid "No courses exist yet -- create one, then retry this test."
+msgstr ""
+
+#, python-format
+msgid ""
+"Course-approved email sent to %(email)s (using real course \"%(course)s\" as "
+"sample data)."
+msgstr ""
+
+#, python-format
+msgid ""
+"Course-rejected email sent to %(email)s (using real course \"%(course)s\" as "
+"sample data)."
+msgstr ""
+
+msgid "No track requests exist yet -- submit one, then retry this test."
+msgstr ""
+
+#, python-format
+msgid ""
+"Internal track-request notification sent to %(email)s (using real request "
+"\"%(track)s\" as sample data)."
+msgstr ""
+
+msgid ""
+"No track requests have been approved yet -- approve one, then retry this "
+"test."
+msgstr ""
+
+#, python-format
+msgid ""
+"Track-approved email sent to %(email)s (using real request \"%(track)s\" as "
+"sample data)."
+msgstr ""
+
+msgid ""
+"No track requests have been rejected yet -- reject one, then retry this test."
+msgstr ""
+
+#, python-format
+msgid ""
+"Track-rejected email sent to %(email)s (using real request \"%(track)s\" as "
+"sample data)."
+msgstr ""
+
+msgid ""
+"No certificates have been issued yet -- complete a course to generate one, "
+"then retry this test."
+msgstr ""
+
+#, python-format
+msgid ""
+"Certificate email sent to %(email)s (using real certificate data for "
+"\"%(course)s\")."
+msgstr ""
+
+msgid "Your admin account has no email address on file."
+msgstr ""
+
+#, python-format
+msgid ""
+"Password reset email (%(role)s template) sent to your own address "
+"(%(email)s) -- this is a real, working reset link."
+msgstr ""
+
+msgid "Subscription revenue distribution ran successfully."
+msgstr ""
+
+#, python-format
+msgid "%(title)s approved and published."
+msgstr ""
+
+#, python-format
+msgid "Please enter a rejection reason before rejecting %(title)s."
+msgstr ""
+
+#, python-format
+msgid "%(title)s rejected."
+msgstr ""
+
+#, python-format
+msgid ""
+"%(username)s can't be approved yet -- a Payoneer account is required for "
+"instructors based outside Egypt."
+msgstr ""
+
+#, python-format
+msgid "%(username)s has been approved."
+msgstr ""
+
+#, python-format
+msgid ""
+"%(username)s has existing activity on the platform and can't be rejected."
+msgstr ""
+
+#, python-format
+msgid "%(username)s's registration was rejected and removed."
+msgstr ""
+
+msgid "You can't delete your own account."
+msgstr ""
+
+msgid "Admin accounts can't be deleted from here."
+msgstr ""
+
+#, python-format
+msgid "%(username)s was permanently deleted."
+msgstr ""
+
+#, python-format
+msgid "%(username)s has payment or revenue history and can't be deleted."
+msgstr ""
+
+#, python-format
+msgid ""
+"A track already exists named \"%(name)s\". Reject this request or rename the "
+"proposed category first."
+msgstr ""
+
+#, python-format
+msgid ""
+"A track named \"%(name)s\" already exists. Reject this request or rename it "
+"first."
+msgstr ""
+
+#, python-format
+msgid "\"%(name)s\" approved and is now live."
+msgstr ""
+
+#, python-format
+msgid "Please enter a rejection reason before rejecting \"%(name)s\"."
+msgstr ""
+
+#, python-format
+msgid "\"%(name)s\" rejected."
+msgstr ""
+
+msgid "Mendoura home"
+msgstr ""
+
+msgid "Home"
+msgstr ""
+
+msgid "AI Coach"
+msgstr ""
+
+msgid "Dashboard"
+msgstr ""
+
+msgid "Admin Panel"
+msgstr ""
+
+msgid "Search tracks & courses..."
+msgstr ""
+
+#, python-format
+msgid "%(counter)s pending instructor request"
+msgid_plural "%(counter)s pending instructor requests"
+msgstr[0] ""
+msgstr[1] ""
+
+#, python-format
+msgid "%(counter)s pending course approval"
+msgid_plural "%(counter)s pending course approvals"
+msgstr[0] ""
+msgstr[1] ""
+
+#, python-format
+msgid "%(counter)s pending track request"
+msgid_plural "%(counter)s pending track requests"
+msgstr[0] ""
+msgstr[1] ""
+
+msgid "Logout"
+msgstr ""
+
+msgid "Login"
+msgstr ""
+
+msgid "Sign Up"
+msgstr ""
+
+msgid "Menu"
+msgstr ""
+
+msgid "Terms & Conditions"
+msgstr ""
+
+msgid "Privacy Policy"
+msgstr ""
+
+msgid "Cairo, Egypt"
+msgstr ""
+
+msgid "All rights reserved."
+msgstr ""
+
+msgid "Legal"
+msgstr ""
+
+msgid "Company location:"
+msgstr ""
+
+msgid "Contact:"
+msgstr ""
+
+#, python-format
+msgid "Last updated: %(date)s"
+msgstr ""
+
+msgid "You're offline"
+msgstr ""
+
+msgid ""
+"Mendoura needs a connection to load courses and lectures. Check your "
+"internet and try again."
+msgstr ""
+
+msgid "Try Again"
+msgstr ""
+
+msgid "Open Mendoura AI Coach"
+msgstr ""
+
+msgid "Close"
+msgstr ""
+
+msgid "Brief this lesson"
+msgstr ""
+
+msgid "Summarize this module"
+msgstr ""
+
+msgid "What should I focus on here?"
+msgstr ""
+
+msgid "Recommend a course for me"
+msgstr ""
+
+msgid "Build me a study schedule"
+msgstr ""
+
+msgid "Give me career advice"
+msgstr ""
+
+msgid "Ask your AI Coach..."
+msgstr ""
+
+msgid ""
+"Welcome! Ask me anything -- career advice, course recommendations, or study "
+"guidance."
+msgstr ""
+
+msgid ""
+"Ask me about this lesson -- I can brief it or summarize the whole module for "
+"you."
+msgstr ""
+
+msgid "Learn Without Limits"
+msgstr ""
+
+msgid ""
+"Where your mind explores <span class=\"text-brand-600 dark:text-"
+"brand-400\">the new aura.</span>"
+msgstr ""
+
+msgid ""
+"Courses built by real, expert instructors. Track your progress, earn "
+"certificates, and grow your career."
+msgstr ""
+
+msgid "Go to Your Dashboard"
+msgstr ""
+
+msgid "Start Learning"
+msgstr ""
+
+msgid "Become an Instructor"
+msgstr ""
+
+msgid "Expert-Led Courses"
+msgstr ""
+
+msgid ""
+"Structured lessons and hands-on projects designed by experienced instructors."
+msgstr ""
+
+msgid "Verified Certificates"
+msgstr ""
+
+msgid "Complete courses and earn certificates to showcase your skills."
+msgstr ""
+
+msgid "Instructor Compensation"
+msgstr ""
+
+msgid ""
+"Instructors are compensated for their content based on platform performance, "
+"managed directly by Mendoura."
+msgstr ""
+
+msgid "Simple, transparent pricing"
+msgstr ""
+
+msgid "Buy a single course, or unlock everything with a subscription."
+msgstr ""
+
+msgid "Pay per course"
+msgstr ""
+
+msgid "Lifetime access to just the course you need."
+msgstr ""
+
+msgid "Unlimited access to every track and course."
+msgstr ""
+
+msgid "Please wait..."
+msgstr ""
+
+msgid "Very weak"
+msgstr ""
+
+msgid "Weak"
+msgstr ""
+
+msgid "Fair"
+msgstr ""
+
+msgid "Good"
+msgstr ""
+
+msgid "Strong"
+msgstr ""
+
+msgid "Passwords match"
+msgstr ""
+
+msgid "Passwords do not match"
+msgstr ""
+
+msgid "Welcome back to<br>your learning journey."
+msgstr ""
+
+msgid ""
+"Pick up right where you left off — your courses, progress, and certificates "
+"are waiting."
+msgstr ""
+
+msgid "Welcome back"
+msgstr ""
+
+msgid "Log in to continue your learning journey."
+msgstr ""
+
+msgid "Invalid username or password."
+msgstr ""
+
+msgid "Password"
+msgstr ""
+
+msgid "Forgot password?"
+msgstr ""
+
+msgid "Log In"
+msgstr ""
+
+msgid "Don't have an account?"
+msgstr ""
+
+msgid "Sign up as Student"
+msgstr ""
+
+msgid "as Instructor"
+msgstr ""
+
+msgid "Password Reset"
+msgstr ""
+
+msgid "You're all set."
+msgstr ""
+
+msgid "Your password has been changed. Log in and get back to learning."
+msgstr ""
+
+msgid "Password reset"
+msgstr ""
+
+msgid ""
+"Your password has been changed successfully. You can now log in with your "
+"new password."
+msgstr ""
+
+msgid "Set a New Password"
+msgstr ""
+
+msgid "Choose a new<br>password."
+msgstr ""
+
+msgid ""
+"Make it something you'll remember — you'll use it every time you come back "
+"to learn."
+msgstr ""
+
+msgid "Set a new password"
+msgstr ""
+
+msgid "Choose a new password for your account."
+msgstr ""
+
+msgid "New password"
+msgstr ""
+
+msgid "Confirm new password"
+msgstr ""
+
+msgid "Set New Password"
+msgstr ""
+
+msgid "Link expired"
+msgstr ""
+
+msgid ""
+"This password reset link is invalid or has already been used. Reset links "
+"only work once and expire after a few days."
+msgstr ""
+
+msgid "Request a New Link"
+msgstr ""
+
+msgid "Check Your Email"
+msgstr ""
+
+msgid "Almost there."
+msgstr ""
+
+msgid ""
+"If that email matches an account, a reset link is on its way. It's good for "
+"a few days, then it expires."
+msgstr ""
+
+msgid "Check your email"
+msgstr ""
+
+msgid ""
+"We've sent password reset instructions to that address, if it belongs to an "
+"account. It may take a few minutes to arrive — check your spam folder if you "
+"don't see it."
+msgstr ""
+
+msgid "Back to Login"
+msgstr ""
+
+msgid "Reset Password"
+msgstr ""
+
+msgid "Forgot your<br>password?"
+msgstr ""
+
+msgid ""
+"No problem — tell us the email on your account and we'll send you a link to "
+"pick a new one."
+msgstr ""
+
+msgid "Reset your password"
+msgstr ""
+
+msgid "Enter your account email and we'll send you a reset link."
+msgstr ""
+
+msgid "Please enter a valid email address."
+msgstr ""
+
+msgid "Send Reset Link"
+msgstr ""
+
+msgid "Remembered it?"
+msgstr ""
+
+msgid "Back to login"
+msgstr ""
+
+msgid "Instructor Sign Up"
+msgstr ""
+
+msgid "Share your knowledge.<br>Get compensated for it."
+msgstr ""
+
+msgid ""
+"Contribute a course once, get compensated for as long as students keep "
+"enrolling."
+msgstr ""
+
+#, python-format
+msgid "Compensation of up to 70%% on content you produce"
+msgstr ""
+
+msgid "Track your compensation in real time"
+msgstr ""
+
+msgid "Reach students across 12 tracks"
+msgstr ""
+
+msgid "Share your knowledge and start earning."
+msgstr ""
+
+msgid "Country"
+msgstr ""
+
+msgid "Payoneer Account"
+msgstr ""
+
+msgid ""
+"Required if you're based outside Egypt — Mendoura will transfer your "
+"compensation here directly."
+msgstr ""
+
+#, python-format
+msgid ""
+"I agree to the <a href=\"%(terms_url)s\" target=\"_blank\" class=\"text-"
+"brand-600 dark:text-brand-400 font-semibold hover:underline\">Terms &amp; "
+"Conditions</a> and <a href=\"%(privacy_url)s\" target=\"_blank\" "
+"class=\"text-brand-600 dark:text-brand-400 font-semibold hover:"
+"underline\">Privacy Policy</a>."
+msgstr ""
+
+msgid "Create Instructor Account"
+msgstr ""
+
+msgid "Already have an account?"
+msgstr ""
+
+msgid "Log in"
+msgstr ""
+
+msgid "Student Sign Up"
+msgstr ""
+
+msgid "Learn skills that<br>actually matter."
+msgstr ""
+
+msgid ""
+"Join thousands of students building real careers with courses from working "
+"professionals."
+msgstr ""
+
+msgid "Free and paid courses across 12 tracks"
+msgstr ""
+
+msgid "Verified certificates on completion"
+msgstr ""
+
+msgid "Learn at your own pace, on any device"
+msgstr ""
+
+msgid "Create your student account"
+msgstr ""
+
+msgid "Start learning today, free forever."
+msgstr ""
+
+msgid "Create Account"
+msgstr ""

@@ -3,17 +3,17 @@ import re
 import polib
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
+from django.utils.translation import to_locale
 
 from courses import auto_translate
 
-# fr/es are the two "real" supported UI-chrome languages beyond the
-# human-reviewed en/ar pair (see the project's .po policy: en/ar stay
-# human-review-only, fr/es get machine-translated static UI strings same as
-# DB content already does, and the remaining 9 languages keep falling back
-# to English for UI chrome). Kept as an explicit default rather than
-# derived from settings.LANGUAGES so this command never silently starts
-# machine-translating a language the policy hasn't actually signed off on.
-DEFAULT_LANGUAGES = ['fr', 'es']
+# Every settings.LANGUAGES entry except en (the source -- it has no .po
+# file at all) and ar (human-review-only, per the project's .po policy --
+# never machine-overwritten by this command). Kept as an explicit list
+# rather than derived live from settings.LANGUAGES so this command never
+# silently starts machine-translating a language the policy hasn't
+# actually signed off on the moment someone adds a new entry there.
+DEFAULT_LANGUAGES = ['fr', 'es', 'de', 'it', 'pt', 'tr', 'ru', 'zh-hans', 'hi', 'ur']
 
 # Anything with a Python format placeholder (%(name)s, %s, %d, ...) needs
 # the placeholder itself preserved byte-for-byte, and a plural entry needs
@@ -41,20 +41,26 @@ def _is_translatable(entry: polib.POEntry) -> bool:
 class Command(BaseCommand):
     help = (
         "Machine-translate blank msgstr entries in locale/<lang>/LC_MESSAGES/django.po "
-        "using the same GoogleTranslator wrapper as DB-content translation "
-        "(courses.auto_translate). Per project policy this is only meant to run for "
-        "fr/es -- en has no .po file (it's the source language) and ar is "
-        "human-reviewed only, never machine-overwritten by this command. Plural "
-        "entries, entries with Python format placeholders (%(name)s, %s, %d), and "
-        "entries containing HTML markup are skipped and left for manual translation, "
-        "since a mistranslated placeholder or reordered tag would break rendering "
-        "rather than just reading awkwardly."
+        "using the same GoogleTranslator wrapper (and the same retry/backoff/throttle "
+        "settings -- AUTO_TRANSLATE_REQUEST_DELAY_SECONDS/AUTO_TRANSLATE_MAX_RETRIES/"
+        "AUTO_TRANSLATE_RETRY_BACKOFF_SECONDS) as DB-content translation, since both "
+        "funnel every single call through the same auto_translate._translate_text(). "
+        "Per project policy this covers every settings.LANGUAGES entry except en (the "
+        "source -- it has no .po file) and ar (human-reviewed only, never "
+        "machine-overwritten by this command). Plural entries, entries with Python "
+        "format placeholders (%(name)s, %s, %d), and entries containing HTML markup "
+        "are skipped and left for manual translation, since a mistranslated "
+        "placeholder or reordered tag would break rendering rather than just reading "
+        "awkwardly. This is a one-time/occasional bulk backfill (run by a human, not "
+        "triggered per-request), so it accepts running for several hours at the "
+        "existing per-call throttle rather than needing its own separate rate limiting."
     )
 
     def add_arguments(self, parser):
         parser.add_argument(
             '--language', action='append', dest='languages', default=None,
-            help=f'Target language code, e.g. --language fr. Repeatable. '
+            help='Target language code, in Django\'s own LANGUAGES form (e.g. --language '
+                 'zh-hans, not the zh_Hans locale-directory spelling). Repeatable. '
                  f'Defaults to {DEFAULT_LANGUAGES} if omitted.')
         parser.add_argument(
             '--force', action='store_true',
@@ -69,7 +75,12 @@ class Command(BaseCommand):
             self._translate_language(lang, options['force'])
 
     def _translate_language(self, lang, force):
-        po_path = settings.BASE_DIR / 'locale' / lang / 'LC_MESSAGES' / 'django.po'
+        # locale/ directories follow gettext's own naming (e.g. zh_Hans),
+        # which diverges from Django's own LANGUAGES code (zh-hans) for
+        # exactly the languages with a script/region subtag -- to_locale()
+        # is Django's own conversion between the two, same one makemessages
+        # uses internally to decide which directory to write to.
+        po_path = settings.BASE_DIR / 'locale' / to_locale(lang) / 'LC_MESSAGES' / 'django.po'
         if not po_path.exists():
             raise CommandError(f'{po_path} does not exist -- run makemessages first.')
 

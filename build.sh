@@ -44,6 +44,16 @@ fi
 
 python manage.py migrate
 
+# Pure-Python .mo compile (no system gettext/msgfmt dependency -- see
+# compile_po_files' own help text) -- a safety net so a locale/*/django.po
+# committed without its .mo compiled/committed alongside it still serves
+# translated UI text after this deploy, instead of silently falling back
+# to English until someone happens to notice and runs compilemessages by
+# hand. Cheap and network-free, unlike translate_po_entries itself (the
+# actual machine-translation backfill), which stays a manually-run,
+# one-off command -- not something a build should ever block on.
+python manage.py compile_po_files
+
 # Idempotent (get_or_create/update_or_create) -- safe to run on every deploy.
 python manage.py seed_tracks
 python manage.py seed_plans

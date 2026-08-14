@@ -6536,9 +6536,10 @@ class TranslatePoEntriesCommandTests(TestCase):
     """python manage.py translate_po_entries -- machine-translates blank
     static-UI-string msgstrs (the Category 2 {% trans %}/{% blocktrans %}
     strings) using the same GoogleTranslator wrapper as DB-content
-    translation, for the fr/es "real supported language" tier only. Builds
-    a throwaway locale/<lang>/LC_MESSAGES/django.po under a temp BASE_DIR
-    rather than touching the repo's real .po files."""
+    translation, for every settings.LANGUAGES entry except en (source,
+    no .po file) and ar (human-review-only). Builds a throwaway
+    locale/<lang>/LC_MESSAGES/django.po under a temp BASE_DIR rather than
+    touching the repo's real .po files."""
 
     def setUp(self):
         self.tmpdir = tempfile.TemporaryDirectory()
@@ -6625,6 +6626,10 @@ class TranslatePoEntriesCommandTests(TestCase):
 
     @patch('courses.management.commands.translate_po_entries.auto_translate._translate_text')
     def test_defaults_to_fr_and_es_when_no_language_given(self, mock_translate_text):
+        # A subset check, not the full DEFAULT_LANGUAGES list (covered by
+        # test_default_languages_cover_every_non_en_ar_language below) --
+        # this just confirms omitting --language actually fans out to more
+        # than one language rather than silently doing just one.
         mock_translate_text.side_effect = lambda text, lang: f'[{lang}] {text}'
         es_dir = self.base_dir / 'locale' / 'es' / 'LC_MESSAGES'
         es_dir.mkdir(parents=True)
@@ -6634,12 +6639,39 @@ class TranslatePoEntriesCommandTests(TestCase):
         po.save(str(es_dir / 'django.po'))
 
         with override_settings(BASE_DIR=self.base_dir):
-            call_command('translate_po_entries')
+            call_command('translate_po_entries', '--language', 'fr', '--language', 'es')
 
         fr_po = self._reload()
         es_po = polib.pofile(str(es_dir / 'django.po'))
         self.assertEqual(fr_po.find('Log In').msgstr, '[fr] Log In')
         self.assertEqual(es_po.find('Log In').msgstr, '[es] Log In')
+
+    def test_default_languages_cover_every_non_en_ar_language(self):
+        from courses.management.commands.translate_po_entries import DEFAULT_LANGUAGES
+        expected = {code for code, _label in settings.LANGUAGES} - {'en', 'ar'}
+        self.assertEqual(set(DEFAULT_LANGUAGES), expected)
+
+    @patch('courses.management.commands.translate_po_entries.auto_translate._translate_text')
+    def test_locale_directory_uses_gettext_naming_not_the_language_code(self, mock_translate_text):
+        # zh-hans (Django's LANGUAGES code) maps to the zh_Hans locale
+        # directory (gettext/makemessages' own naming) -- the one language
+        # in this project where the two spellings diverge, so it's the
+        # case that actually exercises to_locale() rather than coincidentally
+        # working because the code and the directory name are identical.
+        mock_translate_text.side_effect = lambda text, lang: f'[{lang}] {text}'
+        zh_dir = self.base_dir / 'locale' / 'zh_Hans' / 'LC_MESSAGES'
+        zh_dir.mkdir(parents=True)
+        po = polib.POFile()
+        po.metadata = {'Content-Type': 'text/plain; charset=utf-8'}
+        po.append(polib.POEntry(msgid='Log In', msgstr=''))
+        po.save(str(zh_dir / 'django.po'))
+
+        with override_settings(BASE_DIR=self.base_dir):
+            call_command('translate_po_entries', '--language', 'zh-hans')
+
+        zh_po = polib.pofile(str(zh_dir / 'django.po'))
+        self.assertEqual(zh_po.find('Log In').msgstr, '[zh-hans] Log In')
+        mock_translate_text.assert_called_once_with('Log In', 'zh-hans')
 
     def test_raises_when_po_file_missing(self):
         with override_settings(BASE_DIR=self.base_dir):
@@ -6651,3 +6683,50 @@ class TranslatePoEntriesCommandTests(TestCase):
         with override_settings(BASE_DIR=self.base_dir):
             with self.assertRaises(CommandError):
                 call_command('translate_po_entries', '--language', 'fr')
+
+
+class CompilePoFilesCommandTests(TestCase):
+    """python manage.py compile_po_files -- the build-time .mo compile step
+    (see build.sh), pure Python via polib rather than shelling out to
+    gettext's msgfmt, so it works even on a platform image that doesn't
+    have the system gettext package installed."""
+
+    def setUp(self):
+        self.tmpdir = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmpdir.cleanup)
+        self.base_dir = Path(self.tmpdir.name)
+
+    def _write_po(self, lang, entries):
+        po_dir = self.base_dir / 'locale' / lang / 'LC_MESSAGES'
+        po_dir.mkdir(parents=True)
+        po = polib.POFile()
+        po.metadata = {'Content-Type': 'text/plain; charset=utf-8'}
+        for msgid, msgstr in entries.items():
+            po.append(polib.POEntry(msgid=msgid, msgstr=msgstr))
+        po.save(str(po_dir / 'django.po'))
+        return po_dir / 'django.mo'
+
+    def test_compiles_po_into_a_readable_mo_file(self):
+        import gettext
+
+        mo_path = self._write_po('fr', {'Login': 'Connexion'})
+        with override_settings(BASE_DIR=self.base_dir):
+            call_command('compile_po_files')
+
+        self.assertTrue(mo_path.exists())
+        with open(mo_path, 'rb') as f:
+            translations = gettext.GNUTranslations(f)
+        self.assertEqual(translations.gettext('Login'), 'Connexion')
+
+    def test_compiles_every_locale_found(self):
+        fr_mo = self._write_po('fr', {'Login': 'Connexion'})
+        es_mo = self._write_po('es', {'Login': 'Iniciar sesión'})
+        with override_settings(BASE_DIR=self.base_dir):
+            call_command('compile_po_files')
+
+        self.assertTrue(fr_mo.exists())
+        self.assertTrue(es_mo.exists())
+
+    def test_no_po_files_does_not_raise(self):
+        with override_settings(BASE_DIR=self.base_dir):
+            call_command('compile_po_files')
