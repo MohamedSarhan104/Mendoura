@@ -1,6 +1,10 @@
 """Database content translation -- a thin wrapper around deep-translator's
 free GoogleTranslator, used to auto-populate per-language fields when an
-admin/instructor saves a record in the source language (English).
+admin/instructor saves a record in its source language. Every field
+defaults to English, except a field whose source language varies
+per-instance (e.g. a lecture transcript, spoken in whatever language the
+course itself is taught in) -- see translate_fields()'s source_language
+parameter and AutoTranslatedFieldsMixin._field_source_language.
 
 No API key, no billing: this deliberately replaced an earlier Anthropic-
 based implementation so the site never needs a paid key just to show
@@ -50,6 +54,9 @@ _GOOGLETRANSLATOR_TARGET_OVERRIDES = {
 
 
 def _google_translator_target(django_language_code: str) -> str:
+    """Despite the name, used for both the source and target language
+    codes passed to GoogleTranslator -- the same code<->API divergence
+    applies whichever position a given language is used in."""
     return _GOOGLETRANSLATOR_TARGET_OVERRIDES.get(django_language_code, django_language_code)
 
 
@@ -74,23 +81,23 @@ def is_configured() -> bool:
     return settings.AUTO_TRANSLATE_ENABLED
 
 
-def _translate_once(stripped: str, api_target: str, target_language: str) -> str:
+def _translate_once(stripped: str, api_target: str, target_language: str, api_source: str) -> str:
     """A single raw GoogleTranslator.translate() attempt. Raises
     TranslationError on any failure (network error, bad response, or an
     empty result) -- never lets a raw exception from the underlying HTTP
     library escape."""
     logger.info(
-        '%s calling GoogleTranslator: source=en target=%s (api_target=%s) text=%r',
-        _DEBUG_TAG, target_language, api_target, _truncate(stripped))
+        '%s calling GoogleTranslator: source=%s target=%s (api_target=%s) text=%r',
+        _DEBUG_TAG, api_source, target_language, api_target, _truncate(stripped))
     started = time.monotonic()
     try:
-        translated = GoogleTranslator(source='en', target=api_target).translate(stripped)
+        translated = GoogleTranslator(source=api_source, target=api_target).translate(stripped)
     except Exception as exc:
         elapsed = time.monotonic() - started
         logger.exception(
-            '%s GoogleTranslator FAILED after %.2fs: source=en target=%s (api_target=%s) text=%r '
+            '%s GoogleTranslator FAILED after %.2fs: source=%s target=%s (api_target=%s) text=%r '
             'exception_type=%s exception_message=%s',
-            _DEBUG_TAG, elapsed, target_language, api_target, _truncate(stripped),
+            _DEBUG_TAG, elapsed, api_source, target_language, api_target, _truncate(stripped),
             type(exc).__name__, str(exc))
         # deep-translator only wraps its *own* known failure modes (rate
         # limiting, bad language code, ...) in deep_translator.exceptions;
@@ -115,17 +122,17 @@ def _translate_once(stripped: str, api_target: str, target_language: str) -> str
     elapsed = time.monotonic() - started
     if translated is None:
         logger.warning(
-            '%s GoogleTranslator returned None after %.2fs: source=en target=%s (api_target=%s) text=%r',
-            _DEBUG_TAG, elapsed, target_language, api_target, _truncate(stripped))
+            '%s GoogleTranslator returned None after %.2fs: source=%s target=%s (api_target=%s) text=%r',
+            _DEBUG_TAG, elapsed, api_source, target_language, api_target, _truncate(stripped))
         raise TranslationError(f'GoogleTranslator returned nothing for target language {target_language!r}.')
 
     logger.info(
-        '%s GoogleTranslator SUCCEEDED after %.2fs: source=en target=%s (api_target=%s) output=%r',
-        _DEBUG_TAG, elapsed, target_language, api_target, _truncate(translated))
+        '%s GoogleTranslator SUCCEEDED after %.2fs: source=%s target=%s (api_target=%s) output=%r',
+        _DEBUG_TAG, elapsed, api_source, target_language, api_target, _truncate(translated))
     return translated
 
 
-def _translate_text(text: str, target_language: str) -> str:
+def _translate_text(text: str, target_language: str, source_language: str = 'en') -> str:
     """Translates one line/cell, retrying a transient failure a few times
     with a short backoff before giving up. Matters a lot for a long,
     multi-line field (e.g. a Markdown table with a dozen cells) even after
@@ -144,12 +151,13 @@ def _translate_text(text: str, target_language: str) -> str:
     leading_ws = text[:len(text) - len(text.lstrip())]
     trailing_ws = text[len(text.rstrip()):]
     api_target = _google_translator_target(target_language)
+    api_source = _google_translator_target(source_language)
     max_retries = getattr(settings, 'AUTO_TRANSLATE_MAX_RETRIES', 0)
     backoff = getattr(settings, 'AUTO_TRANSLATE_RETRY_BACKOFF_SECONDS', 0)
 
     for attempt in range(max_retries + 1):
         try:
-            translated = _translate_once(stripped, api_target, target_language)
+            translated = _translate_once(stripped, api_target, target_language, api_source)
             return f'{leading_ws}{translated}{trailing_ws}'
         except TranslationError:
             if attempt >= max_retries:
@@ -167,12 +175,12 @@ def _is_table_row(line: str) -> bool:
     return stripped.startswith('|') and stripped.endswith('|') and stripped.count('|') >= 2
 
 
-def _translate_table_row(line: str, target_language: str) -> str:
+def _translate_table_row(line: str, target_language: str, source_language: str) -> str:
     """Translate only the text inside each cell, never the pipe characters
     themselves -- keeps the exact same number of columns after translation."""
     cells = line.split('|')
     return '|'.join(
-        cell if not cell.strip() else _translate_text(cell, target_language)
+        cell if not cell.strip() else _translate_text(cell, target_language, source_language)
         for cell in cells
     )
 
@@ -182,7 +190,7 @@ def _translate_table_row(line: str, target_language: str) -> str:
 _BULLET_RE = re.compile(r'^(\s*[-*+]\s+)(.*)$')
 
 
-def _translate_line(line: str, target_language: str) -> str:
+def _translate_line(line: str, target_language: str, source_language: str) -> str:
     """Translate one line, keeping a leading Markdown bullet marker
     (e.g. "- ") itself untranslated -- only the text after it goes through
     GoogleTranslator, so the line stays a recognizable list item."""
@@ -191,16 +199,20 @@ def _translate_line(line: str, target_language: str) -> str:
         marker, rest = bullet_match.groups()
         if not rest.strip():
             return line
-        return f'{marker}{_translate_text(rest, target_language)}'
-    return _translate_text(line, target_language)
+        return f'{marker}{_translate_text(rest, target_language, source_language)}'
+    return _translate_text(line, target_language, source_language)
 
 
-def translate_markdown(text: str, target_language: str) -> str:
+def translate_markdown(text: str, target_language: str, source_language: str = 'en') -> str:
     """Translate a field's source text (plain text or Markdown) line by
     line, preserving every line break, table separator row, and table
     column exactly. A field with no Markdown at all (e.g. a Track name)
     just has one line, so this is equivalent to translating the whole
-    field in one call."""
+    field in one call. source_language defaults to English -- every
+    TRANSLATABLE_FIELDS entry is instructor/admin-entered English, except
+    a field whose actual source language varies per-instance (e.g.
+    Lecture.ai_generated_script, written in whatever language the course
+    itself is taught in -- see AutoTranslatedFieldsMixin._field_source_language)."""
     lines = text.split('\n')
     translated_lines = []
     for line in lines:
@@ -209,15 +221,18 @@ def translate_markdown(text: str, target_language: str) -> str:
         elif _TABLE_SEPARATOR_RE.match(line):
             translated_lines.append(line)
         elif _is_table_row(line):
-            translated_lines.append(_translate_table_row(line, target_language))
+            translated_lines.append(_translate_table_row(line, target_language, source_language))
         else:
-            translated_lines.append(_translate_line(line, target_language))
+            translated_lines.append(_translate_line(line, target_language, source_language))
     return '\n'.join(translated_lines)
 
 
-def translate_fields(fields: dict[str, str], target_languages: list[str]) -> dict[str, dict[str, str]]:
-    """fields: {'name': 'Web Development', 'description': '...'} in English.
-    target_languages: ISO 639-1 codes to translate into, e.g. ['ar', 'fr', 'es'].
+def translate_fields(fields: dict[str, str], target_languages: list[str],
+                      source_language: str = 'en') -> dict[str, dict[str, str]]:
+    """fields: {'name': 'Web Development', 'description': '...'}, all written in
+    source_language (English by default).
+    target_languages: ISO 639-1 codes to translate into, e.g. ['ar', 'fr', 'es'] --
+    callers are responsible for not including source_language itself here.
     Returns {'name': {'ar': '...', 'fr': '...', 'es': '...'}, 'description': {...}}
     -- only the (field, language) pairs that actually succeeded.
 
@@ -244,7 +259,7 @@ def translate_fields(fields: dict[str, str], target_languages: list[str]) -> dic
         result[field] = {}
         for lang in target_languages:
             try:
-                result[field][lang] = translate_markdown(text, lang)
+                result[field][lang] = translate_markdown(text, lang, source_language)
             except TranslationError:
                 logger.warning(
                     "%s translate_fields: field=%r target=%s failed -- leaving it out of this "

@@ -107,17 +107,25 @@ def _unique_slugify(instance, base_value, slug_field='slug'):
 class AutoTranslatedFieldsMixin:
     """Auto-populated per-language JSON translations for a model's designated
     text fields, via auto_translate.py's free GoogleTranslator wrapper (no
-    API key or billing). The admin/instructor-entered value is always
-    assumed to be written in SOURCE_LANGUAGE (English); on save(), any field
-    whose source text has changed (or whose translations don't yet cover
-    every active non-source language) gets re-translated. Subclasses must
-    define TRANSLATABLE_FIELDS and a `{field}_translations` JSONField for
-    each entry.
+    API key or billing). Each field's source text is assumed to be written
+    in SOURCE_LANGUAGE (English) by default; on save(), any field whose
+    source text has changed (or whose translations don't yet cover every
+    other active language) gets re-translated. Subclasses must define
+    TRANSLATABLE_FIELDS and a `{field}_translations` JSONField for each
+    entry.
+
+    A field whose actual source language varies per-instance (e.g. a
+    lecture transcript, spoken in whatever language the course itself is
+    taught in, not necessarily English) overrides `_field_source_language`
+    to return that instance's real source language instead of the
+    class-wide default -- its own translation target list then excludes
+    that language instead of English, and includes English as a real
+    target whenever it isn't the source.
 
     Never blocks a save: if the translation call fails for any reason (rate
     limiting, no network, ...), a subclass-defined LOCAL_TRANSLATIONS
     dictionary (if any) fills in whatever it knows about, and anything
-    still missing falls back to the English source via `_translated()` --
+    still missing falls back to the source text via `_translated()` --
     retried again on the next save."""
     SOURCE_LANGUAGE = 'en'
     TRANSLATABLE_FIELDS = ()
@@ -130,55 +138,75 @@ class AutoTranslatedFieldsMixin:
     # available.
     LOCAL_TRANSLATIONS = {}
 
+    def _field_source_language(self, field):
+        """The language code `field`'s own source text is actually written
+        in for this instance. Defaults to SOURCE_LANGUAGE for every field;
+        override for a field whose source language isn't fixed at the
+        class level."""
+        return self.SOURCE_LANGUAGE
+
     def _translated(self, field):
         translations = getattr(self, f'{field}_translations') or {}
-        lang = get_language() or self.SOURCE_LANGUAGE
+        lang = get_language() or self._field_source_language(field)
         return translations.get(lang) or getattr(self, field)
 
     def _autotranslate(self):
-        target_languages = [code for code, _label in settings.LANGUAGES if code != self.SOURCE_LANGUAGE]
-        if not target_languages:
-            return
+        all_languages = [code for code, _label in settings.LANGUAGES]
 
-        pending = {}
+        # Fields are grouped by their own source language -- almost always
+        # a single group ('en', shared by every field on every model except
+        # Lecture.ai_generated_script), but translate_fields() only accepts
+        # one source_language per call, so a field sourced in something
+        # else needs its own separate call with its own target list (which
+        # includes English, and excludes that field's actual source
+        # instead).
+        pending_by_source = {}
         for field in self.TRANSLATABLE_FIELDS:
             source_value = (getattr(self, field, '') or '').strip()
             if not source_value:
+                continue
+            field_source = self._field_source_language(field)
+            target_languages = [code for code in all_languages if code != field_source]
+            if not target_languages:
                 continue
             translations = getattr(self, f'{field}_translations') or {}
             stale = translations.get('__source__') != source_value
             incomplete = any(lang not in translations for lang in target_languages)
             if stale or incomplete:
-                pending[field] = source_value
+                pending_by_source.setdefault(field_source, {})[field] = source_value
 
-        if not pending:
+        if not pending_by_source:
             return
 
-        results = {}
-        if auto_translate.is_configured():
-            try:
-                results = auto_translate.translate_fields(pending, target_languages)
-            except auto_translate.TranslationError:
-                # Never blocks the save -- LOCAL_TRANSLATIONS/English still
-                # apply below -- but a failure here used to vanish with no
-                # trace anywhere, including in Render's logs. Log it so a
-                # persistently-broken network/rate-limit doesn't look
-                # identical to "translation just hasn't run yet".
-                logger.warning(
-                    'Automatic translation failed for %s pk=%s fields=%s -- falling back to '
-                    'LOCAL_TRANSLATIONS/English for now.',
-                    type(self).__name__, self.pk, list(pending), exc_info=True)
-                results = {}
+        for field_source, pending in pending_by_source.items():
+            target_languages = [code for code in all_languages if code != field_source]
+            results = {}
+            if auto_translate.is_configured():
+                try:
+                    results = auto_translate.translate_fields(
+                        pending, target_languages, source_language=field_source)
+                except auto_translate.TranslationError:
+                    # Never blocks the save -- LOCAL_TRANSLATIONS/source
+                    # text still apply below -- but a failure here used to
+                    # vanish with no trace anywhere, including in Render's
+                    # logs. Log it so a persistently-broken network/
+                    # rate-limit doesn't look identical to "translation
+                    # just hasn't run yet".
+                    logger.warning(
+                        'Automatic translation failed for %s pk=%s fields=%s (source=%s) -- '
+                        'falling back to LOCAL_TRANSLATIONS/source text for now.',
+                        type(self).__name__, self.pk, list(pending), field_source, exc_info=True)
+                    results = {}
 
-        for field, source_value in pending.items():
-            translated = dict(results.get(field) or {})
-            local_fallback = self.LOCAL_TRANSLATIONS.get(field, {}).get(source_value, {})
-            for lang, text in local_fallback.items():
-                translated.setdefault(lang, text)
-            if not translated:
-                continue
-            translated['__source__'] = source_value
-            setattr(self, f'{field}_translations', translated)
+            for field, source_value in pending.items():
+                translated = dict(results.get(field) or {})
+                local_fallback = self.LOCAL_TRANSLATIONS.get(field, {}).get(source_value, {})
+                for lang, text in local_fallback.items():
+                    translated.setdefault(lang, text)
+                if not translated:
+                    continue
+                translated['__source__'] = source_value
+                setattr(self, f'{field}_translations', translated)
 
 
 class Track(AutoTranslatedFieldsMixin, models.Model):
@@ -546,18 +574,35 @@ class Lecture(AutoTranslatedFieldsMixin, models.Model):
         DONE = 'done', _('Done')
         FAILED = 'failed', _('Failed')
 
+    # Maps Course.language's stored value (see forms.COURSE_LANGUAGE_CHOICES --
+    # always the English display name, e.g. 'Arabic', regardless of the
+    # instructor's own UI language at the time they picked it) to the Django
+    # LANGUAGES code the lecture's ai_generated_script is actually written
+    # in. Falls back to English for any value not covered here (a legacy/
+    # blank course.language) -- same default SOURCE_LANGUAGE already assumes
+    # everywhere else.
+    _COURSE_LANGUAGE_TO_CODE = {
+        'English': 'en', 'Arabic': 'ar', 'French': 'fr', 'German': 'de',
+        'Spanish': 'es', 'Italian': 'it', 'Turkish': 'tr',
+    }
+
     module = models.ForeignKey(Module, on_delete=models.CASCADE, related_name='lectures', null=True)
     title = models.CharField(max_length=255)
     title_translations = models.JSONField(default=dict, blank=True)
-    # Only `title` is translated -- ai_generated_script is intentionally
-    # excluded. It's instructor/AI-generated source content (a manual
-    # Script Only script, or the "Generate Transcript" button's output)
-    # used verbatim to ground the AI Coach and populate the Transcript tab,
-    # not marketing copy meant for a browsing student to read in their own
-    # language -- machine-translating it would also risk the AI Coach
-    # grounding on a translated (and therefore potentially distorted)
-    # version of what the instructor actually said.
-    TRANSLATABLE_FIELDS = ('title',)
+    # ai_generated_script itself (the source field) is never touched by
+    # translation -- only `ai_generated_script_translations` is, exactly
+    # like every other TRANSLATABLE_FIELDS entry. That split matters here
+    # specifically: the AI Coach (courses.views._lesson_ai_context) reads
+    # `ai_generated_script` directly and must always ground on the
+    # instructor's actual words, never a translated (and therefore
+    # potentially distorted) version -- while the student-facing Transcript
+    # tab reads `translated_transcript`, which follows the site's own
+    # language switcher like every other translated_* property. Its source
+    # language also isn't always English -- see _field_source_language
+    # below -- so it's kept out of TRANSLATABLE_FIELDS' shared 'en' batch
+    # whenever the course itself isn't taught in English.
+    ai_generated_script_translations = models.JSONField(default=dict, blank=True)
+    TRANSLATABLE_FIELDS = ('title', 'ai_generated_script')
     content_type = models.CharField(max_length=20, choices=ContentType.choices, default=ContentType.VIDEO)
     # Bunny Stream video GUID. When set, the player embeds Bunny's token-signed
     # iframe instead of the legacy video_url/video_file. Those two stay for
@@ -578,10 +623,11 @@ class Lecture(AutoTranslatedFieldsMixin, models.Model):
     # ai_generated_script is the one field both Script Only courses' manual
     # scripts AND the "Generate Transcript" button (instructor-triggered,
     # Full Production courses) write into -- the AI Coach's lesson-grounding
-    # and the Transcript tab both read this single field regardless of
-    # which path populated it, so a Full Production lecture with a
-    # generated transcript gets exactly the same treatment as a Script
-    # Only one written by hand.
+    # and the Transcript tab both read from this single field's data
+    # (translated_transcript falls back to this field verbatim wherever no
+    # cached translation applies), regardless of which path populated it,
+    # so a Full Production lecture with a generated transcript gets exactly
+    # the same treatment as a Script Only one written by hand.
     ai_generated_script = models.TextField(blank=True, null=True)
     transcript_status = models.CharField(
         max_length=20, choices=TranscriptStatus.choices, default=TranscriptStatus.NOT_STARTED)
@@ -597,6 +643,18 @@ class Lecture(AutoTranslatedFieldsMixin, models.Model):
     @property
     def translated_title(self):
         return self._translated('title')
+
+    @property
+    def translated_transcript(self):
+        """Student-facing display only -- see the field comment above.
+        Never used for AI Coach grounding; that reads ai_generated_script
+        directly."""
+        return self._translated('ai_generated_script')
+
+    def _field_source_language(self, field):
+        if field == 'ai_generated_script' and self.module_id:
+            return self._COURSE_LANGUAGE_TO_CODE.get(self.course.language, self.SOURCE_LANGUAGE)
+        return super()._field_source_language(field)
 
     def save(self, *args, **kwargs):
         self._autotranslate()
