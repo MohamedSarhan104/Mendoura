@@ -5375,7 +5375,7 @@ class LegalDocumentTests(TestCase):
         """Same mechanism Track uses: no hardcoded per-language template
         text -- translated_heading/translated_body come from the AI
         pipeline's stored JSON, keyed by the active language."""
-        def fake_translate_fields(fields, target_languages):
+        def fake_translate_fields(fields, target_languages, source_language='en'):
             return {field: {lang: f'[{lang.upper()}] {text}' for lang in target_languages}
                     for field, text in fields.items()}
 
@@ -5413,7 +5413,7 @@ class LegalDocumentTests(TestCase):
         line as the table header."""
         section = self.privacy.sections.get(anchor='data-we-collect')
 
-        def fake_translate_fields(fields, target_languages):
+        def fake_translate_fields(fields, target_languages, source_language='en'):
             return {field: {lang: f'[{lang.upper()}] {text}' for lang in target_languages}
                     for field, text in fields.items()}
 
