@@ -14,7 +14,7 @@ from django.conf import settings
 from django.contrib.auth.tokens import default_token_generator
 from django.core import mail
 from django.core.cache import cache
-from django.core.exceptions import FieldDoesNotExist, ValidationError
+from django.core.exceptions import ValidationError
 from django.core.management import call_command
 from django.core.management.base import CommandError
 from django.test import TestCase, override_settings
@@ -2100,26 +2100,78 @@ class ExpandedContentTranslationTests(TestCase):
             self.assertEqual(module.translated_title, 'وحدة')
 
     @patch('courses.models.auto_translate.translate_fields')
-    def test_lecture_title_translates_but_script_never_does(self, mock_translate):
+    def test_lecture_title_and_transcript_translate_but_source_field_never_changes(self, mock_translate):
         mock_translate.return_value = {'title': {'ar': 'وحدة'}}
         module = Module.objects.create(course=self.course, title='Intro')
         mock_translate.reset_mock()  # Module.save() also auto-translates -- isolate to the Lecture's own call below.
 
-        mock_translate.return_value = {'title': {'ar': 'محاضرة'}}
+        # self.course.language defaults to 'English' (see setUp), so both
+        # fields share the same 'en' source language and are batched into
+        # one translate_fields() call -- see AutoTranslatedFieldsMixin.
+        mock_translate.return_value = {
+            'title': {'ar': 'محاضرة'},
+            'ai_generated_script': {'ar': 'بعض نص النص'},
+        }
+        lecture = Lecture.objects.create(
+            module=module, title='Welcome', ai_generated_script='Some transcript text.')
+
+        with translation_override('ar'):
+            self.assertEqual(lecture.translated_title, 'محاضرة')
+            # Student-facing display DOES translate, unlike before.
+            self.assertEqual(lecture.translated_transcript, 'بعض نص النص')
+        # The raw source field is never mutated by translation -- this is
+        # what keeps AI Coach grounding (courses.views._lesson_ai_context,
+        # which reads ai_generated_script directly) on the instructor's
+        # actual words regardless of what's cached for display.
+        self.assertEqual(lecture.ai_generated_script, 'Some transcript text.')
+        lecture.refresh_from_db()
+        self.assertEqual(lecture.ai_generated_script, 'Some transcript text.')
+
+        # Both fields went through the SAME translate_fields() call (same
+        # source language) -- confirms this doesn't cost an extra call.
+        mock_translate.assert_called_once()
+        fields_arg = mock_translate.call_args.args[0]
+        self.assertEqual(set(fields_arg), {'title', 'ai_generated_script'})
+        self.assertEqual(mock_translate.call_args.kwargs.get('source_language', 'en'), 'en')
+
+    @patch('courses.models.auto_translate.translate_fields')
+    def test_lecture_transcript_falls_back_to_source_text_without_a_cached_translation(self, mock_translate):
+        mock_translate.return_value = {}
+        module = Module.objects.create(course=self.course, title='Intro')
         lecture = Lecture.objects.create(
             module=module, title='Welcome', ai_generated_script='Some transcript text.')
         with translation_override('ar'):
-            self.assertEqual(lecture.translated_title, 'محاضرة')
-        # ai_generated_script is deliberately excluded -- grounds the AI
-        # Coach and feeds the Transcript tab verbatim, not marketing copy.
-        self.assertNotIn('ai_generated_script', Lecture.TRANSLATABLE_FIELDS)
-        with self.assertRaises(FieldDoesNotExist):
-            Lecture._meta.get_field('ai_generated_script_translations')
-        # Only 'title' was ever passed to the translator -- confirms the
-        # script's content never left this process at all.
-        mock_translate.assert_called_once()
-        fields_arg = mock_translate.call_args.args[0]
-        self.assertEqual(set(fields_arg), {'title'})
+            self.assertEqual(lecture.translated_transcript, 'Some transcript text.')
+
+    @patch('courses.models.auto_translate.translate_fields')
+    def test_lecture_transcript_source_language_follows_course_language_not_always_english(self, mock_translate):
+        """A course taught in Arabic has an Arabic-spoken transcript --
+        translation must go INTO English (and every other language) rather
+        than assuming the source is English, and must never ask to
+        translate Arabic into itself."""
+        mock_translate.return_value = {}
+        arabic_course = Course.objects.create(
+            instructor=self.instructor, track=self.track, title='Arabic Course',
+            description='...', production_type=Course.ProductionType.FULL,
+            price=Decimal('0.00'), is_free=True, status=Course.Status.DRAFT, language='Arabic')
+        module = Module.objects.create(course=arabic_course, title='Intro')
+        mock_translate.reset_mock()
+
+        mock_translate.return_value = {'ai_generated_script': {'en': 'Some transcript text.'}}
+        Lecture.objects.create(
+            module=module, title='Welcome', ai_generated_script='بعض نص النص')
+
+        # title (source='en') and ai_generated_script (source='ar' here)
+        # can't share one translate_fields() call since it only accepts a
+        # single source_language -- two separate calls are expected.
+        self.assertEqual(mock_translate.call_count, 2)
+        script_call = next(
+            c for c in mock_translate.call_args_list if 'ai_generated_script' in c.args[0])
+        self.assertEqual(script_call.kwargs['source_language'], 'ar')
+        # 'ar' itself must never appear as a target -- that would be
+        # asking to translate the transcript into its own source language.
+        self.assertNotIn('ar', script_call.args[1])
+        self.assertIn('en', script_call.args[1])
 
     @patch('courses.models.auto_translate.translate_fields')
     def test_resource_title_translates(self, mock_translate):
@@ -3419,6 +3471,25 @@ class GenerateLectureTranscriptTests(TestCase):
         self.assertEqual(self.lecture.transcript_status, Lecture.TranscriptStatus.DONE)
         self.assertEqual(self.lecture.transcript_error, '')
 
+    @override_settings(AUTO_TRANSLATE_ENABLED=True)
+    @patch('courses.models.auto_translate.translate_fields')
+    @patch('courses.views.threading.Thread')
+    def test_success_also_populates_translated_transcript_for_display(self, mock_thread_cls, mock_translate):
+        # This write goes through Lecture.save() (not a bare queryset
+        # .update()) specifically so _autotranslate() runs -- confirms the
+        # generated transcript actually reaches the translation cache
+        # used by the student-facing Transcript tab.
+        self._run_thread_synchronously(mock_thread_cls)
+        mock_translate.return_value = {'ai_generated_script': {'ar': 'نص مترجم'}}
+        with patch('courses.views.ai_coach_client.transcribe_video', return_value='Transcribed text.'):
+            self.client.post(self._url())
+
+        self.lecture.refresh_from_db()
+        self.assertEqual(self.lecture.ai_generated_script, 'Transcribed text.')
+        self.assertEqual(self.lecture.ai_generated_script_translations.get('ar'), 'نص مترجم')
+        with translation_override('ar'):
+            self.assertEqual(self.lecture.translated_transcript, 'نص مترجم')
+
     @patch('courses.views.threading.Thread')
     def test_failure_records_status_and_friendly_error(self, mock_thread_cls):
         self._run_thread_synchronously(mock_thread_cls)
@@ -3903,6 +3974,25 @@ class LessonPlayerLayoutTests(TestCase):
         self.client.force_login(self.student)
         response = self.client.get(reverse('course_player', args=[self.course.id, self.lecture1.id]))
         self.assertNotContains(response, 'id="tab-transcript"')
+
+    def test_transcript_tab_shows_translated_text_in_the_students_chosen_language(self):
+        # Directly seeding the cache (rather than mocking translate_fields)
+        # isolates this to the template/display path -- follows the same
+        # HTTP_ACCEPT_LANGUAGE-driven language switch as everything else on
+        # the site (see e.g. PlatformHomeTranslationTests), not a
+        # transcript-specific mechanism.
+        self.lecture1.ai_generated_script = 'This is the generated transcript.'
+        self.lecture1.ai_generated_script_translations = {
+            '__source__': 'This is the generated transcript.',
+            'fr': 'Ceci est la transcription générée.',
+        }
+        self.lecture1.save(update_fields=['ai_generated_script', 'ai_generated_script_translations'])
+        self.client.force_login(self.student)
+        response = self.client.get(
+            reverse('course_player', args=[self.course.id, self.lecture1.id]), HTTP_ACCEPT_LANGUAGE='fr')
+        self.assertContains(response, 'id="tab-transcript"')
+        self.assertContains(response, 'Ceci est la transcription générée.')
+        self.assertNotContains(response, 'This is the generated transcript.')
 
 
 class WatchThresholdAutoCompleteTests(TestCase):
@@ -4891,6 +4981,35 @@ class AICoachLessonSendTests(TestCase):
         self.assertNotIn('not available', context_kwarg)
 
     @patch('courses.views.ai_coach_client.send_message')
+    def test_grounding_always_uses_original_transcript_even_with_cached_translations(self, mock_send):
+        # _lesson_ai_context reads lecture.ai_generated_script directly, not
+        # translated_transcript -- confirms a French-speaking student asking
+        # a question in French still gets a reply grounded in the
+        # instructor's actual (English) words, never a machine-translated
+        # version of them, regardless of the student's own UI language.
+        mock_send.return_value = 'ok'
+        full_course = Course.objects.create(
+            instructor=self.instructor, track=self.course.track, title='Full Course 2', description='...',
+            production_type=Course.ProductionType.FULL, price=Decimal('0.00'), is_free=True,
+            status=Course.Status.PUBLISHED)
+        module = Module.objects.create(course=full_course, title='M1')
+        lecture = Lecture.objects.create(
+            module=module, title='Full Lesson', ai_generated_script='Generated transcript text.',
+            ai_generated_script_translations={
+                '__source__': 'Generated transcript text.',
+                'fr': 'Texte de transcription généré.',
+            })
+        Enrollment.objects.create(student=self.student, course=full_course)
+        self.client.force_login(self.student)
+        self.client.post(
+            reverse('ai_coach_lesson_send', args=[full_course.id, lecture.id]),
+            data=json.dumps({'message': 'brief this lesson'}), content_type='application/json',
+            HTTP_ACCEPT_LANGUAGE='fr')
+        context_kwarg = mock_send.call_args.kwargs['context']
+        self.assertIn('Generated transcript text.', context_kwarg)
+        self.assertNotIn('Texte de transcription généré.', context_kwarg)
+
+    @patch('courses.views.ai_coach_client.send_message')
     def test_does_not_persist_to_ai_conversation(self, mock_send):
         mock_send.return_value = 'ok'
         self.client.force_login(self.student)
@@ -5169,6 +5288,34 @@ class RetranslateContentCommandTests(TestCase):
         # 'ar' was already cached (see setUp) so isn't re-requested; every
         # other configured language should now be filled in.
         self.assertEqual(set(self.track.name_translations) - {'__source__'}, expected)
+
+    @patch('courses.auto_translate.translate_fields')
+    def test_lecture_transcript_backfill_respects_its_own_source_language(self, mock_translate):
+        # A course taught in Arabic has an Arabic-spoken transcript --
+        # --language all must still translate it (into English and every
+        # other language) rather than treating 'all' as "every non-English
+        # language" the way it would for an English-sourced field, and must
+        # never ask to translate Arabic into itself.
+        mock_translate.return_value = {'ai_generated_script': {'en': '[EN] transcript'}}
+        with override_settings(AUTO_TRANSLATE_ENABLED=False):
+            instructor = User.objects.create_user(username='rtc_inst', password='pw', is_instructor=True)
+            arabic_course = Course.objects.create(
+                instructor=instructor, track=self.track, title='Arabic Course', description='...',
+                production_type=Course.ProductionType.FULL, price=Decimal('0.00'), is_free=True,
+                language='Arabic')
+            module = Module.objects.create(course=arabic_course, title='Intro')
+            lecture = Lecture.objects.create(
+                module=module, title='Welcome', ai_generated_script='بعض نص النص')
+
+        call_command('retranslate_content', '--language', 'all', '--model', 'lecture')
+
+        lecture.refresh_from_db()
+        self.assertEqual(lecture.ai_generated_script_translations.get('en'), '[EN] transcript')
+        script_call = next(
+            c for c in mock_translate.call_args_list if 'ai_generated_script' in c.args[0])
+        self.assertEqual(script_call.kwargs['source_language'], 'ar')
+        self.assertNotIn('ar', script_call.args[1])
+        self.assertIn('en', script_call.args[1])
 
     @override_settings(AUTO_TRANSLATE_ENABLED=False)
     def test_errors_when_auto_translate_disabled(self):
@@ -6045,6 +6192,32 @@ class CourseCreationWizardTests(TestCase):
         self.assertRedirects(response, reverse('course_wizard_review', args=[course.id]))
         lesson.refresh_from_db()
         self.assertEqual(lesson.ai_generated_script, 'Once upon a time...')
+
+    @override_settings(AUTO_TRANSLATE_ENABLED=True)
+    @patch('courses.models.auto_translate.translate_fields')
+    def test_save_lesson_script_also_persists_transcript_translations(self, mock_translate):
+        # save_lesson_script's own lesson.save(update_fields=[...]) must
+        # list ai_generated_script_translations alongside ai_generated_script
+        # -- otherwise _autotranslate()'s computed cache is silently
+        # dropped from this write (update_fields restricts which columns
+        # actually get persisted).
+        mock_translate.return_value = {'ai_generated_script': {'ar': 'كان يا ما كان'}}
+        self.client.force_login(self.instructor)
+        self.client.post(reverse('create_course'), self._course_details_payload(production_type='script_only'))
+        course = Course.objects.get(title='Wizard Course')
+        self.client.post(reverse('course_wizard_modules', args=[course.id]),
+                          {'action': 'add', 'title': 'Module 1', 'order': 1})
+        module = Module.objects.get(course=course)
+        self.client.post(reverse('course_wizard_module_content', args=[course.id, module.id]),
+                          {'action': 'add_lesson', 'title': 'Lesson 1'})
+        lesson = Lecture.objects.get(module=module)
+
+        self.client.post(reverse('course_wizard_module_content', args=[course.id, module.id]),
+                          {'action': 'save_lesson_script', 'lesson_id': lesson.id, 'script': 'Once upon a time...'})
+
+        lesson.refresh_from_db()
+        self.assertEqual(lesson.ai_generated_script, 'Once upon a time...')
+        self.assertEqual(lesson.ai_generated_script_translations.get('ar'), 'كان يا ما كان')
 
     def test_step3_multiple_lessons_all_need_video_before_advancing(self):
         # The core of Issue 2: a module can hold more than one lesson, each
