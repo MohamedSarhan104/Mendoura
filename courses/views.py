@@ -455,7 +455,13 @@ def course_wizard_module_content(request, course_id, module_id):
         elif action == 'save_lesson_script':
             lesson = get_object_or_404(Lecture, id=request.POST.get('lesson_id'), module=module)
             lesson.ai_generated_script = request.POST.get('script', '').strip()
-            lesson.save(update_fields=['ai_generated_script'])
+            # ai_generated_script_translations must be included here too --
+            # Lecture.save() computes it (via _autotranslate(), called
+            # unconditionally at the top of save()) but a restrictive
+            # update_fields would silently drop that computed value from
+            # this write, leaving the cache permanently stale for this
+            # lecture.
+            lesson.save(update_fields=['ai_generated_script', 'ai_generated_script_translations'])
 
         elif action == 'save_quiz_settings':
             form = QuizForm(request.POST, instance=quiz)
@@ -1831,8 +1837,18 @@ def _run_transcript_generation(lecture_id):
             transcript_status=Lecture.TranscriptStatus.FAILED,
             transcript_error=_('An unexpected error occurred. Please try again.'))
         return
-    Lecture.objects.filter(id=lecture_id).update(
-        ai_generated_script=text, transcript_status=Lecture.TranscriptStatus.DONE, transcript_error='')
+    # A plain queryset .update() (like the two failure-path updates above)
+    # would bypass save() entirely, and with it _autotranslate() -- this
+    # write is the one that actually populates ai_generated_script, so it
+    # needs the real instance.save() path to also populate
+    # ai_generated_script_translations for the student-facing Transcript
+    # tab (see Lecture.translated_transcript). update_fields must list
+    # both, for the same reason as save_lesson_script above.
+    lecture.ai_generated_script = text
+    lecture.transcript_status = Lecture.TranscriptStatus.DONE
+    lecture.transcript_error = ''
+    lecture.save(update_fields=[
+        'ai_generated_script', 'ai_generated_script_translations', 'transcript_status', 'transcript_error'])
 
 
 # Kicks off transcription in the background and returns immediately --

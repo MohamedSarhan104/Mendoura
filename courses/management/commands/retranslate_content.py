@@ -48,8 +48,12 @@ class Command(BaseCommand):
         parser.add_argument(
             '--language', action='append', dest='languages', required=True,
             help="Target language code to (re)translate, e.g. --language fr. Repeatable. "
-                 "Pass --language all once to mean every non-English language in "
-                 "settings.LANGUAGES, instead of listing each one out.")
+                 "Pass --language all once to mean every language in settings.LANGUAGES, "
+                 "instead of listing each one out -- each field's own actual source "
+                 "language (English for almost everything; see "
+                 "AutoTranslatedFieldsMixin._field_source_language) is automatically "
+                 "excluded per field/instance, so this is safe even for a field like "
+                 "Lecture.ai_generated_script whose source isn't always English.")
         parser.add_argument(
             '--model', choices=[*MODEL_CHOICES, 'all'], default='all',
             help=f'Restrict to one model ({"/".join(MODEL_CHOICES)}), or all (default).')
@@ -60,7 +64,14 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         valid_codes = {code for code, _label in settings.LANGUAGES}
         if options['languages'] == ['all']:
-            languages = sorted(valid_codes - {'en'})
+            # Every configured language, including English -- correct for
+            # the common case (an English-sourced field never asks to
+            # retranslate into its own source, since _retranslate_instance
+            # excludes each field's own actual source language below), and
+            # necessary for a field like Lecture.ai_generated_script whose
+            # source isn't always English, where English is itself a real
+            # target.
+            languages = sorted(valid_codes)
         else:
             languages = options['languages']
             for lang in languages:
@@ -93,17 +104,27 @@ class Command(BaseCommand):
             source_value = (getattr(instance, field, '') or '').strip()
             if not source_value:
                 continue
+            # Almost always 'en' -- see _field_source_language's default --
+            # but a field like Lecture.ai_generated_script varies per
+            # instance, so its own source language is excluded here rather
+            # than assumed to be English like every other field.
+            field_source = instance._field_source_language(field)
+            candidate_languages = [lang for lang in languages if lang != field_source]
+            if not candidate_languages:
+                continue
             translations = getattr(instance, f'{field}_translations') or {}
-            needed = languages if force else [lang for lang in languages if lang not in translations]
+            needed = (candidate_languages if force
+                      else [lang for lang in candidate_languages if lang not in translations])
             if needed:
-                pending_by_field[field] = (source_value, needed)
+                pending_by_field[field] = (source_value, needed, field_source)
 
         if not pending_by_field:
             return False
 
         update_kwargs = {}
-        for field, (source_value, needed_langs) in pending_by_field.items():
-            results = auto_translate.translate_fields({field: source_value}, needed_langs)
+        for field, (source_value, needed_langs, field_source) in pending_by_field.items():
+            results = auto_translate.translate_fields(
+                {field: source_value}, needed_langs, source_language=field_source)
             new_translations = results.get(field) or {}
             missing = [lang for lang in needed_langs if lang not in new_translations]
             if missing:
