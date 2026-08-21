@@ -2724,25 +2724,25 @@ msgid "Please wait..."
 msgstr "Veuillez patienter..."
 
 msgid "Very weak"
-msgstr ""
+msgstr "Très faible"
 
 msgid "Weak"
-msgstr ""
+msgstr "Faible"
 
 msgid "Fair"
-msgstr ""
+msgstr "Équitable"
 
 msgid "Good"
-msgstr ""
+msgstr "Bon"
 
 msgid "Strong"
-msgstr ""
+msgstr "Fort"
 
 msgid "Passwords match"
-msgstr ""
+msgstr "Les mots de passe correspondent"
 
 msgid "Passwords do not match"
-msgstr ""
+msgstr "Les mots de passe ne correspondent pas"
 
 msgid "Welcome back to<br>your learning journey."
 msgstr ""
@@ -2751,42 +2751,46 @@ msgid ""
 "Pick up right where you left off — your courses, progress, and certificates "
 "are waiting."
 msgstr ""
+"Reprenez là où vous vous étiez arrêté : vos cours, votre progression et vos "
+"certificats vous attendent."
 
 msgid "Welcome back"
-msgstr ""
+msgstr "Bon retour"
 
 msgid "Log in to continue your learning journey."
-msgstr ""
+msgstr "Connectez-vous pour poursuivre votre parcours d'apprentissage."
 
 msgid "Invalid username or password."
-msgstr ""
+msgstr "Nom d'utilisateur ou mot de passe incorrect."
 
 msgid "Password"
-msgstr ""
+msgstr "Mot de passe"
 
 msgid "Forgot password?"
-msgstr ""
+msgstr "Mot de passe oublié ?"
 
 msgid "Log In"
-msgstr ""
+msgstr "Connexion"
 
 msgid "Don't have an account?"
-msgstr ""
+msgstr "Vous n'avez pas de compte ?"
 
 msgid "Sign up as Student"
-msgstr ""
+msgstr "S'inscrire en tant qu'étudiant"
 
 msgid "as Instructor"
-msgstr ""
+msgstr "en tant qu'instructeur"
 
 msgid "Password Reset"
-msgstr ""
+msgstr "Réinitialisation du mot de passe"
 
 msgid "You're all set."
-msgstr ""
+msgstr "Tout est prêt."
 
 msgid "Your password has been changed. Log in and get back to learning."
 msgstr ""
+"Votre mot de passe a été modifié. Connectez-vous et reprenez votre "
+"apprentissage."
 
 msgid "Password reset"
 msgstr ""
