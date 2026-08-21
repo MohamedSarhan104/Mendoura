@@ -136,65 +136,71 @@ msgid ""
 "A Payoneer account (email or account ID) is required for instructors based "
 "outside Egypt."
 msgstr ""
+"Se requiere una cuenta de Payoneer (correo electrónico o ID de cuenta) para "
+"los instructores que se encuentran fuera de Egipto."
 
 msgid "Your account is currently pending administrator approval."
 msgstr ""
+"Tu cuenta está actualmente pendiente de aprobación por parte del "
+"administrador."
 
 msgid "English"
-msgstr ""
+msgstr "Inglés"
 
 msgid "Arabic"
-msgstr ""
+msgstr "Árabe"
 
 msgid "French"
-msgstr ""
+msgstr "Francés"
 
 msgid "German"
-msgstr ""
+msgstr "Alemán"
 
 msgid "Spanish"
-msgstr ""
+msgstr "Español"
 
 msgid "Italian"
-msgstr ""
+msgstr "Italiano"
 
 msgid "Turkish"
-msgstr ""
+msgstr "Turco"
 
 msgid "e.g. Introduction to Python"
-msgstr ""
+msgstr "p. ej. Introducción a Python"
 
 msgid "What is this course about?"
-msgstr ""
+msgstr "¿De qué trata este curso?"
 
 msgid ""
 "Type the script here. Mendoura will turn this text into a professional video"
 " lecture."
 msgstr ""
+"Escribe el guion aquí. Mendoura convertirá este texto en una video-lección "
+"profesional."
 
 msgid "Share your experience with this course..."
-msgstr ""
+msgstr "Comparte tu experiencia con este curso..."
 
 msgid "Optional: Google Drive / GitHub link"
-msgstr ""
+msgstr "Opcional: enlace de Google Drive / GitHub"
 
 msgid "Any notes for your instructor?"
-msgstr ""
+msgstr "¿Alguna nota para su instructor?"
 
 msgid "e.g. 18/20 or A-"
-msgstr ""
+msgstr "p. ej. 18/20 o A-"
 
 msgid "Feedback for the student..."
-msgstr ""
+msgstr "Comentarios para el estudiante..."
 
 msgid "e.g. Web Development"
-msgstr ""
+msgstr "p. ej. Desarrollo web"
 
 msgid "Category"
-msgstr ""
+msgstr "Categoría"
 
 msgid "e.g. Robotics"
-msgstr ""
+msgstr "p. ej. Robótica"
 
 msgid "Why should this track exist? (optional)"
 msgstr ""
