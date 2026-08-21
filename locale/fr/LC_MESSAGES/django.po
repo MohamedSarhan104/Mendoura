@@ -2793,15 +2793,17 @@ msgstr ""
 "apprentissage."
 
 msgid "Password reset"
-msgstr ""
+msgstr "Réinitialisation du mot de passe"
 
 msgid ""
 "Your password has been changed successfully. You can now log in with your "
 "new password."
 msgstr ""
+"Votre mot de passe a été modifié avec succès. Vous pouvez maintenant vous "
+"connecter avec votre nouveau mot de passe."
 
 msgid "Set a New Password"
-msgstr ""
+msgstr "Définir un nouveau mot de passe"
 
 msgid "Choose a new<br>password."
 msgstr ""
@@ -2810,58 +2812,69 @@ msgid ""
 "Make it something you'll remember — you'll use it every time you come back "
 "to learn."
 msgstr ""
+"Choisissez quelque chose dont vous vous souviendrez — vous l'utiliserez à "
+"chaque fois que vous reviendrez pour apprendre."
 
 msgid "Set a new password"
-msgstr ""
+msgstr "Définir un nouveau mot de passe"
 
 msgid "Choose a new password for your account."
-msgstr ""
+msgstr "Choisissez un nouveau mot de passe pour votre compte."
 
 msgid "New password"
-msgstr ""
+msgstr "Nouveau mot de passe"
 
 msgid "Confirm new password"
-msgstr ""
+msgstr "Confirmer le nouveau mot de passe"
 
 msgid "Set New Password"
-msgstr ""
+msgstr "Définir un nouveau mot de passe"
 
 msgid "Link expired"
-msgstr ""
+msgstr "Lien expiré"
 
 msgid ""
 "This password reset link is invalid or has already been used. Reset links "
 "only work once and expire after a few days."
 msgstr ""
+"Ce lien de réinitialisation de mot de passe est invalide ou a déjà été "
+"utilisé. Les liens de réinitialisation ne fonctionnent qu'une seule fois et "
+"expirent après quelques jours."
 
 msgid "Request a New Link"
-msgstr ""
+msgstr "Demander un nouveau lien"
 
 msgid "Check Your Email"
-msgstr ""
+msgstr "Consultez votre e-mail"
 
 msgid "Almost there."
-msgstr ""
+msgstr "Presque terminé."
 
 msgid ""
 "If that email matches an account, a reset link is on its way. It's good for "
 "a few days, then it expires."
 msgstr ""
+"Si cette adresse e-mail correspond à un compte, un lien de réinitialisation "
+"est en cours d'envoi. Il est valable quelques jours, puis il expirera."
 
 msgid "Check your email"
-msgstr ""
+msgstr "Consultez votre e-mail"
 
 msgid ""
 "We've sent password reset instructions to that address, if it belongs to an "
 "account. It may take a few minutes to arrive — check your spam folder if you"
 " don't see it."
 msgstr ""
+"Nous avons envoyé les instructions de réinitialisation du mot de passe à "
+"cette adresse, si elle est associée à un compte. L'e-mail peut mettre "
+"quelques minutes à arriver ; vérifiez votre dossier spam si vous ne le voyez"
+" pas."
 
 msgid "Back to Login"
-msgstr ""
+msgstr "Retour à la connexion"
 
 msgid "Reset Password"
-msgstr ""
+msgstr "Réinitialiser le mot de passe"
 
 msgid "Forgot your<br>password?"
 msgstr ""
@@ -2870,27 +2883,31 @@ msgid ""
 "No problem — tell us the email on your account and we'll send you a link to "
 "pick a new one."
 msgstr ""
+"Pas de problème — indiquez-nous l'adresse e-mail associée à votre compte et "
+"nous vous enverrons un lien pour en choisir un nouveau."
 
 msgid "Reset your password"
-msgstr ""
+msgstr "Réinitialiser votre mot de passe"
 
 msgid "Enter your account email and we'll send you a reset link."
 msgstr ""
+"Saisissez l'adresse e-mail de votre compte et nous vous enverrons un lien de"
+" réinitialisation."
 
 msgid "Please enter a valid email address."
-msgstr ""
+msgstr "Veuillez saisir une adresse e-mail valide."
 
 msgid "Send Reset Link"
-msgstr ""
+msgstr "Envoyer le lien de réinitialisation"
 
 msgid "Remembered it?"
-msgstr ""
+msgstr "Vous vous en souvenez ?"
 
 msgid "Back to login"
-msgstr ""
+msgstr "Retour à la connexion"
 
 msgid "Instructor Sign Up"
-msgstr ""
+msgstr "Inscription d'instructeur"
 
 msgid "Share your knowledge.<br>Get compensated for it."
 msgstr ""
@@ -2899,30 +2916,34 @@ msgid ""
 "Contribute a course once, get compensated for as long as students keep "
 "enrolling."
 msgstr ""
+"Contribuez à un cours une fois, soyez rémunéré tant que les étudiants "
+"continuent de s'inscrire."
 
 #, python-format
 msgid "Compensation of up to 70%% on content you produce"
-msgstr ""
+msgstr "Indemnisation allant jusqu'à 70%% sur le contenu que vous produisez"
 
 msgid "Track your compensation in real time"
-msgstr ""
+msgstr "Suivez votre rémunération en temps réel"
 
 msgid "Reach students across 12 tracks"
-msgstr ""
+msgstr "Atteignez des étudiants dans 12 parcours"
 
 msgid "Share your knowledge and start earning."
-msgstr ""
+msgstr "Partagez vos connaissances et commencez à gagner de l'argent."
 
 msgid "Country"
-msgstr ""
+msgstr "Pays"
 
 msgid "Payoneer Account"
-msgstr ""
+msgstr "Compte Payoneer"
 
 msgid ""
 "Required if you're based outside Egypt — Mendoura will transfer your "
 "compensation here directly."
 msgstr ""
+"Requis si vous êtes basé en dehors de l'Égypte — Mendoura transférera votre "
+"rémunération directement ici."
 
 #, python-format
 msgid ""
@@ -2934,16 +2955,16 @@ msgid ""
 msgstr ""
 
 msgid "Create Instructor Account"
-msgstr ""
+msgstr "Créer un compte instructeur"
 
 msgid "Already have an account?"
-msgstr ""
+msgstr "Vous avez déjà un compte ?"
 
 msgid "Log in"
-msgstr ""
+msgstr "Connexion"
 
 msgid "Student Sign Up"
-msgstr ""
+msgstr "Inscription des étudiants"
 
 msgid "Learn skills that<br>actually matter."
 msgstr ""
@@ -2952,6 +2973,8 @@ msgid ""
 "Join thousands of students building real careers with courses from working "
 "professionals."
 msgstr ""
+"Rejoignez des milliers d'étudiants qui construisent une véritable carrière "
+"grâce à des cours dispensés par des professionnels en activité."
 
 msgid "Free and paid courses across 12 tracks"
 msgstr ""
