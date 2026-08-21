@@ -2487,10 +2487,10 @@ msgid "%(username)s's registration was rejected and removed."
 msgstr ""
 
 msgid "You can't delete your own account."
-msgstr ""
+msgstr "Vous ne pouvez pas supprimer votre propre compte."
 
 msgid "Admin accounts can't be deleted from here."
-msgstr ""
+msgstr "Les comptes administrateur ne peuvent pas être supprimés d'ici."
 
 #, python-format
 msgid "%(username)s was permanently deleted."
@@ -2585,65 +2585,71 @@ msgid "All rights reserved."
 msgstr "Tous droits réservés."
 
 msgid "Legal"
-msgstr ""
+msgstr "Mentions légales"
 
 msgid "Company location:"
-msgstr ""
+msgstr "Emplacement de l'entreprise :"
 
 msgid "Contact:"
-msgstr ""
+msgstr "Contact :"
 
 #, python-format
 msgid "Last updated: %(date)s"
 msgstr ""
 
 msgid "You're offline"
-msgstr ""
+msgstr "Vous êtes hors ligne"
 
 msgid ""
 "Mendoura needs a connection to load courses and lectures. Check your "
 "internet and try again."
 msgstr ""
+"Mendoura a besoin d'une connexion pour charger les cours et les conférences."
+" Vérifiez votre connexion internet et réessayez."
 
 msgid "Try Again"
-msgstr ""
+msgstr "Réessayer"
 
 msgid "Open Mendoura AI Coach"
-msgstr ""
+msgstr "Ouvrir le coach IA Mendoura"
 
 msgid "Close"
-msgstr ""
+msgstr "Fermer"
 
 msgid "Brief this lesson"
-msgstr ""
+msgstr "Faire un résumé de cette leçon"
 
 msgid "Summarize this module"
-msgstr ""
+msgstr "Résumer ce module"
 
 msgid "What should I focus on here?"
-msgstr ""
+msgstr "Sur quoi dois-je me concentrer ici ?"
 
 msgid "Recommend a course for me"
-msgstr ""
+msgstr "Me recommander un cours"
 
 msgid "Build me a study schedule"
-msgstr ""
+msgstr "Créez-moi un planning d'étude"
 
 msgid "Give me career advice"
-msgstr ""
+msgstr "Donnez-moi des conseils de carrière"
 
 msgid "Ask your AI Coach..."
-msgstr ""
+msgstr "Demandez à votre coach IA..."
 
 msgid ""
 "Welcome! Ask me anything -- career advice, course recommendations, or study "
 "guidance."
 msgstr ""
+"Bienvenue ! Posez-moi toutes vos questions : conseils de carrière, "
+"recommandations de cours ou aide à l'étude."
 
 msgid ""
 "Ask me about this lesson -- I can brief it or summarize the whole module for"
 " you."
 msgstr ""
+"Posez-moi des questions sur cette leçon : je peux vous en faire un compte-"
+"rendu ou résumer le module entier pour vous."
 
 msgid "Learn Without Limits"
 msgstr "Apprenez sans limites"
@@ -2715,7 +2721,7 @@ msgid "Unlimited access to every track and course."
 msgstr "Accès illimité à tous les parcours et cours."
 
 msgid "Please wait..."
-msgstr ""
+msgstr "Veuillez patienter..."
 
 msgid "Very weak"
 msgstr ""
