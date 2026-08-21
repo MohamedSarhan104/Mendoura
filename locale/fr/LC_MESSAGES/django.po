@@ -2260,13 +2260,13 @@ msgid "Homework submitted."
 msgstr "Devoirs soumis."
 
 msgid "Malformed request."
-msgstr ""
+msgstr "Requête mal formée."
 
 msgid "Message cannot be empty."
-msgstr ""
+msgstr "Le message ne peut pas être vide."
 
 msgid "That message is too long -- please shorten it."
-msgstr ""
+msgstr "Ce message est trop long, veuillez le raccourcir."
 
 #, python-format
 msgid "%(title)s updated."
@@ -2295,22 +2295,24 @@ msgid ""
 msgstr ""
 
 msgid "An unexpected error occurred. Please try again."
-msgstr ""
+msgstr "Une erreur inattendue est survenue. Veuillez réessayer."
 
 msgid ""
 "Upload a video and wait for it to finish processing before generating a "
 "transcript."
 msgstr ""
+"Téléchargez une vidéo et attendez qu'elle ait fini d'être traitée avant de "
+"générer une transcription."
 
 #, python-format
 msgid "\"%(title)s\" has watch-time history and cannot be deleted."
 msgstr ""
 
 msgid "Video hosting is not configured."
-msgstr ""
+msgstr "L'hébergement vidéo n'est pas configuré."
 
 msgid "This submission has already been graded."
-msgstr ""
+msgstr "Cette soumission a déjà été notée."
 
 #, python-format
 msgid "Graded %(username)s's submission."
@@ -2321,13 +2323,13 @@ msgid "You can request a payout once a week. Next available: %(date)s."
 msgstr ""
 
 msgid "Payout request submitted."
-msgstr ""
+msgstr "Demande de paiement soumise."
 
 msgid "Payout amount cannot exceed your available balance."
-msgstr ""
+msgstr "Le montant du paiement ne peut pas dépasser votre solde disponible."
 
 msgid "Please enter a valid payout amount."
-msgstr ""
+msgstr "Veuillez saisir un montant de paiement valide."
 
 #, python-format
 msgid "Your request for \"%(name)s\" has been submitted for review."
@@ -2338,10 +2340,10 @@ msgid "Send failed: %(reason)s"
 msgstr ""
 
 msgid "unknown error"
-msgstr ""
+msgstr "erreur inconnue"
 
 msgid "Enter a target email address first."
-msgstr ""
+msgstr "Veuillez d'abord saisir une adresse e-mail cible."
 
 #, python-format
 msgid "Student welcome email sent to %(email)s."
@@ -2349,6 +2351,8 @@ msgstr ""
 
 msgid "No enrollments exist yet -- enroll in a course, then retry this test."
 msgstr ""
+"Aucune inscription n'existe encore -- inscrivez-vous à un cours, puis "
+"réessayez ce test."
 
 #, python-format
 msgid ""
@@ -2375,7 +2379,7 @@ msgid "Instructor rejection email sent to %(email)s."
 msgstr ""
 
 msgid "No courses exist yet -- create one, then retry this test."
-msgstr ""
+msgstr "Aucun cours n'existe encore -- créez-en un, puis réessayez ce test."
 
 #, python-format
 msgid ""
@@ -2391,6 +2395,8 @@ msgstr ""
 
 msgid "No track requests exist yet -- submit one, then retry this test."
 msgstr ""
+"Aucune demande de suivi n'existe encore -- soumettez-en une, puis réessayez "
+"ce test."
 
 #, python-format
 msgid ""
@@ -2402,6 +2408,8 @@ msgid ""
 "No track requests have been approved yet -- approve one, then retry this "
 "test."
 msgstr ""
+"Aucune demande de piste n'a encore été approuvée ; approuvez-en une, puis "
+"réessayez ce test."
 
 #, python-format
 msgid ""
@@ -2413,6 +2421,8 @@ msgid ""
 "No track requests have been rejected yet -- reject one, then retry this "
 "test."
 msgstr ""
+"Aucune demande de piste n'a encore été rejetée ; rejetez-en une, puis "
+"réessayez ce test."
 
 #, python-format
 msgid ""
@@ -2424,6 +2434,8 @@ msgid ""
 "No certificates have been issued yet -- complete a course to generate one, "
 "then retry this test."
 msgstr ""
+"Aucun certificat n'a encore été délivré. Suivez un cours pour en générer un,"
+" puis réessayez ce test."
 
 #, python-format
 msgid ""
@@ -2432,7 +2444,7 @@ msgid ""
 msgstr ""
 
 msgid "Your admin account has no email address on file."
-msgstr ""
+msgstr "Votre compte administrateur n'a aucune adresse e-mail enregistrée."
 
 #, python-format
 msgid ""
@@ -2441,7 +2453,7 @@ msgid ""
 msgstr ""
 
 msgid "Subscription revenue distribution ran successfully."
-msgstr ""
+msgstr "La répartition des revenus d'abonnement a été effectuée avec succès."
 
 #, python-format
 msgid "%(title)s approved and published."
