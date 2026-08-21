@@ -203,19 +203,19 @@ msgid "e.g. Robotics"
 msgstr "p. ej. Robótica"
 
 msgid "Why should this track exist? (optional)"
-msgstr ""
+msgstr "¿Por qué debería existir esta pista? (opcional)"
 
 msgid "e.g. Robotics & Automation"
-msgstr ""
+msgstr "p. ej. Robótica y automatización"
 
 msgid "Select a category…"
-msgstr ""
+msgstr "Seleccionar una categoría…"
 
 msgid "+ Other / New category…"
-msgstr ""
+msgstr "+ Otro / Nueva categoría…"
 
 msgid "Enter a name for the new category."
-msgstr ""
+msgstr "Introduzca un nombre para la nueva categoría."
 
 #, python-format
 msgid ""
@@ -223,57 +223,65 @@ msgid ""
 msgstr ""
 
 msgid "Select a valid category."
-msgstr ""
+msgstr "Seleccione una categoría válida."
 
 msgid "Select a category, or choose \"+ Other / New category…\" to propose one."
 msgstr ""
+"Seleccione una categoría, o elija \"+ Otro / Nueva categoría...\" para "
+"proponer una."
 
 msgid "e.g. Getting Started"
-msgstr ""
+msgstr "p. ej. Primeros pasos"
 
 msgid "e.g. Slides.pdf"
-msgstr ""
+msgstr "p. ej. Slides.pdf"
 
 msgid "e.g. Bank transfer, PayPal"
-msgstr ""
+msgstr "p. ej. Transferencia bancaria, PayPal"
 
 msgid "e.g. Introduction to Variables"
-msgstr ""
+msgstr "p. ej. Introducción a las variables"
 
 msgid "https://youtube.com/... (external embed, optional)"
-msgstr ""
+msgstr "https://youtube.com/... (incrustación externa, opcional)"
 
 msgid "Defaults to \"<Module title> Quiz\" if left blank"
 msgstr ""
 
 msgid "e.g. What does CSS stand for?"
-msgstr ""
+msgstr "p. ej. ¿Qué significan las siglas CSS?"
 
 msgid "Answer choice"
-msgstr ""
+msgstr "Opción de respuesta"
 
 msgid ""
 "Enter a valid username. This value may contain only letters, numbers, "
 "spaces, and @/./+/-/_ characters."
 msgstr ""
+"Introduzca un nombre de usuario válido. Este valor solo puede contener "
+"letras, números, espacios y caracteres @/./+/-/_."
 
 msgid "username"
-msgstr ""
+msgstr "nombre de usuario"
 
 msgid ""
 "Required. 150 characters or fewer. Letters, digits, spaces and @/./+/-/_ "
 "only."
 msgstr ""
+"Obligatorio. 150 caracteres o menos. Solo letras, números, espacios y "
+"@/./+/-/_."
 
 msgid "A user with that username already exists."
-msgstr ""
+msgstr "Ya existe un usuario con ese nombre de usuario."
 
 msgid ""
 "Payoneer email or account ID. Required for instructors based outside Egypt."
 msgstr ""
+"Correo electrónico o ID de cuenta de Payoneer. Obligatorio para instructores"
+" fuera de Egipto."
 
 msgid "e.g. a Font Awesome class name"
-msgstr ""
+msgstr "p. ej., un nombre de clase de Font Awesome"
 
 msgid "Used until a course is linked, or if none ever is."
 msgstr ""
