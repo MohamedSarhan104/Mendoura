@@ -2142,11 +2142,15 @@ msgstr "Ajoutez un module pour continuer"
 
 msgid "Could not add this module. Please check the fields and try again."
 msgstr ""
+"Impossible d'ajouter ce module. Veuillez vérifier les champs et réessayer."
 
 msgid ""
 "Review everything below, then submit for admin review. You can still make "
 "changes from your dashboard after submitting."
 msgstr ""
+"Veuillez examiner tout ce qui suit, puis soumettre pour examen par "
+"l'administrateur. Vous pourrez toujours effectuer des modifications depuis "
+"votre tableau de bord après la soumission."
 
 #, python-format
 msgid "%(count)s Module"
@@ -2161,16 +2165,16 @@ msgstr[0] ""
 msgstr[1] ""
 
 msgid "All scripts added"
-msgstr ""
+msgstr "Tous les scripts ont été ajoutés"
 
 msgid "All videos added"
-msgstr ""
+msgstr "Toutes les vidéos ont été ajoutées"
 
 msgid "Script missing"
-msgstr ""
+msgstr "Script manquant"
 
 msgid "Video missing"
-msgstr ""
+msgstr "Vidéo manquante"
 
 #, python-format
 msgid "%(count)s quiz question"
@@ -2179,40 +2183,50 @@ msgstr[0] ""
 msgstr[1] ""
 
 msgid "No quiz"
-msgstr ""
+msgstr "Aucun quiz"
 
 msgid "Submit this course for admin review?"
-msgstr ""
+msgstr "Soumettre ce cours pour examen par l'administrateur ?"
 
 msgid ""
 "Every module needs its video or script before you can submit -- click Edit "
 "above on any module missing one."
 msgstr ""
+"Chaque module doit avoir sa vidéo ou son script avant que vous puissiez "
+"soumettre -- cliquez sur Modifier ci-dessus pour tout module auquel il en "
+"manque un."
 
 msgid "Profile updated."
-msgstr ""
+msgstr "Profil mis à jour."
 
 msgid "That username was just taken by someone else. Please try again."
 msgstr ""
+"Ce nom d'utilisateur vient d'être pris par quelqu'un d'autre. Veuillez "
+"réessayer."
 
 msgid "Welcome to Mendoura! Your account is ready."
-msgstr ""
+msgstr "Bienvenue sur Mendoura ! Votre compte est prêt."
 
 msgid ""
 "Your account has been created and is pending administrator approval. You'll "
 "be able to log in once it's approved."
 msgstr ""
+"Votre compte a été créé et est en attente d'approbation par "
+"l'administrateur. Vous pourrez vous connecter une fois qu'il aura été "
+"approuvé."
 
 msgid "Add at least one lesson to this module before continuing."
-msgstr ""
+msgstr "Ajoutez au moins une leçon à ce module avant de continuer."
 
 msgid "Add a script for every lesson in this module before continuing."
-msgstr ""
+msgstr "Ajoutez un script pour chaque leçon de ce module avant de continuer."
 
 msgid ""
 "Upload a video (or add an external video link) for every lesson in this "
 "module before continuing."
 msgstr ""
+"Téléchargez une vidéo (ou ajoutez un lien vidéo externe) pour chaque leçon "
+"de ce module avant de continuer."
 
 #, python-format
 msgid "%(title)s submitted for review. We'll email you once it's approved."
@@ -2229,17 +2243,21 @@ msgstr ""
 
 msgid "Unable to start checkout right now. Please try again shortly."
 msgstr ""
+"Impossible de démarrer le paiement pour le moment. Veuillez réessayer "
+"ultérieurement."
 
 msgid "Enroll in this course to watch this lecture."
-msgstr ""
+msgstr "Inscrivez-vous à ce cours pour regarder ce cours magistral."
 
 msgid ""
 "No certificate found with that Verification ID. Double-check it and try "
 "again."
 msgstr ""
+"Aucun certificat trouvé avec cet identifiant de vérification. Vérifiez-le et"
+" réessayez."
 
 msgid "Homework submitted."
-msgstr ""
+msgstr "Devoirs soumis."
 
 msgid "Malformed request."
 msgstr ""
