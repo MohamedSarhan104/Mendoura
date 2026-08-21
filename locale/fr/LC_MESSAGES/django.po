@@ -232,7 +232,7 @@ msgstr ""
 "pour en proposer une."
 
 msgid "e.g. Getting Started"
-msgstr ""
+msgstr "p. ex. Pour bien commencer"
 
 msgid "e.g. Slides.pdf"
 msgstr "p. ex. Slides.pdf"
@@ -1051,7 +1051,7 @@ msgid "Instructor Payouts"
 msgstr "Paiements aux instructeurs"
 
 msgid "Enrollments"
-msgstr ""
+msgstr "Inscriptions"
 
 msgid "Students"
 msgstr "Étudiants"
@@ -2071,63 +2071,74 @@ msgid ""
 "Each lesson gets its own title and video -- add as many as this module "
 "needs."
 msgstr ""
+"Chaque leçon possède son propre titre et sa propre vidéo ; ajoutez-en autant"
+" que ce module le nécessite."
 
 msgid "No lessons yet. Add your first one below."
-msgstr ""
+msgstr "Aucune leçon pour le moment. Ajoutez votre première leçon ci-dessous."
 
 msgid "Add Lesson"
-msgstr ""
+msgstr "Ajouter une leçon"
 
 msgid "Lesson Title"
-msgstr ""
+msgstr "Titre de la leçon"
 
 msgid ""
 "One quiz covers the whole module. Students must pass it to mark the module "
 "complete. Leave it out entirely and it won't gate anything."
 msgstr ""
+"Un quiz couvre l'ensemble du module. Les étudiants doivent le réussir pour "
+"marquer le module comme terminé. Supprimez-le complètement et il ne bloquera"
+" rien."
 
 msgid "Save Quiz Settings"
-msgstr ""
+msgstr "Enregistrer les paramètres du quiz"
 
 msgid "Add a Quiz to This Module"
-msgstr ""
+msgstr "Ajouter un quiz à ce module"
 
 msgid "No answer choices yet -- add at least two below."
 msgstr ""
+"Aucun choix de réponse pour l'instant -- ajoutez-en au moins deux ci-"
+"dessous."
 
 msgid "Delete this quiz and all its questions?"
-msgstr ""
+msgstr "Supprimer ce quiz et toutes ses questions ?"
 
 msgid "Add Another Module"
-msgstr ""
+msgstr "Ajouter un autre module"
 
 msgid "Next: Review"
-msgstr ""
+msgstr "Suivant : Révision"
 
 msgid "Add at least one lesson above before continuing."
-msgstr ""
+msgstr "Ajoutez au moins une leçon ci-dessus avant de continuer."
 
 msgid "Add a script for every lesson above before continuing."
-msgstr ""
+msgstr "Ajoutez un script pour chaque leçon ci-dessus avant de continuer."
 
 msgid ""
 "Upload a video (or add an external link) for every lesson above before "
 "continuing."
 msgstr ""
+"Téléchargez une vidéo (ou ajoutez un lien externe) pour chaque leçon ci-"
+"dessus avant de continuer."
 
 msgid "Lesson title is required."
-msgstr ""
+msgstr "Le titre de la leçon est obligatoire."
 
 msgid "Save & Exit to Dashboard"
-msgstr ""
+msgstr "Enregistrer et quitter vers le tableau de bord"
 
 msgid ""
 "Add a module, then add its lessons (with video) and an optional quiz right "
 "away -- one module at a time."
 msgstr ""
+"Ajoutez un module, puis ajoutez immédiatement ses leçons (avec vidéo) et un "
+"quiz optionnel -- un module à la fois."
 
 msgid "Add a module to continue"
-msgstr ""
+msgstr "Ajoutez un module pour continuer"
 
 msgid "Could not add this module. Please check the fields and try again."
 msgstr ""
