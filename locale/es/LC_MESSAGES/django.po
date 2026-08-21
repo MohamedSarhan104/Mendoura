@@ -348,34 +348,34 @@ msgid "Processing"
 msgstr "Procesando"
 
 msgid "Done"
-msgstr ""
+msgstr "Hecho"
 
 msgid "Failed"
-msgstr ""
+msgstr "Error"
 
 msgid "Viewable for free without enrollment"
-msgstr ""
+msgstr "Se puede ver gratis sin inscripción"
 
 msgid "Students can upload homework for this lecture"
-msgstr ""
+msgstr "Los estudiantes pueden subir la tarea para esta lección"
 
 msgid "Any file: PDF, zip, image, audio, slides, etc."
-msgstr ""
+msgstr "Cualquier archivo: PDF, zip, imagen, audio, diapositivas, etc."
 
 msgid "Size in bytes"
-msgstr ""
+msgstr "Tamaño en bytes"
 
 msgid "Link to Google Drive, GitHub, etc."
-msgstr ""
+msgstr "Enlace a Google Drive, GitHub, etc."
 
 msgid "Pending"
-msgstr ""
+msgstr "Pendiente"
 
 msgid "Succeeded"
-msgstr ""
+msgstr "Correcto"
 
 msgid "Refunded"
-msgstr ""
+msgstr "Reembolsado"
 
 #, python-format
 msgid "'%(field)s' is immutable after creation."
@@ -386,34 +386,37 @@ msgid "%(module)s Quiz"
 msgstr ""
 
 msgid "Single choice"
-msgstr ""
+msgstr "Opción única"
 
 msgid "Sale Credit"
-msgstr ""
+msgstr "Crédito de venta"
 
 msgid "Withdrawal"
-msgstr ""
+msgstr "Retirada"
 
 msgid "Adjustment"
-msgstr ""
+msgstr "Ajuste"
 
 msgid "Refund Debit"
-msgstr ""
+msgstr "Reembolso de débito"
 
 msgid "WalletTransaction rows are append-only and cannot be modified."
 msgstr ""
+"Las filas de WalletTransaction son de solo adición y no se pueden modificar."
 
 msgid "WalletTransaction rows are append-only and cannot be deleted."
 msgstr ""
+"Las filas de WalletTransaction solo se pueden añadir y no se pueden "
+"eliminar."
 
 msgid "Requested"
-msgstr ""
+msgstr "Solicitado"
 
 msgid "Paid"
-msgstr ""
+msgstr "Pagado"
 
 msgid "Monthly"
-msgstr ""
+msgstr "Mensual"
 
 msgid "Annual"
 msgstr ""
