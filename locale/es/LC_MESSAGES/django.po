@@ -285,64 +285,67 @@ msgstr "p. ej., un nombre de clase de Font Awesome"
 
 msgid "Used until a course is linked, or if none ever is."
 msgstr ""
+"Se utiliza hasta que se vincula un curso, o si nunca se vincula ninguno."
 
 msgid "Pending Review"
-msgstr ""
+msgstr "Pendiente de revisión"
 
 msgid "Approved"
-msgstr ""
+msgstr "Aprobado"
 
 msgid "Rejected"
-msgstr ""
+msgstr "Rechazado"
 
 msgid "Why this track should exist."
-msgstr ""
+msgstr "Por qué debería existir esta pista."
 
 msgid "Beginner"
-msgstr ""
+msgstr "Principiante"
 
 msgid "Intermediate"
-msgstr ""
+msgstr "Intermedio"
 
 msgid "Advanced"
-msgstr ""
+msgstr "Avanzado"
 
 msgid "Full production by instructor"
-msgstr ""
+msgstr "Producción completa por el instructor"
 
 msgid "Script only (platform produces)"
-msgstr ""
+msgstr "Solo script (producido por la plataforma)"
 
 msgid "Draft"
-msgstr ""
+msgstr "Borrador"
 
 msgid "Published"
-msgstr ""
+msgstr "Publicado"
 
 msgid "Archived"
-msgstr ""
+msgstr "Archivado"
 
 msgid "The script for Mendoura-produced video generation"
-msgstr ""
+msgstr "El guion para la generación de video producido por Mendoura"
 
 msgid ""
 "production_type is read-only once a course has its first successful sale."
 msgstr ""
+"production_type es de solo lectura una vez que un curso tiene su primera "
+"venta exitosa."
 
 msgid "Video"
-msgstr ""
+msgstr "Vídeo"
 
 msgid "Article"
-msgstr ""
+msgstr "Artículo"
 
 msgid "Quiz"
-msgstr ""
+msgstr "Cuestionario"
 
 msgid "Not started"
-msgstr ""
+msgstr "No iniciado"
 
 msgid "Processing"
-msgstr ""
+msgstr "Procesando"
 
 msgid "Done"
 msgstr ""
