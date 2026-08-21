@@ -2977,19 +2977,19 @@ msgstr ""
 "grâce à des cours dispensés par des professionnels en activité."
 
 msgid "Free and paid courses across 12 tracks"
-msgstr ""
+msgstr "Cours gratuits et payants répartis sur 12 parcours"
 
 msgid "Verified certificates on completion"
-msgstr ""
+msgstr "Certificats vérifiés à la fin"
 
 msgid "Learn at your own pace, on any device"
-msgstr ""
+msgstr "Apprenez à votre rythme, sur n'importe quel appareil"
 
 msgid "Create your student account"
-msgstr ""
+msgstr "Créez votre compte étudiant"
 
 msgid "Start learning today, free forever."
-msgstr ""
+msgstr "Commencez à apprendre dès aujourd'hui, gratuitement pour toujours."
 
 msgid "Create Account"
-msgstr ""
+msgstr "Créer un compte"
