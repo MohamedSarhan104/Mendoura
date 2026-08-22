@@ -419,31 +419,31 @@ msgid "Monthly"
 msgstr "Mensual"
 
 msgid "Annual"
-msgstr ""
+msgstr "Anual"
 
 msgid "Active"
-msgstr ""
+msgstr "Activo"
 
 msgid "Expired"
-msgstr ""
+msgstr "Caducado"
 
 msgid "Canceled"
-msgstr ""
+msgstr "Cancelado"
 
 msgid "Open"
-msgstr ""
+msgstr "Abrir"
 
 msgid "Distributed"
-msgstr ""
+msgstr "Distribuido"
 
 msgid "User"
-msgstr ""
+msgstr "Usuario"
 
 msgid "Assistant"
-msgstr ""
+msgstr "Asistente"
 
 msgid "Markdown -- supports tables, bold, and lists."
-msgstr ""
+msgstr "Markdown: admite tablas, negrita y listas."
 
 #, python-format
 msgid "%(counter)s student"
@@ -453,25 +453,25 @@ msgstr[1] ""
 msgstr[2] ""
 
 msgid "Free"
-msgstr ""
+msgstr "Gratis"
 
 msgid "Browse Courses"
 msgstr "Explorar cursos"
 
 msgid "Pick a course and start learning today."
-msgstr ""
+msgstr "Elige un curso y comienza a aprender hoy mismo."
 
 msgid "No courses available yet"
-msgstr ""
+msgstr "Aún no hay cursos disponibles"
 
 msgid "Check back soon, instructors are cooking up something great."
-msgstr ""
+msgstr "Vuelve pronto, los instructores están preparando algo genial."
 
 msgid "Certificate"
-msgstr ""
+msgstr "Certificado"
 
 msgid "Verified Certificate"
-msgstr ""
+msgstr "Certificado verificado"
 
 msgid "Statement of Accomplishment"
 msgstr ""
